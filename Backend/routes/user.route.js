@@ -28,9 +28,8 @@ router.put('/profile', [
 ], authMiddleware.authUser, userController.updateUserProfile)
 router.get('/balance', userController.getUserBalance)
 router.put('/balance', body("balance").isInt().withMessage('Invalid amount'), authMiddleware.authUser, authMiddleware.authUser, userController.addUserBalance)
-// router.post('/refresh-token', authMiddleware.authUser, userController.refreshUserToken)
-// router.get('/settings', authMiddleware.authUser, userController.getUserSettings)
-// router.put('/settings', authMiddleware.authUser, userController.updateUserSettings)
+
+
 
 
 

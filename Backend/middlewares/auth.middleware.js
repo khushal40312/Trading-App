@@ -15,7 +15,7 @@ console.log(token)
     const isBlacklisted = await blacklistTokenModel.findOne({ token })
 
     if (isBlacklisted) {
-        return res.status(401).json({ message: 'Unauthorized' })
+        return res.status(401).json({ message: 'session expired login again' })
 
     }
     try {

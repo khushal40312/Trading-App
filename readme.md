@@ -335,3 +335,264 @@ The modular approach I've taken with controllers and middlewares is already payi
 ---
 
 #100DaysOfCoding #Day26 #MERN #NodeJS #Express #MongoDB #WebDevelopment #TradingApp #Authentication
+
+# 🚀 Day 27: Trading App - Portfolio Management System
+
+## 📝 Project Overview
+A full-stack paper trading application built with the MERN stack that allows users to practice trading strategies with virtual money. The app provides real-time market data and portfolio tracking without financial risk.
+
+## 🔍 Today's Progress
+Today I focused on developing the portfolio management system, which forms the core of the trading application. I created a robust portfolio model, planned API endpoints, and tested integration with the Finnhub API for real-time market data.
+
+### ✅ Completed Tasks
+- **Portfolio Model Creation**
+  - Designed comprehensive schema with asset tracking
+  - Implemented methods for calculating portfolio value
+  - Added performance history tracking
+  - Created automated price update functionality
+- **API Route Planning**
+  - Designed comprehensive endpoint structure
+  - Planned admin and user-specific routes
+  - Outlined asset management functions
+  - Structured analytics endpoints
+- **External API Integration**
+  - Successfully connected to Finnhub API
+  - Tested real-time market data retrieval
+  - Verified data format compatibility
+  - Planned Socket.io integration for live updates
+
+## 💻 Code Implementation Details
+
+### 📊 Portfolio Schema
+```javascript
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const portfolioSchema = new Schema({
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  assets: [{
+    symbol: {
+      type: String,
+      required: true,
+      uppercase: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: [0, 'Quantity cannot be negative']
+    },
+    averageBuyPrice: {
+      type: Number,
+      required: true,
+      min: [0, 'Average buy price cannot be negative']
+    },
+    currentPrice: {
+      type: Number,
+      default: 0
+    },
+    currentValue: {
+      type: Number,
+      default: 0
+    },
+    profitLoss: {
+      type: Number,
+      default: 0
+    },
+    profitLossPercentage: {
+      type: Number,
+      default: 0
+    }
+  }],
+  totalInvestment: {
+    type: Number,
+    default: 0
+  },
+  currentValue: {
+    type: Number,
+    default: 0
+  },
+  totalProfitLoss: {
+    type: Number,
+    default: 0
+  },
+  totalProfitLossPercentage: {
+    type: Number,
+    default: 0
+  },
+  lastUpdated: {
+    type: Date,
+    default: Date.now
+  },
+  performanceHistory: [{
+    date: {
+      type: Date,
+      default: Date.now
+    },
+    value: {
+      type: Number,
+      required: true
+    }
+  }],
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+```
+
+### 📈 Portfolio Methods
+```javascript
+// Method to calculate current portfolio value
+portfolioSchema.methods.calculateValue = function() {
+  let totalValue = 0;
+  let totalInvestment = 0;
+  
+  this.assets.forEach(asset => {
+    const currentValue = asset.quantity * asset.currentPrice;
+    const investment = asset.quantity * asset.averageBuyPrice;
+    
+    asset.currentValue = currentValue;
+    asset.profitLoss = currentValue - investment;
+    asset.profitLossPercentage = investment > 0 ? (asset.profitLoss / investment) * 100 : 0;
+    
+    totalValue += currentValue;
+    totalInvestment += investment;
+  });
+  
+  this.currentValue = totalValue;
+  this.totalInvestment = totalInvestment;
+  this.totalProfitLoss = totalValue - totalInvestment;
+  this.totalProfitLossPercentage = totalInvestment > 0 ? (this.totalProfitLoss / totalInvestment) * 100 : 0;
+  this.lastUpdated = Date.now();
+  
+  // Add current value to performance history
+  this.performanceHistory.push({
+    date: new Date(),
+    value: totalValue
+  });
+  
+  return this.currentValue;
+};
+
+// Method to update asset prices
+portfolioSchema.methods.updatePrices = async function(getPriceFunction) {
+  for (const asset of this.assets) {
+    try {
+      asset.currentPrice = await getPriceFunction(asset.symbol);
+    } catch (error) {
+      console.error(`Failed to update price for ${asset.symbol}:`, error);
+    }
+  }
+  this.calculateValue();
+};
+```
+
+### 🔌 API Integration Test
+```javascript
+const axios = require('axios');
+
+// Replace with your actual API key
+const API_KEY = process.env.FINNHUB_API;
+const SYMBOL = 'BINANCE:BTCUSDT'; // Example stock symbol
+
+async function getStockQuote(symbol) {
+  try {
+    const response = await axios.get(`https://finnhub.io/api/v1/quote`, {
+      params: {
+        symbol,
+        token: API_KEY
+      }
+    });
+    
+    console.log(`Stock quote for ${symbol}:`, response.data);
+  } catch (error) {
+    console.error('Error fetching stock quote:', error.message);
+  }
+}
+
+getStockQuote(SYMBOL);
+```
+
+### 🛣️ Planned API Routes
+```javascript
+// GET /api/portfolios - Get all portfolios (admin only)
+// GET /api/portfolios/me - Get current user's portfolio
+// POST /api/portfolios - Create a new portfolio (if not created automatically with user)
+// PUT /api/portfolios/me - Update portfolio metadata (like name, settings)
+// GET /api/portfolios/me/assets - Get all assets in user's portfolio
+// GET /api/portfolios/me/assets/:symbol - Get details of a specific asset
+// PUT /api/portfolios/me/refresh - Refresh all asset prices in the portfolio
+// GET /api/portfolios/me/performance - Get historical performance data
+// GET /api/portfolios/me/summary - Get portfolio summary (totals, allocation)
+// GET /api/portfolios/me/analytics - Get detailed portfolio analytics (diversification, risk)
+```
+
+## 🌟 Key Features
+- **Real-time Value Calculation**: Automatic updates of portfolio and asset values
+- **Performance Tracking**: Historical data points for visualizing growth over time
+- **Detailed Asset Management**: Comprehensive tracking of individual investments
+- **Profit/Loss Calculations**: Automatic calculations at both portfolio and asset levels
+- **External API Integration**: Live market data from Finnhub
+
+## 📈 Progress Overview
+- ✅ Project Structure: 100%
+- ✅ Authentication System: 90%
+- ✅ User Profile Management: 90%
+- ✅ Portfolio Model: 100%
+- ⬜ Portfolio API Routes: 10% (planned)
+- ⬜ Real-time Updates: 20% (API tested)
+- ⬜ Trading System: 0%
+- ⬜ Frontend Development: 0%
+
+## 🔮 Next Steps
+1. **Implement Portfolio API Endpoints**
+   - Create controllers for all planned routes
+   - Implement portfolio creation logic
+   - Build asset management functionality
+
+2. **Socket.io Integration**
+   - Set up WebSocket connections
+   - Implement real-time price updates
+   - Create price change notifications
+
+3. **Trading System Development**
+   - Design trade execution flow
+   - Implement buy/sell functionality
+   - Create order history tracking
+
+4. **Begin Frontend Development**
+   - Design portfolio dashboard
+   - Create assets listing view
+   - Build performance charts
+
+## 💡 Reflections
+Today's work on the portfolio model highlighted the complexity of financial data management. Creating methods that automatically calculate derived values (like profit/loss percentages) will greatly simplify frontend development later.
+
+The Finnhub API integration test was successful, confirming we'll be able to provide real-time market data. Adding Socket.io will enhance the experience with live updates without requiring constant API calls.
+
+The portfolio schema design required careful consideration of performance optimization, especially for tracking historical data points that will grow over time.
+
+## 🛠️ Technologies Used
+- **MongoDB/Mongoose**: Database and schema modeling
+- **Express.js**: API framework
+- **Node.js**: Runtime environment
+- **Finnhub API**: Market data provider
+- **Socket.io**: (Planned) Real-time updates
+- **Axios**: HTTP client for API requests
+
+## 📚 Learning Resources
+- [Finnhub API Documentation](https://finnhub.io/docs/api)
+- [Socket.io Documentation](https://socket.io/docs/v4)
+- [Mongoose Schema Design Best Practices](https://mongoosejs.com/docs/guide.html)
+
+---
+
+#100DaysOfCoding #Day27 #MERN #NodeJS #MongoDB #FinTech #TradingApp #PortfolioManagement #WebDevelopment #API
