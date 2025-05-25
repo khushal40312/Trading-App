@@ -2,34 +2,51 @@ const { validationResult } = require('express-validator');
 const userModel = require('../models/user.model');
 const userService = require('../services/user.service');
 const blacklistTokenModel = require('../models/blacklistToken.model');
+const portfolioModel = require('../models/portfolio.model.js');
+
 
 
 module.exports.registerUser = async (req, res, next) => {
-
     const error = validationResult(req)
-
     if (!error.isEmpty()) {
         return res.status(400).json({ error: error.array() });
     }
+    
     const { fullname, email, password } = req.body;
     const isUserAlreadyExist = await userModel.findOne({ email })
     if (isUserAlreadyExist) {
-        res.status(401).json({ message: "User already exists " })
+        return res.status(401).json({ message: "User already exists " })
     }
+    
     const hashedPassword = await userModel.hashPassword(password)
+    
+    // Create user first
     const user = await userService.createUser({
         firstname: fullname.firstname,
         lastname: fullname.lastname,
         email,
         password: hashedPassword
     })
+    
+    // Create default portfolio for the new user
+    const newPortfolio = new portfolioModel({
+        user: user._id,
+        assets: [],
+        totalInvestment: 0,
+        currentValue: 0
+    });
+    await newPortfolio.save();
+    
+    // Link portfolio to user
+    user.portfolioId = newPortfolio._id;
+    await user.save();
+    
     const userObj = user.toObject();
     delete userObj.password;
     const token = user.generateAuthToken();
     res.cookie('token', token)
-
+    
     res.status(201).json({ token, userObj })
-
 }
 module.exports.loginUser = async (req, res, next) => {
     const error = validationResult(req)
