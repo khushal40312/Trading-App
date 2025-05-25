@@ -596,3 +596,216 @@ The portfolio schema design required careful consideration of performance optimi
 ---
 
 #100DaysOfCoding #Day27 #MERN #NodeJS #MongoDB #FinTech #TradingApp #PortfolioManagement #WebDevelopment #API
+
+
+# 🚀 Day 28: Trading App - Portfolio API Controllers
+
+## 📝 Project Overview
+Building a comprehensive paper trading application using the MERN stack that enables users to practice trading strategies with virtual money. The app provides real-time market data integration and detailed portfolio tracking without financial risk.
+
+## 🔍 Today's Progress
+Today I focused on implementing the portfolio API controllers that bridge the portfolio model with the frontend application. These controllers handle portfolio retrieval, asset management, and provide the foundation for portfolio operations.
+
+### ✅ Completed Tasks
+- **Portfolio Controller Implementation**
+  - User-specific portfolio retrieval
+  - Admin portfolio overview functionality
+  - User asset listing with detailed information
+  - Error handling for all endpoints
+- **Route Configuration**
+  - Protected endpoints with authentication middleware
+  - RESTful API structure following best practices
+  - Clean separation between user and admin routes
+- **Service Layer Integration**
+  - Connected controllers with portfolio service layer
+  - Maintained separation of concerns architecture
+
+## 💻 Code Implementation Details
+
+### 📊 Portfolio Controllers
+```javascript
+const { validationResult } = require('express-validator');
+const portfolioService = require('../services/portfolio.service.js');
+const Portfolio = require('../models/portfolio.model.js');
+
+module.exports.getPortfolio = async (req, res, next) => {
+    try {
+        const portfolio = await portfolioService.findPortfolio(req.user.id)
+        res.status(200).json(portfolio)
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+}
+
+module.exports.getPortfolios = async (req, res) => {
+    try {
+        const portfolio = await Portfolio.find({})
+        res.status(200).json(portfolio)
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+}
+
+module.exports.getUserAssets = async (req, res) => {
+    try {
+        const portfolio = await Portfolio.findOne({user:req.user.id})
+        console.log(portfolio.assets)
+        
+        res.status(200).json({assets:portfolio.assets})
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+}
+```
+
+### 🛣️ API Routes
+```javascript
+router.get('/me', authMiddleware.authUser, portfolioController.getPortfolio)
+router.get('/all', authMiddleware.authUser, portfolioController.getPortfolios) 
+router.get('/assets', authMiddleware.authUser, portfolioController.getUserAssets)
+```
+
+## 📂 Project Structure Update
+```
+TRADING_APP_PROJECT/
+├── Backend/
+│   ├── config/
+│   ├── controllers/
+│   │   ├── user.controller.js
+│   │   └── portfolio.controller.js ✨ NEW
+│   ├── middlewares/
+│   │   └── auth.middleware.js
+│   ├── models/
+│   │   ├── blacklistToken.model.js
+│   │   ├── user.model.js
+│   │   └── portfolio.model.js
+│   ├── routes/
+│   │   ├── user.route.js
+│   │   └── portfolio.route.js ✨ NEW
+│   ├── services/
+│   │   ├── user.service.js
+│   │   └── portfolio.service.js ✨ NEW
+│   ├── app.js
+│   ├── server.js
+```
+
+## 🌟 Key Features Implemented
+- **User Portfolio Retrieval**: Secure endpoint to fetch authenticated user's portfolio
+- **Admin Portfolio Overview**: Administrative endpoint to view all portfolios
+- **Asset Management**: Dedicated endpoint for retrieving user's assets with detailed information
+- **Service Layer Architecture**: Proper separation between controllers and business logic
+- **Error Handling**: Consistent error responses across all endpoints
+- **Authentication Protection**: All routes secured with JWT middleware
+
+## 📈 API Endpoints Overview
+
+### 🔒 Protected User Routes
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/portfolios/me` | Get current user's portfolio | ✅ |
+| `GET` | `/api/portfolios/assets` | Get user's assets list | ✅ |
+| `GET` | `/api/portfolios/all` | Get all portfolios (admin) | ✅ |
+
+### 📊 Response Examples
+```javascript
+// GET /me - Portfolio Response
+{
+  "user": "user_id",
+  "assets": [...],
+  "totalInvestment": 10000,
+  "currentValue": 10500,
+  "totalProfitLoss": 500,
+  "totalProfitLossPercentage": 5.0,
+  "lastUpdated": "2024-01-15T10:30:00Z",
+  "performanceHistory": [...]
+}
+
+// GET /assets - Assets Response
+{
+  "assets": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "quantity": 10,
+      "averageBuyPrice": 150.00,
+      "currentPrice": 155.00,
+      "currentValue": 1550.00,
+      "profitLoss": 50.00,
+      "profitLossPercentage": 3.33
+    }
+  ]
+}
+```
+
+## 📈 Progress Overview
+- ✅ Project Structure: 100%
+- ✅ Authentication System: 95%
+- ✅ User Profile Management: 90%
+- ✅ Portfolio Model: 100%
+- ✅ Portfolio API Controllers: 40%
+- ⬜ Real-time Updates: 20%
+- ⬜ Trading System: 0%
+- ⬜ Frontend Development: 0%
+
+## 🔮 Next Steps
+1. **Complete Portfolio API**
+   - Implement portfolio refresh functionality
+   - Add portfolio summary endpoint
+   - Create performance analytics endpoint
+   - Build portfolio update capabilities
+
+2. **Enhanced Error Handling**
+   - Add specific error codes
+   - Implement better validation responses
+   - Create portfolio-not-found handling
+
+3. **Real-time Features**
+   - Integrate Socket.io for live updates
+   - Implement price streaming
+   - Add portfolio value notifications
+
+4. **Trading System Development**
+   - Create buy/sell order controllers
+   - Implement trade execution logic
+   - Build trade history tracking
+
+## 💡 Reflections
+Today's work on the portfolio controllers reinforced the importance of a clean service layer architecture. By keeping the controllers thin and delegating business logic to services, the code remains maintainable and testable.
+
+The asset retrieval functionality will be crucial for the frontend dashboard, providing all the necessary data for portfolio visualization and individual asset tracking.
+
+Error handling consistency across all endpoints ensures a reliable API experience, which is essential for a financial application where data integrity is paramount.
+
+## 🛠️ Technologies Used
+- **Express.js**: Web framework and routing
+- **MongoDB/Mongoose**: Database operations
+- **JWT**: Authentication middleware
+- **express-validator**: Input validation
+- **Node.js**: Runtime environment
+
+## 🔧 Testing the API
+```bash
+# Get user portfolio
+GET /api/portfolios/me
+Authorization: Bearer <jwt_token>
+
+# Get user assets
+GET /api/portfolios/assets  
+Authorization: Bearer <jwt_token>
+
+# Get all portfolios (admin)
+GET /api/portfolios/all
+Authorization: Bearer <jwt_token>
+```
+
+## 📚 Learning Resources
+- [Express.js Controller Patterns](https://expressjs.com/en/guide/routing.html)
+- [RESTful API Design Best Practices](https://restfulapi.net/)
+- [Error Handling in Express.js](https://expressjs.com/en/guide/error-handling.html)
+
+---
+
+#100DaysOfCoding #Day28 #MERN #NodeJS #Express #MongoDB #TradingApp #API #Controllers #PortfolioManagement
