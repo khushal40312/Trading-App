@@ -809,3 +809,48 @@ Authorization: Bearer <jwt_token>
 ---
 
 #100DaysOfCoding #Day28 #MERN #NodeJS #Express #MongoDB #TradingApp #API #Controllers #PortfolioManagement
+# day 29
+
+---
+
+## 📈 GET `/:symbol` - Fetch Asset by Symbol
+
+### Description
+This route retrieves asset information from the user's portfolio based on the provided asset symbol (e.g., `AAPL`, `GOOGL`, `TSLA`).
+
+---
+
+### 🔗 Endpoint
+GET /:symbol
+
+### 🔧 URL Parameters
+
+| Param  | Type   | Description                              |
+|--------|--------|------------------------------------------|
+| symbol | string | Ticker symbol of the asset (e.g., AAPL)  |
+
+---
+
+### ✅ Example Request
+ 
+---
+GET /AAPL
+
+
+
+### 📦 Example Response
+```json
+{
+  "symbol": "AAPL",
+  "quantity": 10,
+  "currentPrice": 175
+}
+{
+  "error": "Asset with symbol 'XYZ' not found."
+}
+```
+ # 💡 Notes
+
+* The symbol parameter is case-insensitive.
+
+* This route currently uses in-memory mock data. For production, integrate with a database like MongoDB.

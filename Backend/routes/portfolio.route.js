@@ -10,7 +10,10 @@ const authMiddleware = require('../middlewares/auth.middleware')
 router.get('/me', authMiddleware.authUser, portfolioController.getPortfolio)
 router.get('/all', authMiddleware.authUser, portfolioController.getPortfolios)
 router.get('/assets',authMiddleware.authUser,portfolioController.getUserAssets)
-// GET /api/portfolios/me/assets/:symbol - Get details of a specific asset
+router.get('/assets/:symbol',authMiddleware.authUser,portfolioController.getUserParticularAssets)
+
+
+
 // PUT /api/portfolios/me/refresh - Refresh all asset prices in the portfolio
 // GET /api/portfolios/me/performance - Get historical performance data
 // GET /api/portfolios/me/summary - Get portfolio summary (totals, allocation)
