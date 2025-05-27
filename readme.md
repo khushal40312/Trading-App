@@ -854,3 +854,316 @@ GET /AAPL
 * The symbol parameter is case-insensitive.
 
 * This route currently uses in-memory mock data. For production, integrate with a database like MongoDB.
+# Day 30: Trading App - Complete Portfolio Management & Trade Schema
+
+## Project Overview
+Paper trading application built with MERN stack allowing users to practice trading strategies with virtual money and real-time market data.
+
+## Today's Progress
+Completed the portfolio management system with advanced controllers and created a comprehensive trade schema for upcoming trading functionality.
+
+## Completed Portfolio Controllers
+
+### Asset Management
+```javascript
+module.exports.upsertAsset = async (req, res) => {
+    const { symbol, name, quantity, averageBuyPrice } = req.body;
+    try {
+      const portfolio = await portfolioModel.findOne({ user: req.user.id });
+      const assetIndex = portfolio.assets.findIndex(a => a.symbol === symbol.toUpperCase());
+      if (assetIndex !== -1) {
+        // Update existing asset with weighted average calculation
+        const existing = portfolio.assets[assetIndex];
+        const totalQty = existing.quantity + quantity;
+        const weightedAvgPrice = ((existing.quantity * existing.averageBuyPrice) + 
+                                 (quantity * averageBuyPrice)) / totalQty;
+  
+        existing.quantity = totalQty;
+        existing.averageBuyPrice = weightedAvgPrice;
+      } else {
+        // Add new asset
+        portfolio.assets.push({
+          symbol: symbol.toUpperCase(),
+          name,
+          quantity,
+          averageBuyPrice
+        });
+      }
+  
+      await portfolio.updatePrices(getStockQuote);
+      await portfolio.save();
+      res.status(200).json(portfolio);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to add/update asset' });
+    }
+};
+```
+
+### Portfolio Operations
+```javascript
+module.exports.refreshPortfolioPrices = async (req, res) => {
+    try {
+      const portfolio = await portfolioModel.findOne({ user: req.user.id });
+      await portfolio.updatePrices(getStockQuote);
+      await portfolio.save();
+      res.status(200).json({ message: 'Portfolio refreshed', portfolio });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to refresh portfolio prices' });
+    }
+};
+
+module.exports.getPerformanceHistory = async (req, res) => {
+    try {
+      const portfolio = await portfolioModel.findOne({ user: req.user.id });
+      res.status(200).json({ history: portfolio.performanceHistory });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch performance history' });
+    }
+};
+
+module.exports.getPortfolioSummary = async (req, res) => {
+    try {
+      const portfolio = await portfolioModel.findOne({ user: req.user.id });
+      const { totalInvestment, currentValue, totalProfitLoss, totalProfitLossPercentage } = portfolio;
+      res.status(200).json({ totalInvestment, currentValue, totalProfitLoss, totalProfitLossPercentage });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch portfolio summary' });
+    }
+};
+
+module.exports.getPortfolioAnalytics = async (req, res) => {
+    try {
+      const portfolio = await portfolioModel.findOne({ user: req.user.id });
+  
+      const allocation = portfolio.assets.map(asset => ({
+        symbol: asset.symbol,
+        name: asset.name,
+        allocation: (asset.currentValue / portfolio.currentValue) * 100
+      }));
+  
+      res.status(200).json({
+        allocation,
+        totalAssets: portfolio.assets.length
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch analytics' });
+    }
+};
+```
+
+## Trade Schema Design
+
+### Schema Structure
+```javascript
+const tradeSchema = new Schema({
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  portfolio: {
+    type: Schema.Types.ObjectId,
+    ref: 'Portfolio',
+    required: true
+  },
+  symbol: {
+    type: String,
+    required: true,
+    uppercase: true
+  },
+  assetName: {
+    type: String,
+    required: true
+  },
+  tradeType: {
+    type: String,
+    enum: ['buy', 'sell'],
+    required: true
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    min: [0.0001, 'Quantity must be greater than 0']
+  },
+  price: {
+    type: Number,
+    required: true,
+    min: [0, 'Price must be greater than 0']
+  },
+  totalAmount: {
+    type: Number,
+    required: true
+  },
+  fees: {
+    type: Number,
+    default: 0
+  },
+  netAmount: {
+    type: Number,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'completed', 'failed', 'cancelled'],
+    default: 'pending'
+  },
+  executedAt: {
+    type: Date
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  notes: {
+    type: String,
+    maxlength: 500
+  },
+  marketData: {
+    marketPrice: {
+      type: Number
+    },
+    priceChange24h: {
+      type: Number
+    },
+    volume: {
+      type: Number
+    }
+  }
+});
+```
+
+### Trade Methods
+```javascript
+// Calculate total and net amounts before saving
+tradeSchema.pre('save', function(next) {
+  this.totalAmount = this.quantity * this.price;
+  this.netAmount = this.totalAmount + (this.tradeType === 'buy' ? this.fees : -this.fees);
+  next();
+});
+
+// Method to execute the trade
+tradeSchema.methods.execute = function() {
+  this.status = 'completed';
+  this.executedAt = new Date();
+  return this.save();
+};
+
+// Method to cancel the trade
+tradeSchema.methods.cancel = function() {
+  if (this.status === 'pending') {
+    this.status = 'cancelled';
+    return this.save();
+  }
+  throw new Error('Cannot cancel a trade that is not pending');
+};
+
+// Static method to get user's trade history
+tradeSchema.statics.getUserTrades = function(userId, limit = 20, page = 1) {
+  const skip = (page - 1) * limit;
+  return this.find({ user: userId })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .skip(skip)
+    .populate('portfolio', 'currentValue totalProfitLoss');
+};
+
+// Static method to get trades by symbol
+tradeSchema.statics.getTradesBySymbol = function(userId, symbol) {
+  return this.find({ 
+    user: userId, 
+    symbol: symbol.toUpperCase(),
+    status: 'completed'
+  }).sort({ executedAt: -1 });
+};
+```
+
+## Implemented API Routes
+
+### Portfolio Routes
+```javascript
+router.put('/me/refresh', authMiddleware.authUser, portfolioController.refreshPortfolioPrices)
+router.get('/me/performance', authMiddleware.authUser, portfolioController.getPerformanceHistory)
+router.get('/me/summary', authMiddleware.authUser, portfolioController.getPortfolioSummary)
+router.get('/me/analytics', authMiddleware.authUser, portfolioController.getPortfolioAnalytics)
+```
+
+## Complete API Endpoint Structure
+
+### User Management
+- `POST /api/users/register` - User registration
+- `POST /api/users/login` - User authentication
+- `GET /api/users/logout` - User logout
+- `GET /api/users/profile` - Get user profile
+- `PUT /api/users/profile` - Update user profile
+- `GET /api/users/balance` - Get user balance
+- `PUT /api/users/balance` - Update user balance
+
+### Portfolio Management
+- `GET /api/portfolios/me` - Get user portfolio
+- `GET /api/portfolios/all` - Get all portfolios (admin)
+- `GET /api/portfolios/assets` - Get user assets
+- `PUT /api/portfolios/me/refresh` - Refresh portfolio prices
+- `GET /api/portfolios/me/performance` - Get performance history
+- `GET /api/portfolios/me/summary` - Get portfolio summary
+- `GET /api/portfolios/me/analytics` - Get portfolio analytics
+
+### Trade Management (Planned)
+- `POST /api/trades` - Execute new trade
+- `GET /api/trades` - Get user trade history
+- `GET /api/trades/:id` - Get specific trade details
+- `PUT /api/trades/:id/cancel` - Cancel pending trade
+- `GET /api/trades/symbol/:symbol` - Get trades by symbol
+
+## Key Features Implemented
+- **Weighted Average Calculation**: Proper asset cost basis tracking
+- **Real-time Price Updates**: Integration with external market data
+- **Performance Tracking**: Historical portfolio value tracking
+- **Portfolio Analytics**: Asset allocation and diversification metrics
+- **Trade Management**: Comprehensive trade schema with status tracking
+- **Error Handling**: Consistent error responses across all endpoints
+
+## Progress Overview
+- ✅ Project Structure: 100%
+- ✅ Authentication System: 95%
+- ✅ User Profile Management: 90%
+- ✅ Portfolio Model: 100%
+- ✅ Portfolio API Controllers: 90%
+- ✅ Trade Schema: 100%
+- ⬜ Trade Controllers: 0%
+- ⬜ Real-time Updates: 20%
+- ⬜ Frontend Development: 0%
+
+## Next Steps
+1. Implement trade execution controllers
+2. Build buy/sell order processing
+3. Create trade history endpoints
+4. Add Socket.io for real-time updates
+5. Begin frontend development
+
+## Project Structure
+```
+TRADING_APP_PROJECT/
+├── Backend/
+│   ├── controllers/
+│   │   ├── user.controller.js
+│   │   └── portfolio.controller.js
+│   ├── models/
+│   │   ├── user.model.js
+│   │   ├── portfolio.model.js
+│   │   └── trade.model.js
+│   ├── routes/
+│   │   ├── user.route.js
+│   │   └── portfolio.route.js
+│   ├── services/
+│   │   ├── user.service.js
+│   │   └── portfolio.service.js
+│   ├── middlewares/
+│   │   └── auth.middleware.js
+│   ├── app.js
+│   └── server.js
+```

@@ -6,6 +6,8 @@ const connectToDb = require('./config/db');
 const userRoutes= require('./routes/user.route')
 const portfolioRoutes= require('./routes/portfolio.route.js')
 
+
+
 connectToDb();
 const app = express();
 app.use(express.json());
