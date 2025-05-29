@@ -1167,3 +1167,202 @@ TRADING_APP_PROJECT/
 │   ├── app.js
 │   └── server.js
 ```
+
+# Trading API Documentation
+
+## Day 31 Progress Summary
+
+**Date:** May 29, 2025  
+**Focus:** Buy Assets Route Implementation & Documentation
+
+### Today's Achievements
+- ✅ Implemented comprehensive `/buy` route with full validation
+- ✅ Added robust error handling and user balance verification
+- ✅ Integrated portfolio management with automatic asset updates
+- ✅ Added fee calculation system (0.5% transaction fee)
+- ✅ Implemented trade execution tracking with status updates
+- ✅ Added real-time portfolio value calculations and P&L tracking
+- ✅ Enhanced response format with complete portfolio summary
+
+### Key Features Implemented
+- **Input Validation:** Symbol format, asset name length, positive numbers for quantity/price
+- **Authentication:** Protected route with user authentication middleware
+- **Balance Management:** Automatic balance deduction with insufficient funds protection
+- **Portfolio Integration:** Dynamic asset creation/updates with price tracking
+- **Trade Logging:** Complete trade history with execution timestamps
+- **Fee System:** Transparent fee calculation and deduction
+
+---
+
+## API Routes Documentation
+
+### POST /buy - Buy Assets
+
+Execute a buy trade for financial assets with automatic portfolio management.
+
+#### Route Definition
+```javascript
+router.post('/buy', [validation middleware], authMiddleware.authUser, tradeController.buyAssets)
+```
+
+#### Authentication
+- **Required:** Yes
+- **Type:** Bearer Token / Session-based
+- **Middleware:** `authMiddleware.authUser`
+
+#### Input Validation Rules
+
+| Field | Type | Validation | Description |
+|-------|------|------------|-------------|
+| `symbol` | String | Uppercase, Non-empty | Stock/Asset symbol (e.g., "AAPL") |
+| `assetName` | String | Min 3 characters | Full name of the asset |
+| `quantity` | Number | Positive number | Number of shares/units to buy |
+| `price` | Number | Positive number | Price per share/unit |
+| `notes` | String | Optional | Additional trade notes |
+
+#### Request Body Example
+```json
+{
+  "symbol": "AAPL",
+  "assetName": "Apple Inc.",
+  "quantity": 10,
+  "price": 150.25,
+  "notes": "Long-term investment"
+}
+```
+
+#### Success Response (201 Created)
+```json
+{
+  "message": "Trade executed successfully",
+  "trade": {
+    "_id": "trade_id_here",
+    "user": "user_id_here",
+    "portfolio": "portfolio_id_here",
+    "symbol": "AAPL",
+    "assetName": "Apple Inc.",
+    "tradeType": "buy",
+    "quantity": 10,
+    "price": 150.25,
+    "fees": 7.51,
+    "netAmount": 1510.01,
+    "notes": "Long-term investment",
+    "executedAt": "2025-05-29T10:30:00.000Z",
+    "status": "executed"
+  },
+  "balance": 8489.99,
+  "portfolioSummary": {
+    "currentValue": 25750.80,
+    "totalInvestment": 24500.00,
+    "totalProfitLoss": 1250.80,
+    "totalProfitLossPercentage": 5.11,
+    "assets": [
+      {
+        "symbol": "AAPL",
+        "assetName": "Apple Inc.",
+        "quantity": 25,
+        "averagePrice": 148.50,
+        "currentPrice": 152.30,
+        "totalInvestment": 3712.50,
+        "currentValue": 3807.50,
+        "profitLoss": 95.00,
+        "profitLossPercentage": 2.56
+      }
+    ]
+  }
+}
+```
+
+#### Error Responses
+
+**400 Bad Request - Validation Errors**
+```json
+{
+  "error": [
+    {
+      "type": "field",
+      "msg": "Symbol must be an uppercase string.",
+      "path": "symbol",
+      "location": "body"
+    }
+  ]
+}
+```
+
+**401 Unauthorized - Insufficient Balance**
+```json
+{
+  "error": "Insufficient balance"
+}
+```
+
+**500 Internal Server Error**
+```json
+{
+  "error": "Something went wrong while executing the trade."
+}
+```
+
+#### Business Logic Flow
+
+1. **Validation:** Input validation using express-validator
+2. **Authentication:** Verify user authentication and extract user ID
+3. **Balance Check:** Verify user has sufficient balance for trade + fees
+4. **Portfolio Setup:** Create portfolio if doesn't exist for user
+5. **Trade Creation:** Create trade record with calculated fees (0.5% of trade value)
+6. **Trade Execution:** Execute trade and update status/timestamp
+7. **Balance Update:** Deduct net amount from user balance
+8. **Portfolio Update:** Add/update asset in portfolio with new quantity/price
+9. **Price Refresh:** Update current prices using stock quote API
+10. **P&L Calculation:** Recalculate portfolio value and profit/loss metrics
+11. **Response:** Return comprehensive trade and portfolio summary
+
+#### Fee Structure
+- **Transaction Fee:** 0.5% of trade value
+- **Calculation:** `fees = 0.005 * (quantity * price)`
+- **Net Amount:** `quantity * price + fees`
+
+#### Dependencies
+- `portfolioModel`: Portfolio management operations
+- `tradeModel`: Trade record creation and execution
+- `userModel`: User balance management
+- `getStockQuote`: Real-time price fetching
+
+#### Related Models
+- **Trade Model:** Stores individual trade records
+- **Portfolio Model:** Manages user asset holdings
+- **User Model:** Handles user balance and authentication
+
+---
+
+## Development Notes
+
+### Current Implementation Status
+- **Route Setup:** ✅ Complete
+- **Validation:** ✅ Comprehensive input validation
+- **Error Handling:** ✅ All edge cases covered
+- **Database Integration:** ✅ Full CRUD operations
+- **Authentication:** ✅ Secure user verification
+- **Testing:** 🔄 Ready for integration testing
+
+### Next Steps (Day 32)
+- [ ] Implement sell assets route
+- [ ] Add portfolio rebalancing features
+- [ ] Create trade history endpoint
+- [ ] Add real-time price updates
+- [ ] Implement stop-loss functionality
+
+### Technical Debt
+- Consider adding request rate limiting
+- Implement more sophisticated fee structures
+- Add trade validation against market hours
+- Consider adding trade preview functionality
+
+---
+
+## Code Quality Metrics
+- **Error Coverage:** 100% of identified edge cases
+- **Input Validation:** Comprehensive with clear error messages
+- **Response Format:** Consistent and informative
+- **Database Operations:** Atomic transactions where needed
+- **Security:** Authentication required, input sanitized

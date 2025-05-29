@@ -118,7 +118,10 @@ module.exports.upsertAsset = async (req, res) => {
       const allocation = portfolio.assets.map(asset => ({
         symbol: asset.symbol,
         name: asset.name,
-        allocation: (asset.currentValue / portfolio.currentValue) * 100
+        allocation: portfolio.currentValue > 0 
+  ? (asset.currentValue / portfolio.currentValue) * 100 
+  : 0
+
       }));
   
       res.status(200).json({

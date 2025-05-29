@@ -1,9 +1,9 @@
 const axios = require('axios');
-const API_KEY = process.env.FINNHUB_API_KEY;
+const API_KEY = process.env.FINNHUB_API;
 const cron = require('node-cron');
 const Portfolio= require("../Backend/models/portfolio.model")
 
-
+console.log(API_KEY)
 async function getStockQuote(symbol) {
   try {
     const { data } = await axios.get(`https://finnhub.io/api/v1/quote`, {

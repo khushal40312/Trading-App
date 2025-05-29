@@ -38,7 +38,7 @@ const tradeSchema = new Schema({
   },
   totalAmount: {
     type: Number,
-    required: true
+    
   },
   fees: {
     type: Number,
@@ -46,7 +46,7 @@ const tradeSchema = new Schema({
   },
   netAmount: {
     type: Number,
-    required: true
+    
   },
   status: {
     type: String,

@@ -8,3 +8,42 @@
 // GET /api/trades/me/recent - Get recent trades (last 10-20 trades)
 // GET /api/trades - Get all trades (admin only)
 
+const { body } = require('express-validator');
+
+const express = require('express');
+
+const router = express.Router();
+const tradeController = require('../controllers/trade.controller')
+const authMiddleware = require('../middlewares/auth.middleware')
+
+
+router.post(
+    '/buy',
+    [
+      body('symbol')
+        .isUppercase()
+        .isString()
+        .notEmpty()
+        .withMessage('Symbol must be an uppercase string.'),
+  
+      body('assetName')
+        .isString()
+        .isLength({ min: 3 })
+        .withMessage('Asset name must be at least 3 characters long.'),
+  
+      body('quantity')
+        .isNumeric()
+        .custom(value => value > 0)
+        .withMessage('Quantity must be a positive number.'),
+  
+      body('price')
+        .isNumeric()
+        .custom(value => value > 0)
+        .withMessage('Price must be a positive number.')
+    ],
+    authMiddleware.authUser,
+    tradeController.buyAssets
+  );
+
+
+module.exports = router;

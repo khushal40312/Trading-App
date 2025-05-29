@@ -5,6 +5,8 @@ const cors = require('cors');
 const connectToDb = require('./config/db');
 const userRoutes= require('./routes/user.route')
 const portfolioRoutes= require('./routes/portfolio.route.js')
+const tradeRoutes= require('./routes/trade.route.js')
+
 
 
 
@@ -15,6 +17,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use(cors())
 app.use('/users',userRoutes)
 app.use('/portfolios',portfolioRoutes)
+app.use('/trades',tradeRoutes)
 
 
 module.exports = app;

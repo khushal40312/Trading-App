@@ -79,6 +79,17 @@ const portfolioSchema = new Schema({
     default: Date.now
   }
 });
+portfolioSchema.methods.upsertAsset = function(symbol, name, quantity, buyPrice) {
+  const asset = this.assets.find(a => a.symbol === symbol.toUpperCase());
+  if (asset) {
+    const totalQty = asset.quantity + quantity;
+    const weightedAvg = ((asset.quantity * asset.averageBuyPrice) + (quantity * buyPrice)) / totalQty;
+    asset.quantity = totalQty;
+    asset.averageBuyPrice = weightedAvg;
+  } else {
+    this.assets.push({ symbol: symbol.toUpperCase(), name, quantity, averageBuyPrice: buyPrice });
+  }
+};
 
 // Method to calculate current portfolio value
 portfolioSchema.methods.calculateValue = function() {
