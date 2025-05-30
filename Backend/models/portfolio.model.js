@@ -79,6 +79,31 @@ const portfolioSchema = new Schema({
     default: Date.now
   }
 });
+// Method to remove quantity from an asset or remove the asset entirely
+portfolioSchema.methods.removeAsset = function(symbol, quantityToRemove) {
+  const assetIndex = this.assets.findIndex(a => a.symbol === symbol.toUpperCase());
+  
+  if (assetIndex === -1) {
+    throw new Error(`Asset with symbol ${symbol} not found in portfolio.`);
+  }
+  const asset = this.assets[assetIndex];
+
+  if (quantityToRemove > asset.quantity) {
+    throw new Error(`Cannot remove ${quantityToRemove} units. Only ${asset.quantity} available.`);
+  }
+
+  asset.quantity -= quantityToRemove;
+
+  if (asset.quantity <= 0) {
+    this.assets.splice(assetIndex, 1); // Remove the asset completely
+  }
+
+  // Recalculate values after asset update
+  this.calculateValue();
+
+  return this;
+};
+
 portfolioSchema.methods.upsertAsset = function(symbol, name, quantity, buyPrice) {
   const asset = this.assets.find(a => a.symbol === symbol.toUpperCase());
   if (asset) {

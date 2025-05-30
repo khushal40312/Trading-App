@@ -45,5 +45,31 @@ router.post(
     tradeController.buyAssets
   );
 
-
+  router.post(
+    '/sell',
+    [
+      body('symbol')
+        .isUppercase()
+        .isString()
+        .notEmpty()
+        .withMessage('Symbol must be an uppercase string.'),
+  
+      body('assetName')
+        .isString()
+        .isLength({ min: 3 })
+        .withMessage('Asset name must be at least 3 characters long.'),
+  
+      body('quantity')
+        .isNumeric()
+        .custom(value => value > 0)
+        .withMessage('Quantity must be a positive number.'),
+  
+      body('price')
+        .isNumeric()
+        .custom(value => value > 0)
+        .withMessage('Price must be a positive number.')
+    ],
+    authMiddleware.authUser,
+    tradeController.sellAssets
+  );
 module.exports = router;

@@ -1366,3 +1366,306 @@ router.post('/buy', [validation middleware], authMiddleware.authUser, tradeContr
 - **Response Format:** Consistent and informative
 - **Database Operations:** Atomic transactions where needed
 - **Security:** Authentication required, input sanitized
+
+## Day 32 Progress Summary
+
+**Date:** May 30, 2025  
+**Focus:** Sell Assets Route Implementation & Portfolio Management
+
+### Today's Achievements
+- ✅ Implemented complete `/sell` route with portfolio validation
+- ✅ Added asset ownership verification and quantity checks
+- ✅ Created `removeAsset` portfolio method with automatic cleanup
+- ✅ Integrated balance crediting system for sell trades
+- ✅ Added comprehensive error handling for sell-specific scenarios
+- ✅ Maintained consistent fee structure and response format
+
+### Key Features Added
+- **Asset Validation:** Ownership verification and quantity availability checks
+- **Portfolio Management:** Smart asset removal with automatic cleanup when quantity reaches zero
+- **Balance Updates:** Automatic balance crediting with net proceeds
+- **Error Handling:** Portfolio not found, asset not found, insufficient quantity scenarios
+
+---
+
+## API Routes Documentation
+
+### POST /buy - Buy Assets
+[Previous buy route documentation remains unchanged]
+
+### POST /sell - Sell Assets
+
+Execute a sell trade for owned portfolio assets with automatic balance crediting.
+
+#### Route Definition
+```javascript
+router.post('/sell', [validation middleware], authMiddleware.authUser, tradeController.sellAssets)
+```
+
+#### Input Validation
+Same validation rules as `/buy` route - symbol, assetName, quantity, price requirements.
+
+#### Request Body Example
+```json
+{
+  "symbol": "AAPL",
+  "assetName": "Apple Inc.",
+  "quantity": 5,
+  "price": 155.50,
+  "notes": "Taking profits"
+}
+```
+
+#### Success Response (201 Created)
+```json
+{
+  "message": "Trade executed successfully",
+  "trade": {
+    "_id": "trade_id_here",
+    "user": "user_id_here",
+    "portfolio": "portfolio_id_here",
+    "symbol": "AAPL",
+    "assetName": "Apple Inc.",
+    "tradeType": "sell",
+    "quantity": 5,
+    "price": 155.50,
+    "fees": 3.89,
+    "netAmount": 773.61,
+    "notes": "Taking profits",
+    "executedAt": "2025-05-30T10:30:00.000Z",
+    "status": "executed"
+  },
+  "balance": 9263.60,
+  "portfolioSummary": {
+    "currentValue": 22943.30,
+    "totalInvestment": 21787.50,
+    "totalProfitLoss": 1155.80,
+    "totalProfitLossPercentage": 5.31,
+    "assets": [
+      {
+        "symbol": "AAPL",
+        "assetName": "Apple Inc.",
+        "quantity": 20,
+        "averagePrice": 148.50,
+        "currentPrice": 155.50,
+        "totalInvestment": 2970.00,
+        "currentValue": 3110.00,
+        "profitLoss": 140.00,
+        "profitLossPercentage": 4.71
+      }
+    ]
+  }
+}
+```
+
+#### Sell-Specific Error Responses
+
+**404 Not Found - No Portfolio**
+```json
+{
+  "error": "Portfolio not found."
+}
+```
+
+**400 Bad Request - Asset Not Found**
+```json
+{
+  "error": "Asset AAPL not found in portfolio."
+}
+```
+
+**400 Bad Request - Insufficient Quantity**
+```json
+{
+  "error": "Not enough quantity to sell. Available: 3"
+}
+```
+
+#### Business Logic Flow
+1. **Validation:** Standard input validation
+2. **Portfolio Check:** Verify user has a portfolio
+3. **Asset Verification:** Check if asset exists in portfolio
+4. **Quantity Check:** Verify sufficient quantity available
+5. **Trade Execution:** Create and execute sell trade
+6. **Asset Update:** Remove sold quantity using `removeAsset` method
+7. **Balance Credit:** Add net proceeds to user balance
+8. **Portfolio Refresh:** Update prices and recalculate P&L
+
+#### Portfolio removeAsset Method
+```javascript
+portfolioSchema.methods.removeAsset = function(symbol, quantityToRemove) {
+  // Finds asset by symbol
+  // Validates sufficient quantity
+  // Reduces quantity or removes asset completely if quantity becomes 0
+  // Recalculates portfolio value
+}
+```
+
+Execute a buy trade for financial assets with automatic portfolio management.
+
+#### Route Definition
+```javascript
+router.post('/buy', [validation middleware], authMiddleware.authUser, tradeController.buyAssets)
+```
+
+#### Authentication
+- **Required:** Yes
+- **Type:** Bearer Token / Session-based
+- **Middleware:** `authMiddleware.authUser`
+
+#### Input Validation Rules
+
+| Field | Type | Validation | Description |
+|-------|------|------------|-------------|
+| `symbol` | String | Uppercase, Non-empty | Stock/Asset symbol (e.g., "AAPL") |
+| `assetName` | String | Min 3 characters | Full name of the asset |
+| `quantity` | Number | Positive number | Number of shares/units to buy |
+| `price` | Number | Positive number | Price per share/unit |
+| `notes` | String | Optional | Additional trade notes |
+
+#### Request Body Example
+```json
+{
+  "symbol": "AAPL",
+  "assetName": "Apple Inc.",
+  "quantity": 10,
+  "price": 150.25,
+  "notes": "Long-term investment"
+}
+```
+
+#### Success Response (201 Created)
+```json
+{
+  "message": "Trade executed successfully",
+  "trade": {
+    "_id": "trade_id_here",
+    "user": "user_id_here",
+    "portfolio": "portfolio_id_here",
+    "symbol": "AAPL",
+    "assetName": "Apple Inc.",
+    "tradeType": "buy",
+    "quantity": 10,
+    "price": 150.25,
+    "fees": 7.51,
+    "netAmount": 1510.01,
+    "notes": "Long-term investment",
+    "executedAt": "2025-05-29T10:30:00.000Z",
+    "status": "executed"
+  },
+  "balance": 8489.99,
+  "portfolioSummary": {
+    "currentValue": 25750.80,
+    "totalInvestment": 24500.00,
+    "totalProfitLoss": 1250.80,
+    "totalProfitLossPercentage": 5.11,
+    "assets": [
+      {
+        "symbol": "AAPL",
+        "assetName": "Apple Inc.",
+        "quantity": 25,
+        "averagePrice": 148.50,
+        "currentPrice": 152.30,
+        "totalInvestment": 3712.50,
+        "currentValue": 3807.50,
+        "profitLoss": 95.00,
+        "profitLossPercentage": 2.56
+      }
+    ]
+  }
+}
+```
+
+#### Error Responses
+
+**400 Bad Request - Validation Errors**
+```json
+{
+  "error": [
+    {
+      "type": "field",
+      "msg": "Symbol must be an uppercase string.",
+      "path": "symbol",
+      "location": "body"
+    }
+  ]
+}
+```
+
+**401 Unauthorized - Insufficient Balance**
+```json
+{
+  "error": "Insufficient balance"
+}
+```
+
+**500 Internal Server Error**
+```json
+{
+  "error": "Something went wrong while executing the trade."
+}
+```
+
+#### Business Logic Flow
+
+1. **Validation:** Input validation using express-validator
+2. **Authentication:** Verify user authentication and extract user ID
+3. **Balance Check:** Verify user has sufficient balance for trade + fees
+4. **Portfolio Setup:** Create portfolio if doesn't exist for user
+5. **Trade Creation:** Create trade record with calculated fees (0.5% of trade value)
+6. **Trade Execution:** Execute trade and update status/timestamp
+7. **Balance Update:** Deduct net amount from user balance
+8. **Portfolio Update:** Add/update asset in portfolio with new quantity/price
+9. **Price Refresh:** Update current prices using stock quote API
+10. **P&L Calculation:** Recalculate portfolio value and profit/loss metrics
+11. **Response:** Return comprehensive trade and portfolio summary
+
+#### Fee Structure
+- **Transaction Fee:** 0.5% of trade value
+- **Calculation:** `fees = 0.005 * (quantity * price)`
+- **Net Amount:** `quantity * price + fees`
+
+#### Dependencies
+- `portfolioModel`: Portfolio management operations
+- `tradeModel`: Trade record creation and execution
+- `userModel`: User balance management
+- `getStockQuote`: Real-time price fetching
+
+#### Related Models
+- **Trade Model:** Stores individual trade records
+- **Portfolio Model:** Manages user asset holdings
+- **User Model:** Handles user balance and authentication
+
+---
+
+## Development Notes
+
+### Current Implementation Status
+- **Route Setup:** ✅ Complete
+- **Validation:** ✅ Comprehensive input validation
+- **Error Handling:** ✅ All edge cases covered
+- **Database Integration:** ✅ Full CRUD operations
+- **Authentication:** ✅ Secure user verification
+- **Testing:** 🔄 Ready for integration testing
+
+### Next Steps (Day 33)
+- [ ] Implement trade history endpoint (`GET /trades`)
+- [ ] Add portfolio dashboard route (`GET /portfolio`)
+- [ ] Create trade analytics and reporting
+- [ ] Add stop-loss and limit order functionality
+- [ ] Implement real-time price alerts
+
+### Technical Debt
+- Add transaction rollback for failed operations
+- Implement trade confirmation/preview endpoints
+- Add batch trading operations
+- Consider implementing trade cancellation
+
+---
+
+## Code Quality Metrics
+- **Error Coverage:** 100% of identified edge cases
+- **Input Validation:** Comprehensive with clear error messages
+- **Response Format:** Consistent and informative
+- **Database Operations:** Atomic transactions where needed
+- **Security:** Authentication required, input sanitized
