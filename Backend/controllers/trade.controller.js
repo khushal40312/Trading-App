@@ -144,3 +144,62 @@ module.exports.sellAssets = async (req, res) => {
         res.status(500).json({ error: 'Something went wrong while executing the trade.' });
     }
 };
+
+module.exports.getMyTrades = async (req, res) => {
+    const error = validationResult(req);
+    if (!error.isEmpty()) {
+      return res.status(400).json({ error: error.array() });
+    }
+  
+    const userId = req.user._id; // assuming set by authMiddleware
+  
+    const {
+      symbol,
+      assetName,
+      quantity,
+      price,
+      status,
+      tradeType,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      page = 1,
+      limit = 20
+    } = req.query;
+  
+    try {
+      // 🔍 Build dynamic filter
+      const filters = { user: userId };
+  
+      if (symbol) filters.symbol = symbol.toUpperCase();
+      if (assetName) filters.assetName = assetName;
+      if (quantity) filters.quantity = Number(quantity);
+      if (price) filters.price = Number(price);
+      if (status) filters.status = status;
+      if (tradeType) filters.tradeType = tradeType;
+  
+      // 🔃 Sorting
+      const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+  
+      const skip = (Number(page) - 1) * Number(limit);
+  
+      // 📥 Query with filters, pagination, and population
+      const trades = await tradeModel.find(filters)
+        .sort(sort)
+        .skip(skip)
+        .limit(Number(limit))
+        .populate('portfolio', 'currentValue totalProfitLoss');
+  
+      const total = await tradeModel.countDocuments(filters);
+  
+      return res.json({
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        trades
+      });
+  
+    } catch (err) {
+      console.error('Error in getMyTrades:', err);
+      return res.status(500).json({ error: 'Server error' });
+    }
+  };

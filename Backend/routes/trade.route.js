@@ -8,6 +8,7 @@
 // GET /api/trades/me/recent - Get recent trades (last 10-20 trades)
 // GET /api/trades - Get all trades (admin only)
 
+const { query } = require('express-validator');
 const { body } = require('express-validator');
 
 const express = require('express');
@@ -72,4 +73,49 @@ router.post(
     authMiddleware.authUser,
     tradeController.sellAssets
   );
+
+  router.get(
+    '/me',
+    [
+      query('page')
+        .optional()
+        .isInt({ min: 1 })
+        .withMessage('Page must be a positive integer.'),
+  
+      query('limit')
+        .optional()
+        .isInt({ min: 1 })
+        .withMessage('Limit must be a positive integer.'),
+  
+      query('status')
+        .optional()
+        .isIn(['completed', 'pending', 'cancelled'])
+        .withMessage('Status must be one of: completed, pending, cancelled.'),
+  
+      query('tradeType')
+        .optional()
+        .isIn(['buy', 'sell'])
+        .withMessage('Trade type must be either "buy" or "sell".'),
+  
+      query('symbol')
+        .optional()
+        .isUppercase()
+        .isString()
+        .notEmpty()
+        .withMessage('Symbol must be an uppercase string.'),
+  
+      query('sortBy')
+        .optional()
+        .isIn(['createdAt', 'price', 'quantity'])
+        .withMessage('SortBy must be one of: createdAt, price, quantity.'),
+  
+      query('sortOrder')
+        .optional()
+        .isIn(['asc', 'desc'])
+        .withMessage('SortOrder must be either "asc" or "desc".')
+    ],
+    authMiddleware.authUser,
+    tradeController.getMyTrades
+  );
+
 module.exports = router;
