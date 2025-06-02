@@ -2248,3 +2248,473 @@ router.post('/buy', [validation middleware], authMiddleware.authUser, tradeContr
 - **Response Format:** Consistent and informative
 - **Database Operations:** Atomic transactions where needed
 - **Security:** Authentication required, input sanitized
+
+
+# Trading API Documentation
+
+## Day 33 Progress Summary
+
+**Date:** May 31, 2025  
+**Focus:** Trade History System & Individual Trade Access
+
+### Today's Achievements
+- ✅ Implemented `/me` route for comprehensive trade history retrieval
+- ✅ Added `/me/:id` route for individual trade access with ownership validation
+- ✅ Built dynamic filtering system (symbol, status, type, price, quantity)
+- ✅ Added pagination and sorting functionality with validation
+- ✅ Integrated portfolio data population for enriched responses
+- ✅ Added secure trade access control with user verification
+
+### Key Features Added
+- **Advanced Filtering:** Multi-parameter search with dynamic query building
+- **Individual Trade Access:** Secure single trade retrieval with ownership checks
+- **Pagination:** Efficient data retrieval with page/limit controls
+- **Sorting:** Flexible sorting by date, price, or quantity (asc/desc)
+- **Access Control:** User-specific trade access validation
+
+### Next Phase Routes Planned
+- `/me/symbol/:symbol` - Asset-specific trade history
+- `/me/:id/cancel` - Trade cancellation functionality  
+- `/me/stats` - Trading statistics and analytics
+- `/me/recent` - Quick access to recent trades
+
+---
+
+## API Routes Documentation
+
+### POST /buy - Buy Assets
+[Previous buy route documentation remains unchanged]
+
+### POST /sell - Sell Assets
+
+Execute a sell trade for owned portfolio assets with automatic balance crediting.
+
+#### Route Definition
+```javascript
+router.post('/sell', [validation middleware], authMiddleware.authUser, tradeController.sellAssets)
+```
+
+#### Input Validation
+Same validation rules as `/buy` route - symbol, assetName, quantity, price requirements.
+
+#### Request Body Example
+```json
+{
+  "symbol": "AAPL",
+  "assetName": "Apple Inc.",
+  "quantity": 5,
+  "price": 155.50,
+  "notes": "Taking profits"
+}
+```
+
+#### Success Response (201 Created)
+```json
+{
+  "message": "Trade executed successfully",
+  "trade": {
+    "_id": "trade_id_here",
+    "user": "user_id_here",
+    "portfolio": "portfolio_id_here",
+    "symbol": "AAPL",
+    "assetName": "Apple Inc.",
+    "tradeType": "sell",
+    "quantity": 5,
+    "price": 155.50,
+    "fees": 3.89,
+    "netAmount": 773.61,
+    "notes": "Taking profits",
+    "executedAt": "2025-05-30T10:30:00.000Z",
+    "status": "executed"
+  },
+  "balance": 9263.60,
+  "portfolioSummary": {
+    "currentValue": 22943.30,
+    "totalInvestment": 21787.50,
+    "totalProfitLoss": 1155.80,
+    "totalProfitLossPercentage": 5.31,
+    "assets": [
+      {
+        "symbol": "AAPL",
+        "assetName": "Apple Inc.",
+        "quantity": 20,
+        "averagePrice": 148.50,
+        "currentPrice": 155.50,
+        "totalInvestment": 2970.00,
+        "currentValue": 3110.00,
+        "profitLoss": 140.00,
+        "profitLossPercentage": 4.71
+      }
+    ]
+  }
+}
+```
+
+#### Sell-Specific Error Responses
+
+**404 Not Found - No Portfolio**
+```json
+{
+  "error": "Portfolio not found."
+}
+```
+
+**400 Bad Request - Asset Not Found**
+```json
+{
+  "error": "Asset AAPL not found in portfolio."
+}
+```
+
+**400 Bad Request - Insufficient Quantity**
+```json
+{
+  "error": "Not enough quantity to sell. Available: 3"
+}
+```
+
+#### Business Logic Flow
+1. **Validation:** Standard input validation
+2. **Portfolio Check:** Verify user has a portfolio
+3. **Asset Verification:** Check if asset exists in portfolio
+4. **Quantity Check:** Verify sufficient quantity available
+5. **Trade Execution:** Create and execute sell trade
+6. **Asset Update:** Remove sold quantity using `removeAsset` method
+7. **Balance Credit:** Add net proceeds to user balance
+8. **Portfolio Refresh:** Update prices and recalculate P&L
+
+### GET /me - Get Trade History
+
+Retrieve user's trade history with advanced filtering, sorting, and pagination.
+
+#### Route Definition
+```javascript
+router.get('/me', [query validation middleware], authMiddleware.authUser, tradeController.getMyTrades)
+```
+
+#### Query Parameters
+| Parameter | Type | Default | Validation | Description |
+|-----------|------|---------|------------|-------------|
+| `page` | Integer | 1 | Min: 1 | Page number for pagination |
+| `limit` | Integer | 20 | Min: 1 | Records per page |
+| `symbol` | String | - | Uppercase | Filter by asset symbol |
+| `assetName` | String | - | Any string | Filter by asset name |
+| `quantity` | Number | - | Positive | Filter by exact quantity |
+| `price` | Number | - | Positive | Filter by exact price |
+| `status` | String | - | completed/pending/cancelled | Filter by trade status |
+| `tradeType` | String | - | buy/sell | Filter by trade type |
+| `sortBy` | String | createdAt | createdAt/price/quantity | Sort field |
+| `sortOrder` | String | desc | asc/desc | Sort direction |
+
+#### Request Example
+```
+GET /api/trades/me?symbol=AAPL&tradeType=buy&page=1&limit=10&sortBy=createdAt&sortOrder=desc
+```
+
+#### Success Response (200 OK)
+```json
+{
+  "page": 1,
+  "limit": 10,
+  "total": 25,
+  "trades": [
+    {
+      "_id": "trade_id_here",
+      "user": "user_id_here",
+      "portfolio": {
+        "_id": "portfolio_id_here",
+        "currentValue": 25750.80,
+        "totalProfitLoss": 1250.80
+      },
+      "symbol": "AAPL",
+      "assetName": "Apple Inc.",
+      "tradeType": "buy",
+      "quantity": 10,
+      "price": 150.25,
+      "fees": 7.51,
+      "netAmount": 1510.01,
+      "status": "completed",
+      "notes": "Long-term investment",
+      "createdAt": "2025-05-31T10:30:00.000Z",
+      "executedAt": "2025-05-31T10:30:05.000Z"
+    }
+  ]
+}
+```
+
+### GET /me/:id - Get Individual Trade
+
+Retrieve a specific trade by ID with ownership validation.
+
+#### Route Definition
+```javascript
+router.get('/me/:id', authMiddleware.authUser, tradeController.getMyTradesById)
+```
+
+#### URL Parameters
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | String | Yes | MongoDB ObjectId of the trade |
+
+#### Request Example
+```
+GET /api/trades/me/64b8f2c3a1b2c3d4e5f67890
+```
+
+#### Success Response (201 Created)
+```json
+{
+  "trade": {
+    "_id": "64b8f2c3a1b2c3d4e5f67890",
+    "user": "user_id_here",
+    "portfolio": {
+      "_id": "portfolio_id_here",
+      "currentValue": 25750.80,
+      "totalInvestment": 24500.00,
+      "totalProfitLoss": 1250.80,
+      "assets": [...],
+      "user": "user_id_here"
+    },
+    "symbol": "AAPL",
+    "assetName": "Apple Inc.",
+    "tradeType": "buy",
+    "quantity": 10,
+    "price": 150.25,
+    "fees": 7.51,
+    "netAmount": 1510.01,
+    "status": "completed",
+    "notes": "Long-term investment",
+    "createdAt": "2025-05-31T10:30:00.000Z",
+    "executedAt": "2025-05-31T10:30:05.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+**400 Bad Request - Access Denied**
+```json
+{
+  "error": "you don't have access to this trade history"
+}
+```
+
+**500 Internal Server Error**
+```json
+{
+  "error": "Server error"
+}
+```
+
+#### Security Features
+- **Ownership Validation:** Verifies trade belongs to authenticated user
+- **Population:** Full portfolio data included for context
+- **Access Control:** Prevents users from accessing other users' trades
+
+Execute a buy trade for financial assets with automatic portfolio management.
+
+#### Route Definition
+```javascript
+router.post('/buy', [validation middleware], authMiddleware.authUser, tradeController.buyAssets)
+```
+
+#### Authentication
+- **Required:** Yes
+- **Type:** Bearer Token / Session-based
+- **Middleware:** `authMiddleware.authUser`
+
+#### Input Validation Rules
+
+| Field | Type | Validation | Description |
+|-------|------|------------|-------------|
+| `symbol` | String | Uppercase, Non-empty | Stock/Asset symbol (e.g., "AAPL") |
+| `assetName` | String | Min 3 characters | Full name of the asset |
+| `quantity` | Number | Positive number | Number of shares/units to buy |
+| `price` | Number | Positive number | Price per share/unit |
+| `notes` | String | Optional | Additional trade notes |
+
+#### Request Body Example
+```json
+{
+  "symbol": "AAPL",
+  "assetName": "Apple Inc.",
+  "quantity": 10,
+  "price": 150.25,
+  "notes": "Long-term investment"
+}
+```
+
+#### Success Response (201 Created)
+```json
+{
+  "message": "Trade executed successfully",
+  "trade": {
+    "_id": "trade_id_here",
+    "user": "user_id_here",
+    "portfolio": "portfolio_id_here",
+    "symbol": "AAPL",
+    "assetName": "Apple Inc.",
+    "tradeType": "buy",
+    "quantity": 10,
+    "price": 150.25,
+    "fees": 7.51,
+    "netAmount": 1510.01,
+    "notes": "Long-term investment",
+    "executedAt": "2025-05-29T10:30:00.000Z",
+    "status": "executed"
+  },
+  "balance": 8489.99,
+  "portfolioSummary": {
+    "currentValue": 25750.80,
+    "totalInvestment": 24500.00,
+    "totalProfitLoss": 1250.80,
+    "totalProfitLossPercentage": 5.11,
+    "assets": [
+      {
+        "symbol": "AAPL",
+        "assetName": "Apple Inc.",
+        "quantity": 25,
+        "averagePrice": 148.50,
+        "currentPrice": 152.30,
+        "totalInvestment": 3712.50,
+        "currentValue": 3807.50,
+        "profitLoss": 95.00,
+        "profitLossPercentage": 2.56
+      }
+    ]
+  }
+}
+```
+
+#### Error Responses
+
+**400 Bad Request - Validation Errors**
+```json
+{
+  "error": [
+    {
+      "type": "field",
+      "msg": "Symbol must be an uppercase string.",
+      "path": "symbol",
+      "location": "body"
+    }
+  ]
+}
+```
+
+**401 Unauthorized - Insufficient Balance**
+```json
+{
+  "error": "Insufficient balance"
+}
+```
+
+**500 Internal Server Error**
+```json
+{
+  "error": "Something went wrong while executing the trade."
+}
+```
+
+#### Business Logic Flow
+
+1. **Validation:** Input validation using express-validator
+2. **Authentication:** Verify user authentication and extract user ID
+3. **Balance Check:** Verify user has sufficient balance for trade + fees
+4. **Portfolio Setup:** Create portfolio if doesn't exist for user
+5. **Trade Creation:** Create trade record with calculated fees (0.5% of trade value)
+6. **Trade Execution:** Execute trade and update status/timestamp
+7. **Balance Update:** Deduct net amount from user balance
+8. **Portfolio Update:** Add/update asset in portfolio with new quantity/price
+9. **Price Refresh:** Update current prices using stock quote API
+10. **P&L Calculation:** Recalculate portfolio value and profit/loss metrics
+11. **Response:** Return comprehensive trade and portfolio summary
+
+#### Fee Structure
+- **Transaction Fee:** 0.5% of trade value
+- **Calculation:** `fees = 0.005 * (quantity * price)`
+- **Net Amount:** `quantity * price + fees`
+
+#### Dependencies
+- `portfolioModel`: Portfolio management operations
+- `tradeModel`: Trade record creation and execution
+- `userModel`: User balance management
+- `getStockQuote`: Real-time price fetching
+
+#### Related Models
+- **Trade Model:** Stores individual trade records
+- **Portfolio Model:** Manages user asset holdings
+- **User Model:** Handles user balance and authentication
+
+---
+
+## Development Notes
+
+### Current Implementation Status
+- **Route Setup:** ✅ Complete
+- **Validation:** ✅ Comprehensive input validation
+- **Error Handling:** ✅ All edge cases covered
+- **Database Integration:** ✅ Full CRUD operations
+- **Authentication:** ✅ Secure user verification
+- **Testing:** 🔄 Ready for integration testing
+
+---
+
+## Upcoming Routes (Next Implementation Phase)
+
+### Planned Trade Management Routes
+
+#### GET /me/symbol/:symbol - Asset-Specific Trade History
+- Filter all trades for a specific asset symbol
+- Useful for tracking performance of individual stocks
+- Same pagination and sorting as main trade history
+
+#### PUT /me/:id/cancel - Trade Cancellation
+- Cancel pending trades before execution
+- Validation for trade status (only pending trades)
+- Automatic balance/portfolio restoration
+
+#### GET /me/stats - Trading Statistics
+- Total trades count (buy/sell breakdown)
+- Portfolio performance metrics
+- Profit/loss summaries and percentages
+- Most traded assets and trading patterns
+
+#### GET /me/recent - Recent Trades
+- Quick access to last 10-20 trades
+- Optimized for dashboard displays
+- No pagination needed for recent activity
+
+#### GET / - All Trades (Admin Only)
+- System-wide trade monitoring
+- Admin-level access control
+- Platform trading statistics and oversight
+
+### Implementation Priority
+1. **Asset-specific filtering** - High demand for stock performance tracking
+2. **Trade statistics** - Essential for user dashboards and analytics
+3. **Recent trades** - Quick access for active traders
+4. **Trade cancellation** - Risk management feature
+5. **Admin overview** - Platform monitoring and analytics
+
+### Next Steps (Day 34)
+- [ ] Implement `/me/symbol/:symbol` for asset-specific trade history
+- [ ] Add `/me/stats` for comprehensive trading statistics
+- [ ] Create `/me/recent` for quick recent trades access
+- [ ] Begin `/me/:id/cancel` trade cancellation functionality
+- [ ] Add performance optimization with database indexing
+
+### Technical Debt
+- Add database indexing for trade queries (user, symbol, status)
+- Implement caching for frequently accessed trade statistics
+- Add input validation for MongoDB ObjectId format
+- Consider implementing soft delete for cancelled trades
+
+---
+
+## Code Quality Metrics
+- **Error Coverage:** 100% of identified edge cases
+- **Input Validation:** Comprehensive with clear error messages
+- **Response Format:** Consistent and informative
+- **Database Operations:** Atomic transactions where needed
+- **Security:** Authentication required, input sanitized
