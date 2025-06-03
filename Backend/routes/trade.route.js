@@ -115,5 +115,9 @@ router.post(
     tradeController.getMyTrades
   );
 router.get('/me/:id',authMiddleware.authUser,tradeController.getMyTradesById)
+router.get('/me/symbol/:symbol',authMiddleware.authUser,tradeController.getMyTradesBySymbol)
+router.put('/me/:id/cancel',authMiddleware.authUser,tradeController.cancelPendingTrade)
+
+// me/:id/cancel
 
 module.exports = router;

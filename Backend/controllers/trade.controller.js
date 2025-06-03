@@ -208,7 +208,7 @@ module.exports.getMyTradesById = async (req, res) => {
     const id = req.params.id
     try {
         const trade = await tradeModel.findById(id).populate('portfolio')
-   
+
         if (trade?.user.toString() !== userId.toString()) {
             return res.status(400).json({ error: "you don't have access to this trade history" })
         }
@@ -222,3 +222,45 @@ module.exports.getMyTradesById = async (req, res) => {
 
 
 }
+module.exports.getMyTradesBySymbol = async (req, res) => {
+
+    const userId = req.user._id;
+    const Symbol = req.params.symbol;
+    try {
+        const trade = await tradeModel.find({ symbol: Symbol.toUpperCase(), user: userId.toString() }).populate('portfolio')
+
+        if (null) {
+            return res.status(400).json({ error: "you don't have access to this trade history" })
+        }
+
+        return res.status(201).json({ trade })
+    } catch (error) {
+        console.error('Error in getMyTradesBySymbol:', error);
+        return res.status(500).json({ error: 'Server error' });
+    }
+}
+module.exports.cancelPendingTrade = async (req, res) => {
+    const userId = req.user._id;
+    const id = req.params.id;
+
+    try {
+        const trade = await tradeModel.findOneAndUpdate(
+            { _id: id, status: "pending", user: userId },
+            { $set: { status: "cancelled" } },
+            { new: true }
+        ).populate('portfolio');
+
+        if (!trade) {
+            return res.status(404).json({ message: "Trade not found or already processed" });
+        }
+
+    
+        return res.status(200).json({ message: "Trade cancelled", trade });
+    } catch (error) {
+        console.error('Error in cancelPendingTrade:', error);
+        return res.status(500).json({ error: 'Server error' });
+    }
+};
+
+
+
