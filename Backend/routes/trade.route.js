@@ -114,10 +114,11 @@ router.get(
   authMiddleware.authUser,
   tradeController.getMyTrades
 );
+router.get('/me/all', authMiddleware.authUser, tradeController.getAllTrades)// admin
 router.get('/me/stats', authMiddleware.authUser, tradeController.getMyTradingStats)
-router.get('/me/:id', authMiddleware.authUser, tradeController.getMyTradesById)
 router.get('/me/symbol/:symbol', authMiddleware.authUser, tradeController.getMyTradesBySymbol)
 router.put('/me/:id/cancel', authMiddleware.authUser, tradeController.cancelPendingTrade)
+router.get('/me/:id', authMiddleware.authUser, tradeController.getMyTradesById)
 
 
 

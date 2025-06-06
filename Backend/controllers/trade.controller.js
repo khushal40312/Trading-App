@@ -263,83 +263,100 @@ module.exports.cancelPendingTrade = async (req, res) => {
 };
 module.exports.getMyTradingStats = async (req, res) => {
     const userId = req.user._id;
-  
+
     try {
-      const trades = await tradeModel.find({ user: userId }).populate('portfolio');
-  
-      if (!trades || trades.length === 0) {
-        return res.status(200).json({ success: true, data: {} });
-      }
-  
-      const buyTrades = trades.filter(t => t.tradeType === 'buy');
-      const sellTrades = trades.filter(t => t.tradeType === 'sell');
-  
-      const totalTrades = trades.length;
-      const totalBuyTrades = buyTrades.length;
-      const totalSellTrades = sellTrades.length;
-  
-      const totalInvested = trades.reduce((sum, t) => {
-        return t.tradeType === 'buy' ? sum + (t.totalAmount || (t.quantity * t.price)) : sum;
-      }, 0);
-  
-      const totalRealized = trades.reduce((sum, t) => {
-        return t.tradeType === 'sell' ? sum + (t.totalAmount || (t.quantity * t.price)) : sum;
-      }, 0);
-  
-      const totalProfitLoss = totalRealized - totalInvested;
-      const profitLossPercentage = totalInvested > 0
-        ? Number(((totalProfitLoss / totalInvested) * 100).toFixed(2))
-        : 0;
-  
-      const winningTrades = trades.filter(t => t.tradeType === 'sell' && t.netAmount > t.totalAmount).length;
-      const winRate = Number(((winningTrades / totalTrades) * 100).toFixed(2));
-  
-      const averageTradeSize = Number((
-        trades.reduce((sum, t) => sum + (t.totalAmount || (t.quantity * t.price)), 0) / totalTrades
-      ).toFixed(2));
-  
-      const profitLossValues = trades
-        .filter(t => t.tradeType === 'sell')
-        .map(t => (t.netAmount || 0) - (t.totalAmount || (t.quantity * t.price)));
-  
-      const largestGain = profitLossValues.length ? Math.max(...profitLossValues) : 0;
-      const largestLoss = profitLossValues.length ? Math.min(...profitLossValues) : 0;
-  
-      const assetStats = {};
-      trades.forEach(t => {
-        if (!assetStats[t.symbol]) {
-          assetStats[t.symbol] = { symbol: t.symbol, trades: 0, totalAmount: 0 };
+        const trades = await tradeModel.find({ user: userId }).populate('portfolio');
+
+        if (!trades || trades.length === 0) {
+            return res.status(200).json({ success: true, data: {} });
         }
-        assetStats[t.symbol].trades += 1;
-        assetStats[t.symbol].totalAmount += (t.totalAmount || (t.quantity * t.price));
-      });
-  
-      const mostTradedAssets = Object.values(assetStats)
-        .sort((a, b) => b.trades - a.trades)
-        .slice(0, 5);
-  
-      return res.status(200).json({
-        success: true,
-        data: {
-          totalTrades,
-          totalBuyTrades,
-          totalSellTrades,
-          totalInvested: Number(totalInvested.toFixed(2)),
-          totalRealized: Number(totalRealized.toFixed(2)),
-          totalProfitLoss: Number(totalProfitLoss.toFixed(2)),
-          profitLossPercentage,
-          winRate,
-          averageTradeSize,
-          largestGain: Number(largestGain.toFixed(2)),
-          largestLoss: Number(largestLoss.toFixed(2)),
-          mostTradedAssets,
-          period: 'all'
-        }
-      });
-  
+
+        const buyTrades = trades.filter(t => t.tradeType === 'buy');
+        const sellTrades = trades.filter(t => t.tradeType === 'sell');
+
+        const totalTrades = trades.length;
+        const totalBuyTrades = buyTrades.length;
+        const totalSellTrades = sellTrades.length;
+
+        const totalInvested = trades.reduce((sum, t) => {
+            return t.tradeType === 'buy' ? sum + (t.totalAmount || (t.quantity * t.price)) : sum;
+        }, 0);
+
+        const totalRealized = trades.reduce((sum, t) => {
+            return t.tradeType === 'sell' ? sum + (t.totalAmount || (t.quantity * t.price)) : sum;
+        }, 0);
+
+        const totalProfitLoss = totalRealized - totalInvested;
+        const profitLossPercentage = totalInvested > 0
+            ? Number(((totalProfitLoss / totalInvested) * 100).toFixed(2))
+            : 0;
+
+        const winningTrades = trades.filter(t => t.tradeType === 'sell' && t.netAmount > t.totalAmount).length;
+        const winRate = Number(((winningTrades / totalTrades) * 100).toFixed(2));
+
+        const averageTradeSize = Number((
+            trades.reduce((sum, t) => sum + (t.totalAmount || (t.quantity * t.price)), 0) / totalTrades
+        ).toFixed(2));
+
+        const profitLossValues = trades
+            .filter(t => t.tradeType === 'sell')
+            .map(t => (t.netAmount || 0) - (t.totalAmount || (t.quantity * t.price)));
+
+        const largestGain = profitLossValues.length ? Math.max(...profitLossValues) : 0;
+        const largestLoss = profitLossValues.length ? Math.min(...profitLossValues) : 0;
+
+        const assetStats = {};
+        trades.forEach(t => {
+            if (!assetStats[t.symbol]) {
+                assetStats[t.symbol] = { symbol: t.symbol, trades: 0, totalAmount: 0 };
+            }
+            assetStats[t.symbol].trades += 1;
+            assetStats[t.symbol].totalAmount += (t.totalAmount || (t.quantity * t.price));
+        });
+
+        const mostTradedAssets = Object.values(assetStats)
+            .sort((a, b) => b.trades - a.trades)
+            .slice(0, 5);
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                totalTrades,
+                totalBuyTrades,
+                totalSellTrades,
+                totalInvested: Number(totalInvested.toFixed(2)),
+                totalRealized: Number(totalRealized.toFixed(2)),
+                totalProfitLoss: Number(totalProfitLoss.toFixed(2)),
+                profitLossPercentage,
+                winRate,
+                averageTradeSize,
+                largestGain: Number(largestGain.toFixed(2)),
+                largestLoss: Number(largestLoss.toFixed(2)),
+                mostTradedAssets,
+                period: 'all'
+            }
+        });
+
     } catch (error) {
-      console.error('Error in getMyTradingStats:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+        console.error('Error in getMyTradingStats:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
-  };
-  
+};
+
+module.exports.getAllTrades = async (req, res) => {
+
+    const userId = req.user._id;
+    const isAdmin = await userModel.findById(userId)
+    if (!isAdmin || null) return res.status(500).json({ error: "only admin have access to this route" })
+    try {
+        const trades = await tradeModel.find({}).populate('user')
+        res.status(201).json(trades)
+
+    } catch (error) {
+        console.error('Error in getAllTrades:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+
+
+
+}
