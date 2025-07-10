@@ -7,9 +7,7 @@
 
 const { query } = require('express-validator');
 const { body } = require('express-validator');
-
 const express = require('express');
-
 const router = express.Router();
 const tradeController = require('../controllers/trade.controller')
 const authMiddleware = require('../middlewares/auth.middleware')

@@ -1,5 +1,4 @@
 const { validationResult } = require('express-validator');
-// const portfolioModel = require('../models/portfolio.model');
 const portfolioService = require('../services/portfolio.service.js');
 const portfolioModel = require('../models/portfolio.model.js');
 const getStockQuote = require('../getStockQuote.js');
