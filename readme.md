@@ -3394,3 +3394,128 @@ The trading system now provides a comprehensive suite of endpoints covering the 
 - **Response Format:** Consistent and informative
 - **Database Operations:** Atomic transactions where needed
 - **Security:** Authentication required, input sanitized
+
+# Day 38 - Real-time Portfolio Socket Service
+
+## 🎯 What I Built Today
+
+Implemented a comprehensive WebSocket service for real-time portfolio tracking and stock price updates using Socket.IO.
+
+## 🔧 Key Features
+
+### Real-time Price Updates
+- Fetches live stock prices from Finnhub API every 30 seconds
+- Broadcasts price changes to subscribed users
+- Automatically updates portfolio values
+
+### User Authentication
+- JWT-based socket authentication
+- Secure connection validation
+- User session management
+
+### Portfolio Management
+- Real-time portfolio value calculations
+- Asset price synchronization
+- Live trade execution notifications
+
+### Chart Data
+- Historical stock data retrieval
+- Multiple timeframe support (1m, 5m, 15m, 1h, 1D, 1W, 1M)
+- OHLCV data formatting
+
+## 📡 Socket Events
+
+### Client → Server
+```javascript
+// Join user's portfolio room
+socket.emit('join-portfolio')
+
+// Subscribe to specific stock updates
+socket.emit('subscribe-symbol', 'AAPL')
+
+// Unsubscribe from stock updates
+socket.emit('unsubscribe-symbol', 'AAPL')
+
+// Request chart data
+socket.emit('get-chart-data', { symbol: 'AAPL', timeframe: '1D' })
+```
+
+### Server → Client
+```javascript
+// Portfolio data updates
+socket.on('portfolio-data', (data) => {})
+socket.on('portfolio-update', (data) => {})
+
+// Price updates
+socket.on('price-update', (data) => {})
+
+// Chart data
+socket.on('chart-data', (data) => {})
+
+// Trade notifications
+socket.on('trade-executed', (data) => {})
+
+// General notifications
+socket.on('notification', (data) => {})
+```
+
+## 🏗️ Architecture
+
+### Core Components
+- **SocketService**: Main service class managing all socket operations
+- **Authentication Middleware**: JWT token verification for socket connections
+- **Price Update Service**: Automated price fetching and broadcasting
+- **Room Management**: User-specific portfolio rooms and symbol subscriptions
+
+### Data Flow
+1. User connects with JWT token
+2. Joins personal portfolio room
+3. Subscribes to relevant stock symbols
+4. Receives real-time price updates
+5. Portfolio values auto-calculate and update
+
+## 🔄 Price Update Cycle
+
+```javascript
+// Every 30 seconds:
+// 1. Collect all watched symbols
+// 2. Fetch latest prices from Finnhub API
+// 3. Broadcast to subscribers
+// 4. Update connected users' portfolios
+// 5. Recalculate portfolio values
+```
+
+## 📊 API Integration
+
+### Finnhub API Endpoints
+- **Quote API**: Real-time stock quotes
+- **Candle API**: Historical OHLCV data
+- **Multiple timeframes**: From 1-minute to monthly data
+
+## 🚀 Performance Optimizations
+
+- **Smart Symbol Tracking**: Only fetches prices for actively watched symbols
+- **Efficient Broadcasting**: Uses Socket.IO rooms for targeted updates
+- **Memory Management**: Tracks connected users and cleans up on disconnect
+- **Error Handling**: Graceful degradation for API failures
+
+## 📱 Use Cases
+
+- Real-time portfolio monitoring
+- Live stock price tracking
+- Trade execution notifications
+- Historical chart analysis
+- Multi-user portfolio management
+
+## 🔒 Security Features
+
+- JWT authentication for all socket connections
+- User-specific portfolio rooms
+- Input validation for symbol subscriptions
+- Error handling without exposing sensitive data
+
+---
+
+**Day 38/100** - Building real-time financial applications with WebSockets! 📈⚡
+
+
