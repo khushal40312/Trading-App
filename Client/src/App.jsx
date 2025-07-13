@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import Start from './Pages/Start'
 import Loading from './Components/Loading'
 import Login from './Pages/Login'
+import Register from './Pages/Register'
+
 
 function App() {
   return (
@@ -14,6 +16,8 @@ function App() {
 
           <Route path='/' element={<Start />} />
           <Route path='/login' element={<Login />} />
+          <Route path='/register' element={ <Register/>} />
+
 
         </Routes>
 
