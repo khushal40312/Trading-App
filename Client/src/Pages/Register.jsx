@@ -1,12 +1,58 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { CgMail } from "react-icons/cg";
 import { FaLock } from "react-icons/fa";
+import { toast } from 'react-toastify';
+import axios from 'axios'
 const register = () => {
   const [firstname, setFirstname] = useState('')
   const [lastname, setLastname] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const navigate = useNavigate();
+  
+  const submitHandler = async (e) => {
+
+    e.preventDefault();
+    const newUser = ({
+      fullname: {
+        firstname,
+        lastname
+      },
+      email,
+      password
+
+
+    })
+    toast.promise(
+      axios.post(`${import.meta.env.VITE_BASE_URL}/users/register`, newUser),
+      {
+        pending: 'Creating account...',
+        success: {
+          render({ data }) {
+            const res = data.data;
+
+            navigate('/login');
+            return 'Signup successful!';
+          },
+        },
+        error: {
+          render({ data }) {
+            return data?.response?.data?.message || 'Signup failed';
+          },
+        },
+      }
+    );
+    setEmail('')
+    setPassword('')
+    setFirstname('')
+    setLastname('')
+
+
+
+  }
+
+
 
 
 
@@ -16,7 +62,7 @@ const register = () => {
     <div className='p-7 h-screen flex flex-col justify-between '>
       <div>
         <img className='w-10 mb-5 rounded-xl  ' src="/logo.png" alt="" />
-        <form >
+        <form onSubmit={submitHandler}>
           <div className='flex items-center gap-2 mb-4'>  <h1 className='text-2xl text-black font-bold'> Let's Make Your</h1>  <h1 className='text-2xl text-[#21b121] font-bold  '> account!</h1></div>
 
           <h3 className='text-lg font-medium mb-2 text-[#21b121]'>What's your name?</h3>
