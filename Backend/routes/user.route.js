@@ -26,7 +26,7 @@ router.put('/profile', [
     body('settings.notifications').isBoolean().withMessage('Notifications must be a boolean').toBoolean(),
     body('settings.theme').isIn(["light","dark"]).withMessage('Invalid notification set'),
 ], authMiddleware.authUser, userController.updateUserProfile)
-router.get('/balance', userController.getUserBalance)
+router.get('/balance',authMiddleware.authUser, userController.getUserBalance)
 router.put('/balance', body("balance").isInt().withMessage('Invalid amount'), authMiddleware.authUser, authMiddleware.authUser, userController.addUserBalance)
 
 

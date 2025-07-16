@@ -6,6 +6,7 @@ const blacklistTokenModel = require("../models/blacklistToken.model");
 
 module.exports.authUser = async (req, res, next) => {
     const authHeader = req.headers.authorization;
+    
     const token = req.cookies?.token || authHeader?.split(' ')[1]
 
     

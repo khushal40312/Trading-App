@@ -117,6 +117,7 @@ router.get('/me/stats', authMiddleware.authUser, tradeController.getMyTradingSta
 router.get('/me/symbol/:symbol', authMiddleware.authUser, tradeController.getMyTradesBySymbol)
 router.put('/me/:id/cancel', authMiddleware.authUser, tradeController.cancelPendingTrade)
 router.get('/me/:id', authMiddleware.authUser, tradeController.getMyTradesById)
+router.get('/get-suggestions', tradeController.getSuggetions)
 
 
 

@@ -2,8 +2,7 @@ const { validationResult } = require('express-validator');
 const portfolioService = require('../services/portfolio.service.js');
 const portfolioModel = require('../models/portfolio.model.js');
 const getStockQuote = require('../getStockQuote.js');
-
-
+const CRYPTO_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT'];
 module.exports.getPortfolio = async (req, res, next) => {
     try {
 
@@ -132,4 +131,11 @@ module.exports.upsertAsset = async (req, res) => {
       res.status(500).json({ error: 'Failed to fetch analytics' });
     }
   };
-      
+  module.exports.getDashboardStocks = async (req, res) => {
+    try {
+      const prices = await Promise.all(CRYPTO_SYMBOLS.map(portfolioService.getStockQuotePortfolio));
+      res.status(200).json(prices);
+    } catch (err) {
+      res.status(500).json({ message: 'Error fetching stock data', error: err.message });
+    }
+  };

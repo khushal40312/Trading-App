@@ -3,7 +3,7 @@ const portfolioModel = require('../models/portfolio.model.js');
 const tradeModel = require('../models/Trade.model.js');
 const userModel = require('../models/user.model.js');
 const getStockQuote = require("../getStockQuote.js");
-
+const tradeService = require("../services/trade.service.js")
 
 
 
@@ -356,6 +356,22 @@ module.exports.getAllTrades = async (req, res) => {
         console.error('Error in getAllTrades:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
+
+
+
+}
+module.exports.getSuggetions = async (req, res) => {
+    const input = req.query.q;
+  
+    try {
+
+        const suggestion = await tradeService.getSuggestion(input)
+        res.status(201).json(suggestion)
+    } catch (error) {
+        console.error('Error in getAllTrades:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+
 
 
 

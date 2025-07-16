@@ -9,6 +9,7 @@ import { useSelector } from 'react-redux'
 import Home from './Pages/Home'
 import NotFound from './Pages/NotFound'
 import NotFoundAuth from './Pages/NotFoundAuth'
+import Search from './Pages/Search'
 
 function App() {
   const token = localStorage.getItem("token");
@@ -22,6 +23,8 @@ function App() {
           {token || user.length !== 0 ? (
             <>
               <Route path="/home" element={<Home />} />
+              <Route path="/search" element={<Search />} />
+
               {/* Authenticated fallback */}
               <Route path="*" element={<NotFound />} />
             </>
