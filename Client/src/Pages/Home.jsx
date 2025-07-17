@@ -3,7 +3,7 @@ import Navbar from '../Components/Navbar'
 import Dashboard from '../Components/Dashboard'
 const Home = () => {
     return (
-        <div className='h-screen w-full bg-[#151515]  '>
+        <div className='h-screen w-full bg-[#151515] overflow-hidden '>
             <Dashboard />
             <Navbar />
 

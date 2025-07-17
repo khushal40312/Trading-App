@@ -7,7 +7,7 @@ import { IoPersonOutline } from "react-icons/io5";
 
 const Navbar = () => {
   return (
-<div className="w-screen fixed bottom-0  border-black/20 backdrop-blur-md bg-black/40 rounded-t-lg flex justify-center items-center">
+<div className="w-screen fixed bottom-0  border-black/20 backdrop-blur-xs bg-black/40 rounded-t-lg flex justify-center items-center">
   <div className="flex justify-between items-center  py-2 w-80">
     <Link
       className="px-4 py-3 bg-[#21b121] text-white font-medium rounded-md hover:bg-green-700 transition"

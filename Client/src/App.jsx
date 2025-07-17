@@ -10,6 +10,7 @@ import Home from './Pages/Home'
 import NotFound from './Pages/NotFound'
 import NotFoundAuth from './Pages/NotFoundAuth'
 import Search from './Pages/Search'
+import Trade from './Pages/Trade'
 
 function App() {
   const token = localStorage.getItem("token");
@@ -24,12 +25,15 @@ function App() {
             <>
               <Route path="/home" element={<Home />} />
               <Route path="/search" element={<Search />} />
+              <Route path="/trade/:token" element={<Trade />} />
+
 
               {/* Authenticated fallback */}
               <Route path="*" element={<NotFound />} />
             </>
           ) : (
             <>
+
               <Route path="/" element={<Start />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />

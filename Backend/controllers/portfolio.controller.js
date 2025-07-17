@@ -133,7 +133,7 @@ module.exports.upsertAsset = async (req, res) => {
   };
   module.exports.getDashboardStocks = async (req, res) => {
     try {
-      const prices = await Promise.all(CRYPTO_SYMBOLS.map(portfolioService.getStockQuotePortfolio));
+      const prices = await portfolioService.getCryptoTrendingPortfolio()
       res.status(200).json(prices);
     } catch (err) {
       res.status(500).json({ message: 'Error fetching stock data', error: err.message });

@@ -248,7 +248,7 @@ class SocketService {
   async getChartData(symbol, timeframe) {
     try {
       // This is a simplified example - you might want to use a different API for historical data
-      const response = await axios.get('https://finnhub.io/api/v1/stock/candle', {
+      const response = await axios.get('https://finnhub.io/api/v1/crypto/candle', {
         params: {
           symbol: symbol,
           resolution: this.getResolution(timeframe),

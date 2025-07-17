@@ -11,7 +11,8 @@ async function getStockQuote(symbol) {
         symbol,
         token: API_KEY
       }
-    });
+    });  
+    // a9bd5d89-f8cd-4a2c-af0b-9de77d9c5a55
     return data.c; // current price
   } catch (error) {
     console.error(`Error fetching quote for ${symbol}:`, error.message);

@@ -6,14 +6,10 @@ import {
     LineChart, Line, Tooltip, ResponsiveContainer,
     BarChart
 } from "recharts";
+import { useDispatch } from 'react-redux'
+import { SearchAction } from '../store/trendingSearchSlice';
 
-const data = [
-    { name: "Jan 10", value: 1000 },
-    { name: "Jan 11", value: 1800 },
-    { name: "Jan 12", value: 2526 },
-    { name: "Jan 13", value: 2100 },
-    { name: "Jan 14", value: 2900 },
-];
+
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         return (
@@ -26,12 +22,13 @@ const CustomTooltip = ({ active, payload }) => {
     return null;
 };
 
+
 const Dashboard = () => {
     const [balance, setBalance] = useState('----');
     const [portfolioInfo, setportfolioInfo] = useState();
     const [stocks, setStocks] = useState([]);
     const token = localStorage.getItem('token')
-
+    const dispatch = useDispatch()
     useEffect(() => {
 
 
@@ -70,8 +67,9 @@ const Dashboard = () => {
                             Authorization: `Bearer ${token}`
                         }
                     })
-                    console.log(response)
-                    setStocks(response.data)
+
+                    setStocks(response.data.coins)
+                    dispatch(SearchAction.addTrendingCoins(response.data))
 
                 } catch (error) {
                     console.error(error)
@@ -89,33 +87,46 @@ const Dashboard = () => {
     const chartData = portfolioInfo?.performanceHistory?.map(entry => ({
         name: new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         value: entry.value
-      })).reverse();
+    })).reverse();
 
     return (
         <>
-            <div className='flex items-center justify-between  p-3 w-full   '> <img className='w-15  border border-[#21b121] rounded-xl' src="/logo.png" alt="logo" />
+            <div className='flex items-center justify-between  p-2 w-full   '> <img className='w-12  border border-[#21b121] rounded-xl' src="/logo.png" alt="logo" />
                 <h2 className=' font-bold  text-xl text-[#21b121] '>Dashboard</h2></div>
             <div className='flex items-center mt-3  p-2 border-[#21b121] border-3 border-r-0  rounded-l-lg '>
                 <div>
                     <h3 className='text-sm font-bold text-[#808080]'>Total Balance</h3>
-                    <h1 className='font-bold text-xl text-[#21b121]  '>{(Number(balance)/85.9).toFixed(2)}  <span className='font-bolder text-sm rounded bg-black text-white'>USDT</span></h1>
-                    
+                    <h1 className='font-bold text-xl text-[#21b121]  '>{(Number(balance) / 85.9).toFixed(2)}  <span className='font-bolder text-sm rounded bg-black text-white'>USDT</span></h1>
+
                     <p className='bg-[#21b121] text-center w-1/2 rounded font-bold text-sm text-white'>{
                         parseFloat(portfolioInfo?.totalProfitLossPercentage.toFixed(2))} %</p>
 
                 </div>
 
             </div>
-            <div className='w-full px-4 mt-3 bg-[#000000] rounded border-2 border-[#21b121] overflow-x-auto space-x-4 flex justify-between  '>
-                {stocks?.map(crypto => (<div key={crypto.symbol} className='flex justify-between  items-center bg-[#000000]  rounded'>
-                    <h1 className='font-bold text-sm text-[#808080] '>{crypto.price}$ <p className='font-bold text-xl text-[#21b121]  text-center  '>
-                        <span>
-                            <RiBtcFill /> </span>{crypto.symbol}</p></h1>
-
-                </div>))}
-
-
+            <div className='w-full px-2 mt-3 bg-[#000000] rounded border-2 border-[#21b121] overflow-x-auto space-x-4 flex items-start'>
+                {stocks?.map((crypto) => (
+                    <div
+                        key={crypto?.item?.symbol}
+                        className='flex flex-col items-center min-w-[100px]  bg-[#000000] rounded border border-[#21b121]'
+                    >
+                        <h1 className='font-bold text-sm text-[#808080]'>
+                            {crypto?.item?.data?.price?.toString().startsWith('0.0')
+                                ? `${crypto.item.data.price.toFixed(5)}$`
+                                : `${crypto.item.data.price.toFixed(2)}$`}
+                        </h1>
+                        <img
+                            className='w-7 h-7 my-2 rounded-2xl'
+                            src={crypto?.item?.thumb}
+                            alt={crypto?.item?.symbol}
+                        />
+                        <p className='font-bold text-md text-[#21b121] text-center'>
+                            {crypto?.item?.symbol}
+                        </p>
+                    </div>
+                ))}
             </div>
+
             <div className='flex justify-between p-1'>
                 <h1 className=' font-bold text-[#808080]  text-center '>My Portfolio</h1>
                 <p className=' font-bold text-[#21b121]   text-center   '>View All</p>
@@ -159,18 +170,18 @@ const Dashboard = () => {
                         <span className="text-green-500 font-medium cursor-pointer hover:underline">View More</span>
                     </div>
                     <ResponsiveContainer width="100%" height={180}>
-    <LineChart data={chartData || []}>
-        <Tooltip content={<CustomTooltip />} />
-        <Line
-            type="monotone"
-            dataKey="value"
-            stroke="#00FF7F"
-            strokeWidth={3}
-            dot={{ r: 5, stroke: '#000', strokeWidth: 2, fill: '#00FF7F' }}
-            activeDot={{ r: 6, fill: '#00FF7F', stroke: '#000', strokeWidth: 2 }}
-        />
-    </LineChart>
-</ResponsiveContainer>
+                        <LineChart data={chartData || []}>
+                            <Tooltip content={<CustomTooltip />} />
+                            <Line
+                                type="monotone"
+                                dataKey="value"
+                                stroke="#00FF7F"
+                                strokeWidth={3}
+                                dot={{ r: 5, stroke: '#000', strokeWidth: 2, fill: '#00FF7F' }}
+                                activeDot={{ r: 6, fill: '#00FF7F', stroke: '#000', strokeWidth: 2 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
 
                     <div className="text-white text-xs mt-2 opacity-50">Jan 12 2022</div>
                 </div>
