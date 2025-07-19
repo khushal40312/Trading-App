@@ -5,7 +5,7 @@ function CandleChart() {
   const [series, setSeries] = useState([]);
 
   useEffect(() => {
-    fetch('https://api.coingecko.com/api/v3/coins/pi-network/ohlc?vs_currency=usd&days=1')
+    fetch('https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=1')
       .then(res => res.json())
       .then(data => {
         const formatted = data.map(([timestamp, open, high, low, close]) => ({

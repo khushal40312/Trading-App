@@ -1,11 +1,14 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import UserInfo from "./userProfileSlice";
 import trendingSearches from "./trendingSearchSlice"
+import selectedToken from "./seletedTokenSlice"
+
 
 
 const appReducer = combineReducers({
     user: UserInfo,
-    search:trendingSearches
+    search:trendingSearches,
+    selectedToken:selectedToken,
    
 })
 const rootReducer = (state, action) => {

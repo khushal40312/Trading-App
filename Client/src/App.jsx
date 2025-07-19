@@ -26,6 +26,7 @@ function App() {
               <Route path="/home" element={<Home />} />
               <Route path="/search" element={<Search />} />
               <Route path="/trade/:token" element={<Trade />} />
+              <Route path="/trade" element={<Trade />} />
 
 
               {/* Authenticated fallback */}
