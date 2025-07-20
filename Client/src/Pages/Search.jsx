@@ -20,7 +20,7 @@ const Search = () => {
     const trendingSearch = useSelector(store => store.search)
     const dispatch = useDispatch()
     const navigate = useNavigate()
-    console.log(iconUrl)
+    
     useEffect(() => {
         const fetchSuggestions = async () => {
             if (!debouncedInput || !token) return;
@@ -35,6 +35,13 @@ const Search = () => {
                 setSuggestions(response.data)
             } catch (error) {
                 console.error('Error fetching suggestions:', error);
+                if (
+                    
+                    error.response?.data?.message?.toLowerCase().includes('session expired')
+                  ) {
+                    localStorage.removeItem('token');
+                    navigate('/session-expired');
+                  }
             } finally {
                 setLoading(false);
             }
@@ -67,6 +74,13 @@ const Search = () => {
                 } catch (error) {
                     console.error(error)
                     setLoading2(false)
+                    if (
+                       
+                        error.response?.data?.message?.toLowerCase().includes('session expired')
+                      ) {
+                        localStorage.removeItem('token');
+                        navigate('/session-expired');
+                      }
                 } finally {
 
                     setLoading2(false)
@@ -84,7 +98,7 @@ const Search = () => {
         navigate(`/trade/${token}`);
     };
 
-    console.log(trendingSearch)
+    
     return (
         <div className="w-full bg-black/90">
             <form onSubmit={submitHandler} className="relative">

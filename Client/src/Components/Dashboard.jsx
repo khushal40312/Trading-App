@@ -6,8 +6,10 @@ import {
     LineChart, Line, Tooltip, ResponsiveContainer,
     BarChart
 } from "recharts";
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { SearchAction } from '../store/trendingSearchSlice';
+import { selectedTokenAction } from '../store/seletedTokenSlice';
+import { useNavigate } from 'react-router-dom';
 
 
 const CustomTooltip = ({ active, payload }) => {
@@ -29,6 +31,8 @@ const Dashboard = () => {
     const [stocks, setStocks] = useState([]);
     const token = localStorage.getItem('token')
     const dispatch = useDispatch()
+    const trendingSearch = useSelector(store => store.search)
+   const navigate = useNavigate()
     useEffect(() => {
 
 
@@ -44,6 +48,13 @@ const Dashboard = () => {
                     setBalance(response.data.balance)
                 } catch (error) {
                     console.error(error)
+                    if (
+                       
+                        error.response?.data?.message?.toLowerCase().includes('session expired')
+                      ) {
+                        localStorage.removeItem('token');
+                        navigate('/session-expired');
+                      }
                 }
             }
             const fetchUserProtfolio = async () => {
@@ -57,26 +68,42 @@ const Dashboard = () => {
                     setportfolioInfo(response.data)
                 } catch (error) {
                     console.error(error)
+                    if (
+                       
+                        error.response?.data?.message?.toLowerCase().includes('session expired')
+                      ) {
+                        localStorage.removeItem('token');
+                        navigate('/session-expired');
+                      }
                 }
             }
-            const fetchStocks = async () => {
+            if (trendingSearch.length === 0 && token) {
+                const fetchStocks = async () => {
+                    try {
+                        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/dashboard-stocks`, {
+                            headers: {
+                                Authorization: `Bearer ${token}`
+                            }
+                        })
 
-                try {
-                    const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/dashboard-stocks`, {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    })
+                        setStocks(response.data.coins)
+                        dispatch(SearchAction.addTrendingCoins(response.data))
 
-                    setStocks(response.data.coins)
-                    dispatch(SearchAction.addTrendingCoins(response.data))
+                    } catch (error) {
+                        console.error(error)
+                        if (
+                            
+                            error.response?.data?.message?.toLowerCase().includes('session expired')
+                          ) {
+                            localStorage.removeItem('token');
+                            navigate('/session-expired');
+                          }
 
-                } catch (error) {
-                    console.error(error)
-
+                    }
                 }
+
+                fetchStocks()
             }
-            fetchStocks()
             fetchUserProtfolio()
             fetchUserBalance()
         }
@@ -88,7 +115,12 @@ const Dashboard = () => {
         name: new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         value: entry.value
     })).reverse();
-
+    const findToken = (token, info) => {
+        localStorage.setItem("trade", token)
+        dispatch(selectedTokenAction.addToken(info?.item))
+        navigate(`/trade/${token}`);
+    };
+    const displayList = stocks?.length === 0 ? trendingSearch?.coins : stocks;
     return (
         <>
             <div className='flex items-center justify-between  p-2 w-full   '> <img className='w-12  border border-[#21b121] rounded-xl' src="/logo.png" alt="logo" />
@@ -104,28 +136,30 @@ const Dashboard = () => {
                 </div>
 
             </div>
-            <div className='w-full px-2 mt-3 bg-[#000000] rounded border-2 border-[#21b121] overflow-x-auto space-x-4 flex items-start'>
-                {stocks?.map((crypto) => (
-                    <div
-                        key={crypto?.item?.symbol}
-                        className='flex flex-col items-center min-w-[100px]  bg-[#000000] rounded border border-[#21b121]'
-                    >
-                        <h1 className='font-bold text-sm text-[#808080]'>
-                            {crypto?.item?.data?.price?.toString().startsWith('0.0')
-                                ? `${crypto.item.data.price.toFixed(5)}$`
-                                : `${crypto.item.data.price.toFixed(2)}$`}
-                        </h1>
-                        <img
-                            className='w-7 h-7 my-2 rounded-2xl'
-                            src={crypto?.item?.thumb}
-                            alt={crypto?.item?.symbol}
-                        />
-                        <p className='font-bold text-md text-[#21b121] text-center'>
-                            {crypto?.item?.symbol}
-                        </p>
-                    </div>
-                ))}
-            </div>
+            
+<div className='w-full px-2 mt-3 bg-[#000000] rounded border-2 border-[#21b121] overflow-x-auto space-x-4 flex items-start'>
+  {displayList?.map((crypto) => (
+    <div
+      onClick={() => findToken(crypto?.item?.symbol, crypto)}
+      key={crypto?.item?.symbol}
+      className='flex flex-col items-center min-w-[100px] bg-[#000000] rounded border border-[#21b121]'
+    >
+      <h1 className='font-bold text-sm text-[#808080]'>
+        {crypto?.item?.data?.price.toString().startsWith('0.0')
+          ? `${crypto.item.data.price.toFixed(5)}$`
+          : `${crypto.item.data.price.toFixed(2)}$`}
+      </h1>
+      <img
+        className='w-7 h-7 my-2 rounded-2xl'
+        src={crypto?.item?.thumb}
+        alt={crypto?.item?.symbol}
+      />
+      <p className='font-bold text-md text-[#21b121] text-center'>
+        {crypto?.item?.symbol}
+      </p>
+    </div>
+  ))}
+</div>
 
             <div className='flex justify-between p-1'>
                 <h1 className=' font-bold text-[#808080]  text-center '>My Portfolio</h1>

@@ -20,7 +20,6 @@ module.exports.getSuggestion = async (input) => {
         }
 
         const chain = match.chains?.find((c) => !!c.contractAddress); // get any chain with contract
-
         // Try contract-based lookup first if available
         if (chain?.contractAddress) {
             const network = chain.chain.toLowerCase(); // e.g. ETH, BSC, BASE, etc.
@@ -37,8 +36,8 @@ module.exports.getSuggestion = async (input) => {
                     }
                 );
 
+                console.log(tokenInfoRes.data.data)
                 const info = tokenInfoRes.data.data?.attributes;
-
                 return {
                     name: info.name,
                     symbol: info.symbol,
@@ -59,7 +58,7 @@ module.exports.getSuggestion = async (input) => {
             params: { query: match.coin },
             headers: {
                 accept: 'application/json',
-                'x-cg-pro-api-key': COINGECKO_API_KEY,
+                'x-cg-demo-api-key': COINGECKO_API_KEY,
             },
         });
 

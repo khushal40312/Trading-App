@@ -4,4 +4,11 @@ html, body {
     padding: 0;
     overflow-x: hidden;
   }
+  .apexcharts-menu-item {
+    background-color: #f0f0f0; /* Light gray background */
+    color: #333; /* Dark gray text */
+  }
   
+  .apexcharts-menu-item:hover {
+    background-color: #e0e0e0; /* Slightly darker on hover */
+  }

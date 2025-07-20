@@ -11,6 +11,8 @@ import NotFound from './Pages/NotFound'
 import NotFoundAuth from './Pages/NotFoundAuth'
 import Search from './Pages/Search'
 import Trade from './Pages/Trade'
+import CandleChart from './Pages/CandleChart'
+import SessionExpired from './Pages/SessionExpired'
 
 function App() {
   const token = localStorage.getItem("token");
@@ -27,7 +29,9 @@ function App() {
               <Route path="/search" element={<Search />} />
               <Route path="/trade/:token" element={<Trade />} />
               <Route path="/trade" element={<Trade />} />
+              <Route path="/trade/:token/candles" element={<CandleChart />} />
 
+              <Route path="/session-expired" element={<SessionExpired />} />
 
               {/* Authenticated fallback */}
               <Route path="*" element={<NotFound />} />
@@ -38,10 +42,14 @@ function App() {
               <Route path="/" element={<Start />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+
+
               {/* Unauthenticated fallback */}
               <Route path="*" element={<NotFoundAuth />} />
             </>
           )}
+          <Route path="/session-expired" element={<SessionExpired />} />
+
         </Routes>
       </Suspense>
     </>
