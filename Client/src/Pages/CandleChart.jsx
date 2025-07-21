@@ -36,7 +36,7 @@ const CandleChart = () => {
       } catch (error) {
         console.error('Error fetching suggestions:', error);
         if (
-          
+
           err.response?.data?.message?.toLowerCase().includes('session expired')
         ) {
           localStorage.removeItem('token');
@@ -62,14 +62,11 @@ const CandleChart = () => {
         const endTime = Date.now();
         const startTime = endTime - 60 * 60 * 1000; // last hour (can be modified based on interval)
         const response = await axios.get(
-          `https://api.bitget.com/api/v2/spot/market/candles`,
+          `${import.meta.env.VITE_BASE_URL}/trades/bitget/candles/${tempTokenInfo?.symbol || selectedToken?.symbol}?interval=${interval}&startTime=${startTime}&endTime=${endTime}`,
           {
-            params: {
-              symbol: `${tempTokenInfo?.symbol || selectedToken?.symbol}USDT`,
-              granularity: interval,
-              startTime,
-              endTime,
-              limit: 100,
+            headers: {
+              accept: 'application/json',
+              Authorization: `Bearer ${token_auth}`
             },
           }
         );
@@ -94,19 +91,19 @@ const CandleChart = () => {
   };
 
   const fetchFromCoinGecko = async (days) => {
-    if (tempTokenInfo?.coingeckoId || selectedToken.coingeckoId) {
+    if (tempTokenInfo?.coingeckoId || selectedToken?.coingeckoId) {
       try {
         setLoading(true);
         const response = await axios.get(
-          `https://api.coingecko.com/api/v3/coins/${tempTokenInfo?.coingeckoId || selectedToken?.coingeckoId}/ohlc?vs_currency=usd&days=${days}`,
+          `${import.meta.env.VITE_BASE_URL}/trades/geko/candles/${tempTokenInfo?.coingeckoId || selectedToken.coingeckoId}?days=${days}`,
           {
             headers: {
               accept: 'application/json',
-              'x-cg-demo-api-key': import.meta.env.VITE_COINGEKO_API // Replace with your actual CoinGecko key
+              Authorization: `Bearer ${token_auth}`
             }
           }
         );
-
+        console.log(response.data)
         const candles = response.data.map(candle => ({
           x: new Date(candle[0]),
           y: [candle[1], candle[2], candle[3], candle[4]]
@@ -115,8 +112,8 @@ const CandleChart = () => {
         setSeries([{ data: candles }]);
       } catch (err) {
         console.error('CoinGecko fetch error:', err);
-       
-        
+
+
       } finally {
         setLoading(false);
       }
@@ -180,7 +177,7 @@ const CandleChart = () => {
           <Loading />
         </div>
       )}
-  
+
       {tempTokenInfo?.symbol || selectedToken?.symbol ? (
         <div className='flex w-full h-screen bg-black justify-center items-center'>
           <div className="p-4 text-white bg-gray-900 w-full h-screen rounded">
@@ -208,7 +205,7 @@ const CandleChart = () => {
                 <option value="7">7 Days</option>
                 <option value="30">30 Days</option>
               </select>
-  
+
               <ApexCharts
                 options={options}
                 series={series}
@@ -217,12 +214,12 @@ const CandleChart = () => {
               />
             </div>
           </div>
-  
+
           <Navbar />
         </div>
       ) : null}
     </>
   );
-}  
+}
 
 export default CandleChart;

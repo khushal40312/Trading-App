@@ -153,7 +153,7 @@ const Trade = () => {
 
         {/* Main Section */}
         <div className="flex border border-white">
-          <BuySellPanel selectedSide={selectedSide} setSelectedSide={setSelectedSide} />
+          <BuySellPanel tradecoin={tradecoin} livePrice={tradeRef.current?.PRICE} token_auth={token_auth} selectedSide={selectedSide} setSelectedSide={setSelectedSide} />
           <TokenInfoPanel recentTrades={recentTrades} tradeRef={tradeRef} lastTrade={lastTrade} animate={animate} token={token} imageSrc={imageSrc} priceRef={priceRef} tradecoin={tradecoin} qtyRef={qtyRef} />
 
         </div>

@@ -1,7 +1,6 @@
 const { default: axios } = require("axios");
 
-// Replace this with your actual CoinGecko API key
-const COINGECKO_API_KEY = "CG-koLDAFFUE841gxtwW7rXepxt";
+
 
 module.exports.getSuggestion = async (input) => {
     try {
@@ -24,14 +23,14 @@ module.exports.getSuggestion = async (input) => {
         if (chain?.contractAddress) {
             const network = chain.chain.toLowerCase(); // e.g. ETH, BSC, BASE, etc.
             const contract = chain.contractAddress;
-            
+
             try {
                 const tokenInfoRes = await axios.get(
                     `https://api.coingecko.com/api/v3/onchain/networks/${network}/tokens/${contract}/info`,
                     {
                         headers: {
                             accept: 'application/json',
-                            'x-cg-demo-api-key': COINGECKO_API_KEY,
+                            'x-cg-demo-api-key': process.env.COINGECKO_API_KEY,
                         },
                     }
                 );
@@ -46,7 +45,7 @@ module.exports.getSuggestion = async (input) => {
                     image: info.image?.large || info.image_url,
                     description: info.description,
                     source: "coingecko_onchain",
-                    
+
                 };
             } catch (contractErr) {
                 console.warn(`Fallback to search: ${contractErr.message}`);
@@ -58,7 +57,7 @@ module.exports.getSuggestion = async (input) => {
             params: { query: match.coin },
             headers: {
                 accept: 'application/json',
-                'x-cg-demo-api-key': COINGECKO_API_KEY,
+                'x-cg-demo-api-key': process.env.COINGECKO_API_KEY,
             },
         });
 
@@ -90,3 +89,59 @@ module.exports.getSuggestion = async (input) => {
         return { error: true, message: err.message };
     }
 };
+
+module.exports.getCandlesfromCoingeko = async (payload) => {
+    const { coingeckoId, days } = payload;
+    try {
+        const response = await axios.get(
+            `https://api.coingecko.com/api/v3/coins/${coingeckoId}/ohlc?vs_currency=usd&days=${days}`,
+            {
+                headers: {
+                    accept: 'application/json',
+                    'x-cg-demo-api-key': process.env.COINGEKO_API // Replace with your actual CoinGecko key
+                }
+            }
+        );
+
+        return response.data
+
+
+    } catch (error) {
+        console.log(error, "error during fetching CK candles ")
+    }
+
+
+
+
+
+}
+module.exports.getCandlesfromBitget = async (payload) => {
+
+    const { symbol, interval, startTime, endTime } = payload;
+    try {
+        const response = await axios.get(
+            `https://api.bitget.com/api/v2/spot/market/candles`,
+            {
+                params: {
+                    symbol: `${symbol}USDT`,
+                    granularity: interval,
+                    startTime,
+                    endTime,
+                    limit: 100,
+                },
+            }
+        );
+
+
+        return response.data.data;
+
+
+    } catch (error) {
+        console.log(error, "error during fetching BG candles ")
+    }
+
+
+
+
+
+}

@@ -362,7 +362,7 @@ module.exports.getAllTrades = async (req, res) => {
 }
 module.exports.getSuggetions = async (req, res) => {
     const input = req.query.q;
-  
+
     try {
 
         const suggestion = await tradeService.getSuggestion(input)
@@ -370,6 +370,41 @@ module.exports.getSuggetions = async (req, res) => {
     } catch (error) {
         console.error('Error in getAllTrades:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+
+
+
+
+}
+
+module.exports.getCandlesfromGeko = async (req, res) => {
+
+    const { coingeckoId } = req.params;
+    const { days } = req.query;
+
+
+    try {
+        const candles = await tradeService.getCandlesfromCoingeko({coingeckoId, days});
+        res.status(201).json(candles);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch candle data', details: error.message });
+    }
+
+
+
+
+}
+module.exports.getCandlesfromBitget = async (req, res) => {
+
+    const { symbol } = req.params;
+    const { interval, startTime, endTime } = req.query;
+
+
+    try {
+        const candles = await tradeService.getCandlesfromBitget({symbol, interval, startTime, endTime});
+        res.status(201).json(candles);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch candle data', details: error.message });
     }
 
 

@@ -118,6 +118,10 @@ router.get('/me/symbol/:symbol', authMiddleware.authUser, tradeController.getMyT
 router.put('/me/:id/cancel', authMiddleware.authUser, tradeController.cancelPendingTrade)
 router.get('/me/:id', authMiddleware.authUser, tradeController.getMyTradesById)
 router.get('/get-suggestions', tradeController.getSuggetions)
+router.get('/geko/candles/:coingeckoId',authMiddleware.authUser, tradeController.getCandlesfromGeko)
+router.get('/bitget/candles/:symbol',authMiddleware.authUser, tradeController.getCandlesfromBitget)
+
+
 
 
 
