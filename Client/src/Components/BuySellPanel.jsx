@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
-const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, livePrice, tradecoin }) => {
+const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, livePrice, tradecoin, TokenDetails }) => {
     const [amount, setAmount] = useState('');
     const [price, setPrice] = useState('');
     const [availableBalance, setAvailableBalance] = useState(0);
     const [selected, setSelected] = useState('USDT');
 
     const navigate = useNavigate();
-
+    // console.log(TokenDetails)
     // Fetch balance from API
     useEffect(() => {
         const fetchBalance = async () => {
@@ -30,8 +31,46 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
         fetchBalance();
     }, [token_auth, navigate]);
 
+    const buyAsset = (payload) => {
+        const { tradecoin, assetName, price, amount } = payload;
+        if (!tradecoin || !assetName || !price || !amount) return;
+        console.log(amount,price)
+        const tradeData = {
+            symbol: tradecoin,
+            assetName,
+            quantity: selected === 'USDT' ? (amount * price) : amount,
+            price,
+            notes: 'Long-term investment'
+        };
+        return toast.promise(
+            axios.post(
+                `${import.meta.env.VITE_BASE_URL}/trades/buy`,
+                tradeData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token_auth}`
+                    }
+                }
+            ),
+            {
+                pending: 'Buying assets...',
+                success: {
+                    render({ data }) {
+                        const res = data.data;
+                        console.log(res);
+                        return '✅ Successfully bought assets!';
+                    }
+                },
+                error: {
+                    render({ data }) {
+                        return data?.response?.data?.message || '❌ Failed to buy assets';
+                    }
+                }
+            }
+        );
+    };
 
-    // Sync price with livePrice
+
     useEffect(() => {
         if (livePrice && livePrice > 0) {
             setPrice(livePrice);
@@ -47,18 +86,18 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
         if (!livePrice || livePrice <= 0) return;
 
         const balance = availableBalance;
-        
+
         let calculatedToken;
 
         if (selectedSide === 'buy' && selected === 'USDT') {
             const amountInBase = (balance * percent) / 100;
-            
-            setAmount(amountInBase);
+
+            setAmount(amountInBase.toFixed(5));
 
         } else if (selectedSide === 'buy' && selected === tradecoin.toString()) {
             const amountInBase = (balance * percent) / 100;
             calculatedToken = amountInBase * livePrice;
-            setAmount(calculatedToken);
+            setAmount(calculatedToken.toFixed(5));
 
 
 
@@ -75,17 +114,17 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
     const handleAmountChange = (e) => {
 
 
-        let input = parseFloat(e.target.value);
+        let input = e.target.value;
+        setAmount(input)
+
+
         if (selected === 'USDT' && selectedSide === 'buy') {
-            if (!input || input < 0) {
-                setAmount('');
-                return;
-            } else if (input > availableBalance) {
+            if (input > availableBalance) {
                 input = availableBalance;
                 setAmount(input)
             } else {
 
-                setAmount(input.toFixed(5))
+                setAmount(input)
             }
         } else if (selected === tradecoin.toString() && selectedSide === 'buy') {
             let maxToken = availableBalance * livePrice;
@@ -98,7 +137,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                 setAmount(input)
             } else {
 
-                setAmount(input.toFixed(5))
+                setAmount(input)
             }
 
 
@@ -175,6 +214,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                 </div>
 
                 <button
+                    onClick={() => buyAsset({ tradecoin, assetName: TokenDetails.coingeckoId, price, amount })}
                     className={`${selectedSide === 'buy' ? 'bg-green-600' : 'bg-red-600'
                         } text-xl font-bold text-white rounded-2xl w-40 px-6 py-6`}
                 >

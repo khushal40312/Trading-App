@@ -35,7 +35,7 @@ module.exports.getSuggestion = async (input) => {
                     }
                 );
 
-                console.log(tokenInfoRes.data.data)
+               
                 const info = tokenInfoRes.data.data?.attributes;
                 return {
                     name: info.name,

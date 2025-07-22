@@ -103,7 +103,7 @@ const CandleChart = () => {
             }
           }
         );
-        console.log(response.data)
+        
         const candles = response.data.map(candle => ({
           x: new Date(candle[0]),
           y: [candle[1], candle[2], candle[3], candle[4]]

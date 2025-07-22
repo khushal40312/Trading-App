@@ -43,12 +43,12 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
+              <Route path="/session-expired" element={<SessionExpired />} />
 
               {/* Unauthenticated fallback */}
               <Route path="*" element={<NotFoundAuth />} />
             </>
           )}
-          <Route path="/session-expired" element={<SessionExpired />} />
 
         </Routes>
       </Suspense>

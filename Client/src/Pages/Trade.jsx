@@ -55,7 +55,7 @@ const Trade = () => {
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (!token_auth || !recentTrade || !selectedToken ) return;
+      if (!token_auth || !recentTrade || !selectedToken) return;
 
 
       try {
@@ -66,11 +66,11 @@ const Trade = () => {
         });
 
         setTempTokenInfo(response.data);
-         dispatch(selectedTokenAction.addToken(response.data))
+        dispatch(selectedTokenAction.addToken(response.data))
       } catch (error) {
         console.error('Error fetching suggestions:', error);
         if (
-         
+
           error.response?.data?.message?.toLowerCase().includes('session expired')
         ) {
           localStorage.removeItem('token');
@@ -129,7 +129,7 @@ const Trade = () => {
       console.log('WebSocket closed & animation frame canceled');
     };
 
-  }, [token]);
+  }, [tradecoin]);
 
 
   const handleNewTrade = (trade) => {
@@ -153,7 +153,7 @@ const Trade = () => {
 
         {/* Main Section */}
         <div className="flex border border-white">
-          <BuySellPanel tradecoin={tradecoin} livePrice={tradeRef.current?.PRICE} token_auth={token_auth} selectedSide={selectedSide} setSelectedSide={setSelectedSide} />
+          <BuySellPanel TokenDetails={selectedToken || tempTokenInfo} tradecoin={tradecoin} livePrice={tradeRef.current?.PRICE} token_auth={token_auth} selectedSide={selectedSide} setSelectedSide={setSelectedSide} />
           <TokenInfoPanel recentTrades={recentTrades} tradeRef={tradeRef} lastTrade={lastTrade} animate={animate} token={token} imageSrc={imageSrc} priceRef={priceRef} tradecoin={tradecoin} qtyRef={qtyRef} />
 
         </div>
