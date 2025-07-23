@@ -42,6 +42,19 @@ const portfolioSchema = new Schema({
     profitLossPercentage: {
       type: Number,
       default: 0
+    },
+    imageURL: {
+      thumb: {
+        type: String
+      },
+      small: {
+        type: String
+
+      },
+      large: {
+        type: String
+
+      }
     }
   }],
   totalInvestment: {
@@ -80,9 +93,9 @@ const portfolioSchema = new Schema({
   }
 });
 // Method to remove quantity from an asset or remove the asset entirely
-portfolioSchema.methods.removeAsset = function(symbol, quantityToRemove) {
+portfolioSchema.methods.removeAsset = function (symbol, quantityToRemove) {
   const assetIndex = this.assets.findIndex(a => a.symbol === symbol.toUpperCase());
-  
+
   if (assetIndex === -1) {
     throw new Error(`Asset with symbol ${symbol} not found in portfolio.`);
   }
@@ -104,52 +117,53 @@ portfolioSchema.methods.removeAsset = function(symbol, quantityToRemove) {
   return this;
 };
 
-portfolioSchema.methods.upsertAsset = function(symbol, name, quantity, buyPrice) {
+portfolioSchema.methods.upsertAsset = function (symbol, name, quantity, buyPrice,imageURL) {
   const asset = this.assets.find(a => a.symbol === symbol.toUpperCase());
   if (asset) {
     const totalQty = asset.quantity + quantity;
     const weightedAvg = ((asset.quantity * asset.averageBuyPrice) + (quantity * buyPrice)) / totalQty;
     asset.quantity = totalQty;
     asset.averageBuyPrice = weightedAvg;
+    asset.imageURL=imageURL;
   } else {
-    this.assets.push({ symbol: symbol.toUpperCase(), name, quantity, averageBuyPrice: buyPrice });
+    this.assets.push({ symbol: symbol.toUpperCase(), name, quantity, averageBuyPrice: buyPrice,imageURL });
   }
 };
 
 // Method to calculate current portfolio value
-portfolioSchema.methods.calculateValue = function() {
+portfolioSchema.methods.calculateValue = function () {
   let totalValue = 0;
   let totalInvestment = 0;
-  
+
   this.assets.forEach(asset => {
     const currentValue = asset.quantity * asset.currentPrice;
     const investment = asset.quantity * asset.averageBuyPrice;
-    
+
     asset.currentValue = currentValue;
     asset.profitLoss = currentValue - investment;
     asset.profitLossPercentage = investment > 0 ? (asset.profitLoss / investment) * 100 : 0;
-    
+
     totalValue += currentValue;
     totalInvestment += investment;
   });
-  
+
   this.currentValue = totalValue;
   this.totalInvestment = totalInvestment;
   this.totalProfitLoss = totalValue - totalInvestment;
   this.totalProfitLossPercentage = totalInvestment > 0 ? (this.totalProfitLoss / totalInvestment) * 100 : 0;
   this.lastUpdated = Date.now();
-  
+
   // Add current value to performance history
   this.performanceHistory.push({
     date: new Date(),
     value: totalValue
   });
-  
+
   return this.currentValue;
 };
 
 // Method to update asset prices
-portfolioSchema.methods.updatePrices = async function(getPriceFunction) {
+portfolioSchema.methods.updatePrices = async function (getPriceFunction) {
   for (const asset of this.assets) {
     try {
       asset.currentPrice = await getPriceFunction(asset.symbol);

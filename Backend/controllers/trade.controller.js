@@ -19,8 +19,10 @@ module.exports.buyAssets = async (req, res) => {
     const userId = req.user.id;
     const tradeType = 'buy';
     const fees = 0.005 * (quantity * price);
-
+    
     try {
+        const imageURL= await tradeService.getImages(assetName);
+        
         let portfolio = await portfolioModel.findOne({ user: userId });
         const user = await userModel.findById(userId);
 
@@ -44,6 +46,7 @@ module.exports.buyAssets = async (req, res) => {
             price,
             fees,
             notes,
+            imageURL
         });
 
         await trade.execute(); // sets executedAt, status, and saves
@@ -53,7 +56,7 @@ module.exports.buyAssets = async (req, res) => {
         await user.save();
 
 
-        portfolio.upsertAsset(symbol, assetName, quantity, price);
+        portfolio.upsertAsset(symbol, assetName, quantity, price,imageURL);
 
         await portfolio.updatePrices(getStockQuote); // or update manually if no price API
         portfolio.calculateValue(); // recalculates P&L
@@ -70,6 +73,7 @@ module.exports.buyAssets = async (req, res) => {
                 totalProfitLoss: portfolio.totalProfitLoss,
                 totalProfitLossPercentage: portfolio.totalProfitLossPercentage,
                 assets: portfolio.assets,
+                imageURL
             }
         });
 
@@ -91,6 +95,8 @@ module.exports.sellAssets = async (req, res) => {
     const fees = 0.005 * (quantity * price);
 
     try {
+        const imageURL= await tradeService.getImages(assetName);
+
         const user = await userModel.findById(userId);
         let portfolio = await portfolioModel.findOne({ user: userId });
 
@@ -116,6 +122,7 @@ module.exports.sellAssets = async (req, res) => {
             price,
             fees,
             notes,
+            imageURL
         });
 
         await trade.execute();

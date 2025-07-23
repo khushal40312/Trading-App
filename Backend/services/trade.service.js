@@ -35,7 +35,7 @@ module.exports.getSuggestion = async (input) => {
                     }
                 );
 
-               
+
                 const info = tokenInfoRes.data.data?.attributes;
                 return {
                     name: info.name,
@@ -138,10 +138,41 @@ module.exports.getCandlesfromBitget = async (payload) => {
 
     } catch (error) {
         console.log(error, "error during fetching BG candles ")
+}
+}
+    module.exports.getImages = async (symbol) => {
+
+        if (!symbol) return
+        try {
+            const response = await axios.get(
+                `https://api.coingecko.com/api/v3/coins/${symbol}`,
+                {
+                    params: {
+
+                        localization: false,
+                        tickers: false,
+                        market_data: false,
+                        community_data: false,
+                        developer_data: false,
+                        sparkline: false
+                    },
+                }
+            );
+
+
+            return response.data.image;
+
+
+        } catch (error) {
+            console.log(error, "error during fetching images ")
+        }
+
+
+
+
+
     }
 
 
 
 
-
-}

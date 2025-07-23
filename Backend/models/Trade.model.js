@@ -21,6 +21,19 @@ const tradeSchema = new Schema({
     type: String,
     required: true
   },
+  imageURL: {
+    thumb: {
+      type: String
+    },
+    small: {
+      type: String
+
+    },
+    large: {
+      type: String
+
+    }
+  },
   tradeType: {
     type: String,
     enum: ['buy', 'sell'],
@@ -38,7 +51,7 @@ const tradeSchema = new Schema({
   },
   totalAmount: {
     type: Number,
-    
+
   },
   fees: {
     type: Number,
@@ -46,7 +59,7 @@ const tradeSchema = new Schema({
   },
   netAmount: {
     type: Number,
-    
+
   },
   status: {
     type: String,
@@ -78,21 +91,21 @@ const tradeSchema = new Schema({
 });
 
 // Calculate total and net amounts before saving
-tradeSchema.pre('save', function(next) {
+tradeSchema.pre('save', function (next) {
   this.totalAmount = this.quantity * this.price;
   this.netAmount = this.totalAmount + (this.tradeType === 'buy' ? this.fees : -this.fees);
   next();
 });
 
 // Method to execute the trade
-tradeSchema.methods.execute = function() {
+tradeSchema.methods.execute = function () {
   this.status = 'completed';
   this.executedAt = new Date();
   return this.save();
 };
 
 // Method to cancel the trade
-tradeSchema.methods.cancel = function() {
+tradeSchema.methods.cancel = function () {
   if (this.status === 'pending') {
     this.status = 'cancelled';
     return this.save();
@@ -101,7 +114,7 @@ tradeSchema.methods.cancel = function() {
 };
 
 // Static method to get user's trade history
-tradeSchema.statics.getUserTrades = function(userId, limit = 20, page = 1) {
+tradeSchema.statics.getUserTrades = function (userId, limit = 20, page = 1) {
   const skip = (page - 1) * limit;
   return this.find({ user: userId })
     .sort({ createdAt: -1 })
@@ -111,9 +124,9 @@ tradeSchema.statics.getUserTrades = function(userId, limit = 20, page = 1) {
 };
 
 // Static method to get trades by symbol
-tradeSchema.statics.getTradesBySymbol = function(userId, symbol) {
-  return this.find({ 
-    user: userId, 
+tradeSchema.statics.getTradesBySymbol = function (userId, symbol) {
+  return this.find({
+    user: userId,
     symbol: symbol.toUpperCase(),
     status: 'completed'
   }).sort({ executedAt: -1 });
