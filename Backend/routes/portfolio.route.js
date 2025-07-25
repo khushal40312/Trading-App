@@ -16,4 +16,6 @@ router.get('/me/performance', authMiddleware.authUser, portfolioController.getPe
 router.get('/me/summary', authMiddleware.authUser, portfolioController.getPortfolioSummary)
 router.get('/me/analytics', authMiddleware.authUser, portfolioController.getPortfolioAnalytics)
 router.get('/dashboard-stocks',authMiddleware.authUser, portfolioController.getDashboardStocks);
+router.get('/get-currency/:name',authMiddleware.authUser, portfolioController.getCurrencyRates);
+
 module.exports = router;

@@ -10,7 +10,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
     const [availableToken, setAvailableToken] = useState(0);
     const [selected, setSelected] = useState('USDT');
     const navigate = useNavigate();
-
+// console.log(availableBalance)
     useEffect(() => {
         const fetchBalance = async () => {
             try {
@@ -28,7 +28,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
             }
         };
         fetchBalance();
-    }, [token_auth, navigate, selectedSide]);
+    }, [token_auth, navigate]);
 
     useEffect(() => {
         const fetchAsset = async () => {
@@ -47,15 +47,16 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
             }
         };
         fetchAsset();
-    }, [token_auth, navigate, selectedSide]);
+    }, [token_auth, navigate]);
 
     const buyAsset = (payload) => {
         const { tradecoin, assetName, price, amount } = payload;
         if (!tradecoin || !assetName || !price || !amount) return;
-        let RoundoffQuantity = Number(formatPrice(amount * price));
-        let RoundoffAmount= Number(formatPrice(amount))
+        let RoundoffQuantity = Number(formatPrice(amount / price));
 
+        let RoundoffAmount = Number(formatPrice(amount))
 
+      
         const tradeData = {
             symbol: tradecoin,
             assetName,
@@ -78,7 +79,12 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                 success: {
                     render({ data }) {
                         const res = data.data;
-                        console.log(res);
+                        console.log(typeof(res.balance))
+                        setAvailableBalance(Number(res.balance))
+                        const tokenQuantity= res.portfolioSummary?.assets.find((element) => element.symbol === "C");
+                        setAvailableToken(Number(tokenQuantity.quantity))
+
+                        
                         return `✅Bought ${tradecoin} ${selected === 'USDT' ? RoundoffQuantity : RoundoffAmount} price: ${price}!`;
                     }
                 },
@@ -95,10 +101,10 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
         if (!tradecoin || !assetName || !price || !amount) return;
         console.log(amount)
         let RoundoffQuantity = Number(formatPrice(amount / price));
-        let RoundoffAmount= Number(formatPrice(amount))
+        let RoundoffAmount = Number(formatPrice(amount))
 
 
-       
+
         const tradeData = {
             symbol: tradecoin,
             assetName,
@@ -121,8 +127,10 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                 success: {
                     render({ data }) {
                         const res = data.data;
-                        console.log(res);
-                        return `sold ${tradecoin} ${selected === 'USDT' ? RoundoffQuantity:RoundoffAmount} price: ${price}!`;
+                        setAvailableBalance(res.balance)
+                        const tokenQuantity= res.portfolioSummary?.assets.find((element) => element.symbol === "C");
+                        setAvailableToken(tokenQuantity.quantity)
+                        return `sold ${tradecoin} ${selected === 'USDT' ? RoundoffQuantity : RoundoffAmount} price: ${price}!`;
                     }
                 },
                 error: {
@@ -160,13 +168,11 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
 
         } else if (selectedSide === 'buy' && selected === tradecoin.toString()) {
             const amountInBase = (balance * percent) / 100;
-            calculatedToken = amountInBase * livePrice;
+            calculatedToken = amountInBase / livePrice;
             setAmount(formatPrice(calculatedToken));
         } else if (selectedSide === 'sell' && selected === 'USDT') {
-            const amountInBase = (token * percent) / 100;
-            calculatedToken = amountInBase * livePrice;
-            setAmount(formatPrice(calculatedToken));
-
+            const usdtValue = quantityToSell * livePrice;
+            setAmount(formatPrice(usdtValue));
         } else if (selectedSide === 'sell' && selected === tradecoin.toString()) {
             const amountInBase = (token * percent) / 100;
             setAmount(formatPrice(amountInBase));

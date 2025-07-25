@@ -142,8 +142,7 @@ const Search = () => {
                     <Skeleton count={10} height={40} containerClassName="space-y-3" />
                 </div>
 
-            ) : (
-                <div className="p-2  w-full h-screen">
+            ) : (input.length !=0 && <div className="p-2  w-full h-screen">
 
 
                     <div onClick={() => findToken(suggestions?.symbol, suggestions)}  className="flex items-center my-3 p-2 border-[#eeeeee] border-2 rounded-xl cursor-pointer active:border-green-500 transition">

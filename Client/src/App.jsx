@@ -13,6 +13,7 @@ import Search from './Pages/Search'
 import Trade from './Pages/Trade'
 import CandleChart from './Pages/CandleChart'
 import SessionExpired from './Pages/SessionExpired'
+import Portfolio from './Pages/Portfolio'
 
 function App() {
   const token = localStorage.getItem("token");
@@ -26,6 +27,8 @@ function App() {
           {token || user.length !== 0 ? (
             <>
               <Route path="/home" element={<Home />} />
+              <Route path="/portfolio" element={<Portfolio />} />
+
               <Route path="/search" element={<Search />} />
               <Route path="/trade/:token" element={<Trade />} />
               <Route path="/trade" element={<Trade />} />

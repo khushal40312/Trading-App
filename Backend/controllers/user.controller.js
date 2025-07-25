@@ -11,15 +11,15 @@ module.exports.registerUser = async (req, res, next) => {
     if (!error.isEmpty()) {
         return res.status(400).json({ error: error.array() });
     }
-    
+
     const { fullname, email, password } = req.body;
     const isUserAlreadyExist = await userModel.findOne({ email })
     if (isUserAlreadyExist) {
         return res.status(401).json({ message: "User already exists " })
     }
-    
+
     const hashedPassword = await userModel.hashPassword(password)
-    
+
     // Create user first
     const user = await userService.createUser({
         firstname: fullname.firstname,
@@ -27,7 +27,7 @@ module.exports.registerUser = async (req, res, next) => {
         email,
         password: hashedPassword
     })
-    
+
     // Create default portfolio for the new user
     const newPortfolio = new portfolioModel({
         user: user._id,
@@ -36,16 +36,16 @@ module.exports.registerUser = async (req, res, next) => {
         currentValue: 0
     });
     await newPortfolio.save();
-    
+
     // Link portfolio to user
     user.portfolioId = newPortfolio._id;
     await user.save();
-    
+
     const userObj = user.toObject();
     delete userObj.password;
     const token = user.generateAuthToken();
     res.cookie('token', token)
-    
+
     res.status(201).json({ token, userObj })
 }
 module.exports.loginUser = async (req, res, next) => {
@@ -128,7 +128,7 @@ module.exports.updateUserProfile = async (req, res) => {
 
 }
 module.exports.getUserBalance = async (req, res) => {
-// console.log(req.user)
+    // console.log(req.user)
     try {
         res.status(200).json({ balance: req.user.balance })
     } catch (error) {
@@ -140,24 +140,40 @@ module.exports.getUserBalance = async (req, res) => {
 
 }
 module.exports.addUserBalance = async (req, res) => {
-    const error = validationResult(req)
+    const error = validationResult(req);
 
     if (!error.isEmpty()) {
         return res.status(400).json({ error: error.array() });
     }
-    const { balance } = req.body
+
+    const { balance, email, password } = req.body;
+
     try {
-        const updatedBalance = await userModel.findByIdAndUpdate(req.user.id,
-           { balance},
-           {new:true}
-        )
-        res.status(200).json({ balance: updatedBalance.balance })
+        // Find user by email and include password field
+        const user = await userModel.findOne({ email }).select('+password');
+
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid email or password' });
+        }
+
+        const isMatch = await user.comparePassword(password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid email or password' })
+        }
+
+
+        // Update user balance
+        const updatedUser = await userModel.findByIdAndUpdate(
+            user._id,
+            { balance: user.balance + balance },
+            { new: true }
+        );
+
+        res.status(200).json({ balance: updatedUser.balance });
 
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Something went wrong' });
     }
+};
 
-
-
-}

@@ -9,20 +9,10 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { SearchAction } from '../store/trendingSearchSlice';
 import { selectedTokenAction } from '../store/seletedTokenSlice';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import ReactApexChart from 'react-apexcharts';
 
 
-const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="bg-black text-white text-sm p-2 rounded shadow-md border border-green-500">
-                ${payload[0].value}
-            </div>
-        );
-    }
-
-    return null;
-};
 
 
 const Dashboard = () => {
@@ -108,13 +98,29 @@ const Dashboard = () => {
             fetchUserBalance()
         }
 
-    }, [])
-
-
-    const chartData = portfolioInfo?.performanceHistory?.map(entry => ({
-        name: new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        value: entry.value
-    })).reverse();
+    }, [navigate,token])
+    const filteredPerformance = (portfolioInfo?.performanceHistory || [])
+    .filter((_, index) => index % 15 === 0); // ✅ pick every 3rd point
+    const recentHistory =filteredPerformance?.slice(-10) || [];
+    const uniqueChartData = [
+      ...new Map(
+        recentHistory.map(entry => [
+          new Date(entry.date).getTime(),
+          Number(entry.value.toFixed(2))
+        ])
+      ).entries()
+    ].map(([time, value]) => [time, value]);
+    
+      
+      const chartSeries = [
+        {
+          name: "Portfolio Value",
+          data: uniqueChartData
+        }
+      ];
+      
+    
+            
     const findToken = (token, info) => {
         localStorage.setItem("trade", token)
         dispatch(selectedTokenAction.addToken(info?.item))
@@ -163,15 +169,15 @@ const Dashboard = () => {
 
             <div className='flex justify-between p-1'>
                 <h1 className=' font-bold text-[#808080]  text-center '>My Portfolio</h1>
-                <p className=' font-bold text-[#21b121]   text-center   '>View All</p>
+                <Link to='/portfolio' className=' font-bold text-[#21b121]   text-center   '>View All</Link>
 
             </div>
             <div className='w-full h-33 p-2'>
 
-                {portfolioInfo?.assets.length === 0 && <div className='flex justify-center h-full items-center'><h2 className="p-3 bg-[#21b121] text-white font-bold rounded-md hover:bg-green-700 transition text-center">No assets Lets Buy some </h2></div>}
-                {portfolioInfo?.assets.length !== 0 && portfolioInfo?.assets?.map(data => (<div key={data._id} className='flex overflow-x-auto space-x-4 h-full'>
+                <div  className='flex overflow-x-auto space-x-4 h-full'>
                     {/* Card 1 */}
-                    <div className='min-w-56 flex justify-between bg-[#0e0e0e] rounded p-3'>
+                    {portfolioInfo?.assets.length === 0 && <div className='flex justify-center h-full items-center'><h2 className="p-3 bg-[#21b121] text-white font-bold rounded-md hover:bg-green-700 transition text-center">No assets Lets Buy some </h2></div>}
+                {portfolioInfo?.assets.length !== 0 && portfolioInfo?.assets?.map(data => (<div key={data._id} className='min-w-56 flex justify-between bg-[#0e0e0e] rounded p-3'>
                         <div className='flex flex-col justify-between h-full'>
                             <div>
                                 <p className='text-[#808080] font-bold text-sm'>{data?.name}</p>
@@ -183,41 +189,92 @@ const Dashboard = () => {
                            <img className='w-7 h-7 rounded-xl ' src={data?.imageURL?.small} alt="token_logo" />
                             <p className='bg-[#21b121] text-center w-14 h-6 rounded font-bold text-sm text-white'>{data?.profitLossPercentage.toFixed(2)}%</p>
                         </div>
-                    </div>
+                    </div>))}
 
 
 
                     {/* Add more cards as needed */}
-                </div>))}
+                </div>
             </div>
 
             <div className='flex justify-between p-1'>
                 <h1 className=' font-bold text-[#808080] text-sm  text-center   '>Weekly Stats</h1>
                 <p className=' font-bold text-[#21b121] text-sm  text-center   '>View All</p>
             </div>
-            <div className="w-full h-70 p-4 flex justify-center">
-                <div className="bg-[#0e0e0e] rounded-xl p-2 min-w-[300px] w-full max-w-sm relative">
-                    <div className="flex justify-between items-center text-white text-sm mb-2">
-                        <span className="opacity-60">Weekly Stats</span>
-                        <span className="text-green-500 font-medium cursor-pointer hover:underline">View More</span>
-                    </div>
-                    <ResponsiveContainer width="100%" height={100}>
-                        <LineChart data={chartData || []}>
-                            <Tooltip content={<CustomTooltip />} />
-                            <Line
-                                type="monotone"
-                                dataKey="value"
-                                stroke="#00FF7F"
-                                strokeWidth={3}
-                                dot={{ r: 5, stroke: '#000', strokeWidth: 2, fill: '#00FF7F' }}
-                                activeDot={{ r: 6, fill: '#00FF7F', stroke: '#000', strokeWidth: 2 }}
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
+            <div className="w-full px-4 py-3">
+  <div className="bg-[#0e0e0e] rounded-xl p-3 w-full">
+    <h2 className="text-sm text-white font-bold mb-2">Portfolio Performance</h2>
+    {chartSeries[0].data.length === 0 ? (
+      <p className="text-[#888] text-sm">No performance data</p>
+    ) : (
+        <ReactApexChart
+  options={{
+    chart: {
+      type: 'area',
+      background: '#0e0e0e',
+      toolbar: { show: false },
+      zoom: { enabled: false }
+    },
+    grid: {
+      borderColor: '#333',
+      strokeDashArray: 3
+    },
+    xaxis: {
+      type: 'datetime',
+      labels: {
+        format: 'dd MMM',
+        rotate: -45,
+        style: {
+          colors: '#888',
+          fontSize: '10px'
+        }
+      },
+      tickAmount: 5
+    },
+    yaxis: {
+      show: false, // 👈 Hide Y-axis labels
+    },
+    dataLabels: {
+      enabled: false // 👈 Don't show values on the chart itself
+    },
+    tooltip: {
+      enabled: true,
+      x: {
+        format: 'dd MMM yyyy HH:mm'
+      },
+      y: {
+        formatter: val => `$${val.toFixed(2)}`
+      },
+      theme: 'dark'
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 4,
+      colors: ['#21b121']
+    },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 0.7,
+        opacityFrom: 0.4,
+        opacityTo: 0.05,
+        stops: [0, 90, 100]
+      }
+    },
+    markers: {
+      size: 0,
+      hover: { size: 5 }
+    }
+  }}
+  series={chartSeries}
+  type="area"
+  height={250}
+/>
 
-                    <div className="text-white text-xs mt-2 opacity-50">Jan 12 2022</div>
-                </div>
-            </div>
+    )}
+  </div>
+</div>
+
         </>
     )
 }
