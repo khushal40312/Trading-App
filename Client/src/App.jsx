@@ -14,6 +14,7 @@ import Trade from './Pages/Trade'
 import CandleChart from './Pages/CandleChart'
 import SessionExpired from './Pages/SessionExpired'
 import Portfolio from './Pages/Portfolio'
+import Profile from './Pages/Profile'
 
 function App() {
   const token = localStorage.getItem("token");
@@ -24,10 +25,12 @@ function App() {
       <ToastContainer position="top-center" autoClose={3000} hideProgressBar />
       <Suspense fallback={<div className="w-full h-screen flex items-center justify-center"><Loading /></div>}>
         <Routes>
-          {token || user.length !== 0 ? (
+          {token || user.length != 0 ? (
             <>
               <Route path="/home" element={<Home />} />
               <Route path="/portfolio" element={<Portfolio />} />
+              <Route path="/profile" element={<Profile />} />
+
 
               <Route path="/search" element={<Search />} />
               <Route path="/trade/:token" element={<Trade />} />

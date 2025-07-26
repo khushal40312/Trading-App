@@ -51,10 +51,11 @@ module.exports.buyAssets = async (req, res) => {
 
         await trade.execute(); // sets executedAt, status, and saves
 
-        // Deduct balance
+        // Deduct balance and push trade ID
         user.balance -= trade.netAmount;
+        user.trades.push(trade._id);
         await user.save();
-
+        
 
         portfolio.upsertAsset(symbol, assetName, quantity, price,imageURL);
 
@@ -131,6 +132,7 @@ module.exports.sellAssets = async (req, res) => {
         await portfolio.save();
 
         user.balance += trade.netAmount;
+        user.trades.push(trade._id);
         await user.save();
 
         return res.status(201).json({

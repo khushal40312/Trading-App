@@ -19,10 +19,10 @@ const Dashboard = () => {
     const [balance, setBalance] = useState('----');
     const [portfolioInfo, setportfolioInfo] = useState();
     const [stocks, setStocks] = useState([]);
-    const token = localStorage.getItem('token')
     const dispatch = useDispatch()
     const trendingSearch = useSelector(store => store.search)
-   const navigate = useNavigate()
+    const navigate = useNavigate()
+    const token = localStorage.getItem('token')
     useEffect(() => {
 
 
@@ -100,7 +100,7 @@ const Dashboard = () => {
 
     }, [navigate,token])
     const filteredPerformance = (portfolioInfo?.performanceHistory || [])
-    .filter((_, index) => index % 15 === 0); // ✅ pick every 3rd point
+    .filter((_, index) => index % 2 === 0); // ✅ pick every 3rd point
     const recentHistory =filteredPerformance?.slice(-10) || [];
     const uniqueChartData = [
       ...new Map(
@@ -199,7 +199,7 @@ const Dashboard = () => {
 
             <div className='flex justify-between p-1'>
                 <h1 className=' font-bold text-[#808080] text-sm  text-center   '>Weekly Stats</h1>
-                <p className=' font-bold text-[#21b121] text-sm  text-center   '>View All</p>
+                <Link to='/portfolio' className=' font-bold text-[#21b121] text-sm  text-center   '>View All</Link>
             </div>
             <div className="w-full px-4 py-3">
   <div className="bg-[#0e0e0e] rounded-xl p-3 w-full">

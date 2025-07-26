@@ -201,7 +201,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                 setAmount(input)
             }
         } else if (selected === tradecoin.toString() && selectedSide === 'buy') {
-            let maxToken = availableBalance * livePrice;
+            let maxToken = availableBalance / livePrice;
 
             if (!input || input < 0) {
                 setAmount('');
