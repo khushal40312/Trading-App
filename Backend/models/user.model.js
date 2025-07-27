@@ -51,6 +51,11 @@ const userSchema = new mongoose.Schema({
         theme: {
             type: String,
             default: 'light'
+        },
+        currency: {
+            type: String,
+            default:'USDT'
+
         }
     },
     role: {
@@ -60,11 +65,15 @@ const userSchema = new mongoose.Schema({
     },
     refreshToken: {
         type: String
-    }
+    },
+    profilePicture: {
+        type: String,
+        default: '/default.png', // or some placeholder URL
+      },
 });
 
 userSchema.methods.generateAuthToken = function () {
-    const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET, {expiresIn: '2d'});
+    const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET, { expiresIn: '2d' });
     return token;
 };
 

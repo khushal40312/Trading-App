@@ -112,7 +112,8 @@ module.exports.updateUserProfile = async (req, res) => {
                 },
                 settings: {
                     notifications: settings.notifications,
-                    theme: settings.theme
+                    theme: settings.theme,
+                    currency: settings.currency
                 }
             },
             { new: true })
@@ -124,18 +125,6 @@ module.exports.updateUserProfile = async (req, res) => {
         res.status(500).json({ error: 'Something went wrong' });
     }
 
-
-
-}
-module.exports.getUserBalance = async (req, res) => {
-    // console.log(req.user)
-    try {
-        res.status(200).json({ balance: req.user.balance })
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Something went wrong' });
-
-    }
 
 
 }
@@ -176,4 +165,39 @@ module.exports.addUserBalance = async (req, res) => {
         res.status(500).json({ error: 'Something went wrong' });
     }
 };
+module.exports.getUserBalance = async (req, res) => {
+    // console.log(req.user)
+    try {
+        res.status(200).json({ balance: req.user.balance })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Something went wrong' });
 
+    }
+
+
+}
+
+
+module.exports.updateProfileIMG = async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+  
+      const userId = req.user.id;
+  
+      const user = await userModel.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      user.profilePicture = req.file.path; // you can choose any field name
+      await user.save();
+  
+      res.json({ message: 'Profile picture updated', profilePicture: user.profilePicture });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };

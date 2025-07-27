@@ -25,7 +25,7 @@ function App() {
       <ToastContainer position="top-center" autoClose={3000} hideProgressBar />
       <Suspense fallback={<div className="w-full h-screen flex items-center justify-center"><Loading /></div>}>
         <Routes>
-          {token || user.length != 0 ? (
+          {user.length != 0||token   ? (
             <>
               <Route path="/home" element={<Home />} />
               <Route path="/portfolio" element={<Portfolio />} />
