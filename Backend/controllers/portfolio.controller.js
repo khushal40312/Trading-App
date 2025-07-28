@@ -147,7 +147,7 @@ module.exports.getCurrencyRates = async (req, res) => {
   
     res.status(201).json({price:price.INR})
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching currency price', error: err.message });
+    res.status(500).json({ message: 'Error fetching currency price', error: error.message });
 
   }
 

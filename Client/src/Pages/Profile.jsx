@@ -11,13 +11,43 @@ const Profile = () => {
     const [isZoomed, setIsZoomed] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
-                    
+
     const [selectedTheme, setSelectedTheme] = useState(Cookies.get('theme'));
     const [selectedCurrency, setSelectedCurrency] = useState(Cookies.get('currency'));
 
-    
+
     // Cookies.set('username', 'JohnDoe', { expires: 7 });
 
+
+    const logoutUser = async () => {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/users/logout/${token}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+
+            localStorage.removeItem('token')
+            localStorage.removeItem('trade')
+            Cookies.remove('theme');
+            Cookies.remove('currency');
+            navigate('/')
+
+        } catch (error) {
+            localStorage.removeItem('token')
+            localStorage.removeItem('trade')
+            Cookies.remove('theme');
+            Cookies.remove('currency');
+            navigate('/')
+
+            console.error(error)
+            if (error.response?.data?.message?.toLowerCase().includes('session expired')) {
+                localStorage.removeItem('token');
+                navigate('/session-expired');
+            }
+        }
+    }
+   
 
     useEffect(() => {
         if (token) {
@@ -29,10 +59,10 @@ const Profile = () => {
                         }
                     })
                     setuser(response.data.user)
-                    
+
                     Cookies.set('theme', response?.data?.user.settings.theme);
                     Cookies.set('currency', response?.data?.user.settings.currency);
-                    
+
                 } catch (error) {
                     console.error(error)
                     if (error.response?.data?.message?.toLowerCase().includes('session expired')) {
@@ -76,7 +106,7 @@ const Profile = () => {
     }
     const handleSettingChanges = (payload) => {
         const { value, type } = payload;
-       
+
         if (type === 'theme') {
             const data = {
                 fullname: {
@@ -153,7 +183,7 @@ const Profile = () => {
                     <div className='w-full flex justify-between items-center '>
                         <span className='font-bold text-white text-sm'>Theme</span>
                         <select value={selectedTheme} onChange={(e) => handleSettingChanges({ value: e.target.value, type: "theme" })} className='bg-black text-white font-bold rounded-xl text-sm'>
-                       
+
 
                             <option value="dark">DARK</option>
                             <option value="light">LIGHT</option>
@@ -166,7 +196,11 @@ const Profile = () => {
                             <option value="INR">INR</option>
                         </select>
                     </div>
+                    <div className='w-full flex justify-center items-center '>
+                        <button onClick={()=>logoutUser()} type="button" className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Logout</button>
+                    </div>
                 </div>
+
             </div>
 
             {/* Zoomed Image Modal */}
@@ -225,4 +259,3 @@ const Profile = () => {
 }
 
 export default Profile
-                                                                             

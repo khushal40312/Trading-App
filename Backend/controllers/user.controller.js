@@ -3,6 +3,7 @@ const userModel = require('../models/user.model');
 const userService = require('../services/user.service');
 const blacklistTokenModel = require('../models/blacklistToken.model');
 const portfolioModel = require('../models/portfolio.model.js');
+const redisClient = require('../config/redisClient.js');
 
 
 
@@ -54,7 +55,7 @@ module.exports.loginUser = async (req, res, next) => {
     if (!error.isEmpty()) {
         return res.status(400).json({ error: error.array() });
     }
-    const { email, password } = req.body;
+    const { email, password, otp } = req.body;
     const user = await userModel.findOne({ email }).select('+password');
     if (!user) {
         return res.status(401).json({ message: 'Invalid email or password' })
@@ -63,6 +64,13 @@ module.exports.loginUser = async (req, res, next) => {
     if (!isMatch) {
         return res.status(401).json({ message: 'Invalid email or password' })
     }
+    const storedOtp = await redisClient.get(`otp:${email}`);
+    if (!storedOtp) return res.status(400).json({ message: 'OTP expired or invalid' });
+    if (storedOtp !== otp) return res.status(401).json({ message: 'Invalid OTP' });
+
+    // Delete OTP after use
+    await redisClient.del(`otp:${email}`);
+
     const userObj = user.toObject();
     delete userObj.password;
     const token = user.generateAuthToken();
@@ -86,8 +94,8 @@ module.exports.getUserProfile = async (req, res) => {
 
 module.exports.logoutUser = async (req, res, next) => {
 
-    res.clearCookie('token')
-    const token = req.cookies.token || req.headers.authorization.split(' ')[1];
+    const token = req.params.token; // normalize to uppercase
+
     await blacklistTokenModel.create({
         token
     });
@@ -181,23 +189,38 @@ module.exports.getUserBalance = async (req, res) => {
 
 module.exports.updateProfileIMG = async (req, res) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
-      }
-  
-      const userId = req.user.id;
-  
-      const user = await userModel.findById(userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-  
-      user.profilePicture = req.file.path; // you can choose any field name
-      await user.save();
-  
-      res.json({ message: 'Profile picture updated', profilePicture: user.profilePicture });
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const userId = req.user.id;
+
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        user.profilePicture = req.file.path; // you can choose any field name
+        await user.save();
+
+        res.json({ message: 'Profile picture updated', profilePicture: user.profilePicture });
     } catch (error) {
-      console.error('Error uploading file:', error);
-      res.status(500).json({ error: 'Internal server error' });
+        console.error('Error uploading file:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-  };
+};
+
+module.exports.sendOTP = async (req, res) => {
+
+    const { email } = req.body;
+
+    try {
+        await userService.sendOTPEmail(email)
+        res.status(201).json({ message: "OTP Sent Successfully" })
+    } catch (err) {
+        console.error('Error sending OTP SMS:', err.response?.data || err.message);
+    }
+
+
+
+}

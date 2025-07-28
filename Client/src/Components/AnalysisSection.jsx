@@ -6,15 +6,12 @@ import ReactApexChart from 'react-apexcharts';
 import { useNavigate } from 'react-router-dom';
 import { IoMdAddCircle } from "react-icons/io";
 import AddFunds from './AddFunds';
-const AnalysisSection = () => {
+const AnalysisSection = ({inrPrice,currency,setCurrency,balance,setBalance}) => {
   const [showBalance, setshowBalance] = useState(true);
-  const [inrPrice, setinrPrice] = useState(0);
   const [showAddFundsModal, setShowAddFundsModal] = useState(false);
   const token = localStorage.getItem('token')
-  const [portfolioInfo, setportfolioInfo] = useState();
+  const [portfolioInfo, setportfolioInfo] = useState({});
   const [summary, setSummary] = useState({});
-  const [balance, setBalance] = useState(0);
-  const [currency, setCurrency] = useState('USDT');
   const [refreshBalance, setrefreshBalance] = useState(false);
 
 
@@ -97,39 +94,19 @@ const AnalysisSection = () => {
   }, [navigate, token, refreshBalance])
 
 
-  const getCurrencyRates = async (name) => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/get-currency/${name}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-
-      setinrPrice(response.data.price)
-    } catch (error) {
-      console.error(error)
-      if (
-
-        error.response?.data?.message?.toLowerCase().includes('session expired')
-      ) {
-        localStorage.removeItem('token');
-        navigate('/session-expired');
-      }
-    }
-  }
 
   const handleCurrencyChange = (name) => {
+    if (!name ) return
     setCurrency(name)
-    if (!name || name === 'USDT' || inrPrice != 0) return
-    getCurrencyRates(name)
-
+    
 
   }
 
 
 
-  const totalBalance = balance + summary?.currentValue;
-  const INR = inrPrice * totalBalance;
+  const totalBalance = (balance || 0) + (summary?.currentValue || 0);
+  const INR = inrPrice && totalBalance ? inrPrice * totalBalance : '------';
+  
 
   const filteredPerformance = (portfolioInfo?.performanceHistory || [])
     .filter((_, index) => index % 15 === 0); // ✅ pick every 3rd point
@@ -160,7 +137,8 @@ const AnalysisSection = () => {
       return num?.toFixed(4)
     } else {
       return num?.toFixed(3)
-    }
+    } 
+    
   }
 
   return (
@@ -185,6 +163,7 @@ const AnalysisSection = () => {
           <h1 className='font-bold text-2xl text-white'>*****</h1>
         )}
         <select
+        value={currency}
           className='text-white font-bold rounded'
           onChange={(e) => handleCurrencyChange(e.target.value)}
         >

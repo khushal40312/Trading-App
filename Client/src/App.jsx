@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import Start from './Pages/Start'
 import Loading from './Components/Loading'
 import Login from './Pages/Login'
@@ -15,17 +15,45 @@ import CandleChart from './Pages/CandleChart'
 import SessionExpired from './Pages/SessionExpired'
 import Portfolio from './Pages/Portfolio'
 import Profile from './Pages/Profile'
+import axios from 'axios'
+import Cookies from 'js-cookie';
 
 function App() {
   const token = localStorage.getItem("token");
   const user = useSelector(store => store.user)
+  const navigate = useNavigate();
+  useEffect(() => {
 
+
+    if (!token) return;
+    const fetchUserProfile = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/users/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+      
+
+        Cookies.set('theme', response?.data?.user.settings.theme);
+        Cookies.set('currency', response?.data?.user.settings.currency);
+
+      } catch (error) {
+        console.error(error)
+        if (error.response?.data?.message?.toLowerCase().includes('session expired')) {
+          localStorage.removeItem('token');
+          navigate('/session-expired');
+        }
+      }
+    }
+    fetchUserProfile()
+  }, [token])
   return (
     <>
       <ToastContainer position="top-center" autoClose={3000} hideProgressBar />
       <Suspense fallback={<div className="w-full h-screen flex items-center justify-center"><Loading /></div>}>
         <Routes>
-          {user.length != 0||token   ? (
+          {user.length != 0 || token ? (
             <>
               <Route path="/home" element={<Home />} />
               <Route path="/portfolio" element={<Portfolio />} />

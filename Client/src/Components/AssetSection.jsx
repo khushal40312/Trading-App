@@ -3,10 +3,11 @@ import React, { useEffect, useState } from 'react'
 
 import { useNavigate } from 'react-router-dom';
 
-const AssetSection = () => {
+const AssetSection = ({ inrPrice, currency, balance }) => {
     const [Assets, setAssets] = useState([]);
     const navigate = useNavigate()
     const token = localStorage.getItem('token')
+
     const formatPrice = (price) => {
         let num;
         num = Number(price)
@@ -31,6 +32,7 @@ const AssetSection = () => {
                 })
 
                 setAssets(response.data.assets)
+               
             } catch (error) {
                 console.error(error)
                 if (
@@ -41,11 +43,32 @@ const AssetSection = () => {
                     navigate('/session-expired');
                 }
             }
+          
+
+
         }
         fetchUserAssets()
     }, [token, navigate])
 
-
+    useEffect(() => {
+        if (balance && inrPrice && !Assets.find(a => a.symbol === 'USDT')) {
+          setAssets(prev => [
+            ...prev,
+            {
+              symbol: "USDT",
+              imageURL: {
+                small: "/USDT.png"
+              },
+              _id: "2832rytrghr8h39",
+              name: "Tether",
+              quantity: balance,
+              currentValue: balance,
+              profitLossPercentage: 0
+            }
+          ]);
+        }
+      }, [balance, inrPrice, Assets]);
+      
 
 
     return (
@@ -70,12 +93,16 @@ const AssetSection = () => {
                     <div className='flex items-center w-20  flex-col justify-between'>
                         <h1 className='font-bold text-white '>{formatPrice(item?.quantity)}</h1>
                         <h1 className='flex items-center w-25 justify-center'>
-                        
-                        <p className='text-gray-400 text-xs'>{formatPrice(item?.currentValue)} <span>USDT</span></p>
+
+                            <p className='text-gray-400 text-xs'>{currency === "USDT" ? formatPrice(item?.currentValue) || '----' : formatPrice(item?.currentValue * inrPrice) || '----'} <span>{currency}</span></p>
                         </h1>
-                        <p className={` text-left  rounded  text-sm ${item?.profitLossPercentage?.toString().startsWith('-') ? 'text-red-500' : 'text-green-500'}`}>
-                            {item?.profitLossPercentage?.toString().startsWith('-') ? item?.profitLossPercentage.toFixed(2) : `+${item?.profitLossPercentage.toFixed(2)}`}
-                        </p>
+                       {item.symbol!=="USDT"?<p className={` text-left  rounded  text-sm ${item?.profitLossPercentage?.toString().startsWith('-') ? 'text-red-500' : 'text-green-500'}`}>
+                            {item?.profitLossPercentage?.toString().startsWith('-') ? item?.profitLossPercentage.toFixed(2)||'--' : `+${item?.profitLossPercentage.toFixed(2)||'--'}`}
+                        </p>:
+                        <p className={` text-left  rounded text-white  text-sm`}>
+                        ---
+                    </p>}
+                        
                     </div>
                 </div>))}
 
