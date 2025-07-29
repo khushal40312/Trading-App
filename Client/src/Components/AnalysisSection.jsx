@@ -5,8 +5,10 @@ import axios from 'axios';
 import ReactApexChart from 'react-apexcharts';
 import { useNavigate } from 'react-router-dom';
 import { IoMdAddCircle } from "react-icons/io";
+import { MdOutlinePendingActions } from "react-icons/md";
+
 import AddFunds from './AddFunds';
-const AnalysisSection = ({inrPrice,currency,setCurrency,balance,setBalance}) => {
+const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance }) => {
   const [showBalance, setshowBalance] = useState(true);
   const [showAddFundsModal, setShowAddFundsModal] = useState(false);
   const token = localStorage.getItem('token')
@@ -32,7 +34,7 @@ const AnalysisSection = ({inrPrice,currency,setCurrency,balance,setBalance}) => 
 
           setBalance(response.data.balance)
         } catch (error) {
-          
+
 
           console.error(error)
           if (
@@ -96,9 +98,9 @@ const AnalysisSection = ({inrPrice,currency,setCurrency,balance,setBalance}) => 
 
 
   const handleCurrencyChange = (name) => {
-    if (!name ) return
+    if (!name) return
     setCurrency(name)
-    
+
 
   }
 
@@ -106,7 +108,7 @@ const AnalysisSection = ({inrPrice,currency,setCurrency,balance,setBalance}) => 
 
   const totalBalance = (balance || 0) + (summary?.currentValue || 0);
   const INR = inrPrice && totalBalance ? inrPrice * totalBalance : '------';
-  
+
 
   const filteredPerformance = (portfolioInfo?.performanceHistory || [])
     .filter((_, index) => index % 15 === 0); // ✅ pick every 3rd point
@@ -137,15 +139,39 @@ const AnalysisSection = ({inrPrice,currency,setCurrency,balance,setBalance}) => 
       return num?.toFixed(4)
     } else {
       return num?.toFixed(3)
-    } 
-    
+    }
+
+  }
+  const getTrades = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+
+    } catch (error) {
+      console.error(error)
+      if (
+
+        error.response?.data?.message?.toLowerCase().includes('session expired')
+      ) {
+        localStorage.removeItem('token');
+        navigate('/session-expired');
+      }
+    }
   }
 
   return (
 
 
     <div className='w-full p-2 rounded h-[58vh]'>
-      <div className='flex px-2 gap-3 items-center my-1'>
+      <div className='flex px-2 gap-3 items-center my-1 relative'>
+        <span className='hover-trade absolute top-6 right-4 invert '><MdOutlinePendingActions size={30} /></span>
+        <span className=' info-trade absolute top-0   text-xs bg-gray-400 font-bold p-1 rounded right-3 invert '> Trade History</span>
+
+
         <h2 className='text-gray-400'>Total Balance</h2>
         <span onClick={() => setshowBalance(!showBalance)} className='invert'>
           {showBalance ? <IoMdEye /> : <FaRegEyeSlash />}
@@ -163,7 +189,7 @@ const AnalysisSection = ({inrPrice,currency,setCurrency,balance,setBalance}) => 
           <h1 className='font-bold text-2xl text-white'>*****</h1>
         )}
         <select
-        value={currency}
+          value={currency}
           className='text-white font-bold rounded'
           onChange={(e) => handleCurrencyChange(e.target.value)}
         >
@@ -180,8 +206,8 @@ const AnalysisSection = ({inrPrice,currency,setCurrency,balance,setBalance}) => 
         <p className='text-white px-2'>Total P&amp;L</p>
         <p
           className={`text-left rounded text-md px-2 ${summary?.totalProfitLossPercentage?.toString().startsWith('-')
-              ? 'text-red-500'
-              : 'text-green-500'
+            ? 'text-red-500'
+            : 'text-green-500'
             }`}
         >
           {typeof summary?.totalProfitLossPercentage === 'number'
@@ -278,7 +304,7 @@ const AnalysisSection = ({inrPrice,currency,setCurrency,balance,setBalance}) => 
         <AddFunds
           onClose={() => setShowAddFundsModal(false)}
           onSuccess={() => {
-            setrefreshBalance((prev) => !prev); 
+            setrefreshBalance((prev) => !prev);
             setShowAddFundsModal(false);
 
           }}

@@ -74,6 +74,12 @@ const Login = () => {
         },
         error: {
           render({ data }) {
+            if (data?.response?.data?.message !== 'OTP expired or invalid') {
+              setOtp('')
+              setEmail('')
+              setPassword('')
+              setOtpSent(true)
+            }
             return data?.response?.data?.message || 'Login failed';
           },
         },

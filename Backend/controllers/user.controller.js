@@ -13,14 +13,20 @@ module.exports.registerUser = async (req, res, next) => {
         return res.status(400).json({ error: error.array() });
     }
 
-    const { fullname, email, password } = req.body;
+    const { fullname, email, password,otp } = req.body;
     const isUserAlreadyExist = await userModel.findOne({ email })
     if (isUserAlreadyExist) {
         return res.status(401).json({ message: "User already exists " })
     }
+    const storedOtp = await redisClient.get(`otp:${email}`);
+    if (!storedOtp) return res.status(400).json({ message: 'OTP expired or invalid' });
+    if (storedOtp !== otp) return res.status(401).json({ message: 'Invalid OTP' });
+
+    // Delete OTP after use
+    await redisClient.del(`otp:${email}`);
 
     const hashedPassword = await userModel.hashPassword(password)
-
+  
     // Create user first
     const user = await userService.createUser({
         firstname: fullname.firstname,

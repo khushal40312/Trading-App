@@ -25,7 +25,7 @@ const Trade = () => {
   const recentTrade = localStorage.getItem('trade');
   const { token } = useParams();
   const token_auth = localStorage.getItem('token');
-  const tradecoin = (token || recentTrade)?.toUpperCase();
+  const tradecoin = (token || recentTrade||"BTC")?.toUpperCase();
   const selectedToken = useSelector((store) => store.selectedToken);
   const dispatch = useDispatch()
   const processQueue = () => {
@@ -55,11 +55,11 @@ const Trade = () => {
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (!token_auth || !recentTrade || !selectedToken) return;
+      if (!token_auth &&!tradecoin&& !recentTrade && !selectedToken ) return;
 
 
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/trades/get-suggestions?q=${recentTrade}`, {
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/trades/get-suggestions?q=${recentTrade||tradecoin}`, {
           headers: {
             Authorization: `Bearer ${token_auth}`
           }
