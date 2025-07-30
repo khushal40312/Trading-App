@@ -41,7 +41,20 @@ module.exports.getUserParticularAssets = async (req, res) => {
     const data = await portfolioModel.findOne({ user: req.user.id })
     const symbol = req.params.symbol.toUpperCase(); // normalize to uppercase
     const asset = data.assets.find(a => a.symbol === symbol);
-    res.status(200).json({ asset })
+    if (!asset) {
+
+      res.status(200).json({
+        asset: {
+
+          quantity: 0
+        }
+      })
+
+    } else {
+
+      res.status(200).json({ asset })
+
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Something went wrong' });
@@ -144,8 +157,8 @@ module.exports.getCurrencyRates = async (req, res) => {
   const name = req.params.name.toUpperCase();
   try {
     const price = await portfolioService.getCurrency(name)
-  
-    res.status(201).json({price:price.INR})
+
+    res.status(201).json({ price: price.INR })
   } catch (error) {
     res.status(500).json({ message: 'Error fetching currency price', error: error.message });
 

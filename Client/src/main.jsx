@@ -7,11 +7,11 @@ import { Provider } from 'react-redux'
 import tradexStore from './store/index.js'
 import 'react-loading-skeleton/dist/skeleton.css'
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
+  // <StrictMode>
     <Provider store={tradexStore}>
       <BrowserRouter >
         <App />
       </BrowserRouter>
     </Provider>
-  </StrictMode>,
+  // </StrictMode>,
 )

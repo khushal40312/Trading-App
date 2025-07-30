@@ -28,7 +28,7 @@ const TokenInfoPanel = React.memo(({
   }, [recentTrades]); // Only re-compute when `recentTrades` changes
 
   return (
-    <div className="w-[44vw] h-[70vh] bg-black text-white p-1 ">
+    <div className="w-[44vw] h-[70vh]  bg-linear-to-r/srgb from-indigo-500 to-teal-400 rounded text-white p-1 ">
       <div className="flex items-center justify-center my-2">
         <img
           className="w-12 rounded-2xl"

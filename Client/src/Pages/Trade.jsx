@@ -143,16 +143,20 @@ const Trade = () => {
   }
   const imageSrc = selectedToken?.image || selectedToken?.thumb || tempTokenInfo?.image;
   return (
-    <div className="w-screen h-screen bg-black/80">
+    <div className="w-screen h-screen  bg-linear-to-r/srgb from-indigo-500 to-teal-400">
       <div className="h-full w-screen bg-black/20 p-3 flex flex-col">
         {/* Header */}
-        <div className="w-full h-20 bg-black rounded flex items-center px-3 justify-between border border-green-600 border-3">
-          <h1 className="text-xl font-bold text-white">{tradecoin}/USDT</h1>
-          <span onClick={() => gotoGraph()}> <VscGraph className="invert" size={23} /></span>
+        <div className="w-full h-20  bg-linear-to-r/srgb from-indigo-500 to-teal-400 rounded flex items-center px-3 justify-between border border-white border-2 rounded">
+          <h1 className="text-xl font-bold text-black">{tradecoin}/USDT</h1>
+          <h1 className='flex gap-2'>
+          <span onClick={() => gotoGraph()}> <VscGraph className="" size={23} /></span>
+          
+
+          </h1>
         </div>
 
         {/* Main Section */}
-        <div className="flex border border-white">
+        <div className="flex border border-white rounded">
           <BuySellPanel TokenDetails={selectedToken || tempTokenInfo} tradecoin={tradecoin} livePrice={tradeRef.current?.PRICE} token_auth={token_auth} selectedSide={selectedSide} setSelectedSide={setSelectedSide} />
           <TokenInfoPanel recentTrades={recentTrades} tradeRef={tradeRef} lastTrade={lastTrade} animate={animate} token={token} imageSrc={imageSrc} priceRef={priceRef} tradecoin={tradecoin} qtyRef={qtyRef} />
 

@@ -81,7 +81,7 @@ const Portfolio = () => {
 
 return (
   <>
-    <div className='h-[108vh] overflow-y-auto w-full bg-[#151515] '>
+    <div className='h-[108vh] overflow-y-auto w-full bg-linear-to-r/srgb from-indigo-500 to-teal-400 '>
 
       <AnalysisSection setBalance={setBalance} balance={balance} inrPrice={inrPrice} currency={currency} setCurrency={setCurrency} />
       <AssetSection inrPrice={inrPrice} currency={currency} balance={balance} />

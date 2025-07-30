@@ -8,6 +8,7 @@ import { IoMdAddCircle } from "react-icons/io";
 import { MdOutlinePendingActions } from "react-icons/md";
 
 import AddFunds from './AddFunds';
+import TradeHistory from './TradeHistory';
 const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance }) => {
   const [showBalance, setshowBalance] = useState(true);
   const [showAddFundsModal, setShowAddFundsModal] = useState(false);
@@ -16,6 +17,7 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
   const [summary, setSummary] = useState({});
   const [refreshBalance, setrefreshBalance] = useState(false);
 
+  const [showTradeHistory, setshowTradeHistory] = useState(false);
 
 
 
@@ -142,37 +144,18 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
     }
 
   }
-  const getTrades = async () => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-
-
-    } catch (error) {
-      console.error(error)
-      if (
-
-        error.response?.data?.message?.toLowerCase().includes('session expired')
-      ) {
-        localStorage.removeItem('token');
-        navigate('/session-expired');
-      }
-    }
-  }
+ 
 
   return (
 
 
     <div className='w-full p-2 rounded h-[58vh]'>
       <div className='flex px-2 gap-3 items-center my-1 relative'>
-        <span className='hover-trade absolute top-6 right-4 invert '><MdOutlinePendingActions size={30} /></span>
+        <span onClick={() => setshowTradeHistory(true)} className='hover-trade absolute top-6 right-4 invert '><MdOutlinePendingActions size={30} /></span>
         <span className=' info-trade absolute top-0   text-xs bg-gray-400 font-bold p-1 rounded right-3 invert '> Trade History</span>
 
 
-        <h2 className='text-gray-400'>Total Balance</h2>
+        <h2 className='text-gray-200'>Total Balance</h2>
         <span onClick={() => setshowBalance(!showBalance)} className='invert'>
           {showBalance ? <IoMdEye /> : <FaRegEyeSlash />}
         </span>
@@ -308,6 +291,14 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
             setShowAddFundsModal(false);
 
           }}
+        />
+      )}
+
+{showTradeHistory && (
+        <TradeHistory
+        currency={currency}
+        inrPrice={inrPrice}
+        setshowTradeHistory={setshowTradeHistory}
         />
       )}
     </div>

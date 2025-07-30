@@ -100,7 +100,7 @@ const Search = () => {
 
     
     return (
-        <div className="w-full bg-black/90">
+        <div className="w-full  bg-linear-to-r/srgb from-indigo-500 to-teal-400">
             <form onSubmit={submitHandler} className="relative">
                 <span className="absolute top-8 left-3">
                     <CiSearch size={30} />
@@ -124,7 +124,7 @@ const Search = () => {
                             <div className='flex items-center w-10'> <img src={item.item.thumb || ''} alt={item.item.name} className="w-10 h-10 rounded-full bg-[#eeeeee] mr-3 object-contain" />
                                 <h4 className="font-medium text-white">{item.item.symbol || 'Unknown Token'}</h4>
                             </div>
-                            <h1 className='font-bold text-sm text-center text-[#808080]'>
+                            <h1 className='font-bold text-sm text-center text-gray-300'>
                                 {item?.item?.data?.price?.toString().startsWith('0.0')
                                     ? `${item.item.data.price.toFixed(5)} $`
                                     : `${item.item.data.price.toFixed(2)} $`}

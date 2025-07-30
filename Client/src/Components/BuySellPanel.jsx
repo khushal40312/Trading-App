@@ -10,7 +10,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
     const [availableToken, setAvailableToken] = useState(0);
     const [selected, setSelected] = useState('USDT');
     const navigate = useNavigate();
-// console.log(availableBalance)
+    // console.log(availableBalance)
     useEffect(() => {
         const fetchBalance = async () => {
             try {
@@ -36,8 +36,8 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                 const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/assets/${tradecoin}`, {
                     headers: { Authorization: `Bearer ${token_auth}` }
                 });
-
-                setAvailableToken(response.data.asset.quantity); // assume USDT balance
+                
+                setAvailableToken(response?.data?.asset?.quantity); // assume USDT balance
             } catch (error) {
                 console.error('Error fetching asset:', error);
                 if (error.response?.data?.message?.toLowerCase().includes('session expired')) {
@@ -56,7 +56,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
 
         let RoundoffAmount = Number(formatPrice(amount))
 
-      
+
         const tradeData = {
             symbol: tradecoin,
             assetName,
@@ -79,12 +79,12 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                 success: {
                     render({ data }) {
                         const res = data.data;
-                        console.log(typeof(res.balance))
+                        console.log(typeof (res.balance))
                         setAvailableBalance(Number(res.balance))
-                        const tokenQuantity= res.portfolioSummary?.assets.find((element) => element.symbol === "C");
+                        const tokenQuantity = res.portfolioSummary?.assets.find((element) => element.symbol === "C");
                         setAvailableToken(Number(tokenQuantity.quantity))
 
-                        
+
                         return `✅Bought ${tradecoin} ${selected === 'USDT' ? RoundoffQuantity : RoundoffAmount} price: ${price}!`;
                     }
                 },
@@ -128,7 +128,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                     render({ data }) {
                         const res = data.data;
                         setAvailableBalance(res.balance)
-                        const tokenQuantity= res.portfolioSummary?.assets.find((element) => element.symbol === "C");
+                        const tokenQuantity = res.portfolioSummary?.assets.find((element) => element.symbol === "C");
                         setAvailableToken(tokenQuantity.quantity)
                         return `sold ${tradecoin} ${selected === 'USDT' ? RoundoffQuantity : RoundoffAmount} price: ${price}!`;
                     }
@@ -171,6 +171,8 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
             calculatedToken = amountInBase / livePrice;
             setAmount(formatPrice(calculatedToken));
         } else if (selectedSide === 'sell' && selected === 'USDT') {
+            const quantityToSell = (availableToken * percent) / 100;
+
             const usdtValue = quantityToSell * livePrice;
             setAmount(formatPrice(usdtValue));
         } else if (selectedSide === 'sell' && selected === tradecoin.toString()) {
@@ -249,7 +251,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
     }
 
     return (
-        <div className="w-[50vw] h-[70vh] bg-black py-6">
+        <div className="w-[50vw] h-[70vh]  bg-linear-to-r/srgb from-indigo-500 to-teal-400 rounded py-6">
             <div className="flex justify-center gap-2 mt-2">
                 {['buy', 'sell'].map((side) => (
                     <button
@@ -310,7 +312,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                         ))}
                     </div>
 
-                    <p className="text-gray-400 text-xs mt-2">
+                    <p className="text-black text-xs mt-2">
                         Balance: {selectedSide === 'buy' ? formatPrice(availableBalance) : formatPrice(availableToken)} {selectedSide === 'buy' ? 'USDT' : tradecoin}
                     </p>
                 </div>

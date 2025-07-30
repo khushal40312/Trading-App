@@ -11,10 +11,10 @@ const Profile = () => {
     const [isZoomed, setIsZoomed] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
-
     const [selectedTheme, setSelectedTheme] = useState(Cookies.get('theme'));
     const [selectedCurrency, setSelectedCurrency] = useState(Cookies.get('currency'));
-
+    const [stats, setStats] = useState({});
+ 
 
     // Cookies.set('username', 'JohnDoe', { expires: 7 });
 
@@ -47,7 +47,7 @@ const Profile = () => {
             }
         }
     }
-   
+
 
     useEffect(() => {
         if (token) {
@@ -71,6 +71,24 @@ const Profile = () => {
                     }
                 }
             }
+            const fetchUserStats = async () => {
+                try {
+                    const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/trades/me/stats`, {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    })
+                    setStats(response.data.data)
+
+                } catch (error) {
+                    console.error(error)
+                    if (error.response?.data?.message?.toLowerCase().includes('session expired')) {
+                        localStorage.removeItem('token');
+                        navigate('/session-expired');
+                    }
+                }
+            }
+            fetchUserStats()
             fetchUserProfile()
         }
     }, [navigate, token])
@@ -141,10 +159,6 @@ const Profile = () => {
         }
 
     }
-
-
-
-
     const handleProfileUpdate = async (data) => {
         if (!data) return;
 
@@ -164,9 +178,11 @@ const Profile = () => {
             console.error("Upload error:", error);
         }
     }
+
+
     return (
         <>
-            <div className='h-screen overflow-y-auto w-full bg-[#151515] p-5 '>
+            <div className='h-screen overflow-y-auto w-full bg-linear-to-r/srgb from-indigo-500 to-teal-400 p-5 '>
                 <h1 className='text-white font-bold text-xl m-2 '>Profile</h1>
                 <div className='flex p-3 gap-5 rounded-xl flex-col w-full h-[80vh] bg-black/80'>
                     <div className='w-full flex justify-between items-center px-2 mt-2'>
@@ -182,22 +198,71 @@ const Profile = () => {
                     <h1 className='text-gray-200 text-md font-bold'>Settings </h1>
                     <div className='w-full flex justify-between items-center '>
                         <span className='font-bold text-white text-sm'>Theme</span>
-                        <select value={selectedTheme} onChange={(e) => handleSettingChanges({ value: e.target.value, type: "theme" })} className='bg-black text-white font-bold rounded-xl text-sm'>
+                        <select value={selectedTheme} onChange={(e) => handleSettingChanges({ value: e.target.value, type: "theme" })} className=' text-white font-bold rounded-xl text-sm'>
 
 
-                            <option value="dark">DARK</option>
-                            <option value="light">LIGHT</option>
+                            <option className='bg-black text-white rounded' value="dark">DARK</option>
+                            <option className='bg-black text-white rounded' value="light">LIGHT</option>
                         </select>
                     </div>
                     <div className='w-full flex justify-between items-center '>
                         <span className='font-bold text-white text-sm'>Currency</span>
-                        <select value={selectedCurrency} onChange={(e) => handleSettingChanges({ value: e.target.value, type: "currency" })} className='bg-black text-white font-bold rounded-xl text-sm'>
-                            <option value="USDT">USDT</option>
-                            <option value="INR">INR</option>
+                        <select value={selectedCurrency} onChange={(e) => handleSettingChanges({ value: e.target.value, type: "currency" })} className=' text-white font-bold rounded-xl text-sm'>
+                            <option className='bg-black text-white rounded' value="USDT">USDT</option>
+                            <option className='bg-black text-white rounded' value="INR">INR</option>
                         </select>
                     </div>
+                    <div className='flex flex-col gap-3'>
+                    <h1 className='text-gray-200 text-md font-bold mb-2'>Stats </h1>
+
+                    <div className='w-full flex justify-between items-center '>
+                        <span className='font-bold text-white text-sm'>Total Trades</span>
+
+                        <input
+                            className="h-5 text-center w-19 rounded text-white bg-[#413f3f] m-1 px-2"
+                            type="number"
+                           
+                            value={stats.totalTrades}
+                            readOnly
+                        />
+                    </div>
+                    <div className='w-full flex justify-between items-center '>
+                        <span className='font-bold text-white text-sm'>Total Buy</span>
+
+                        <input
+                            className="h-5 text-center w-19 rounded text-white bg-[#413f3f] m-1 px-2"
+                            type="number"
+                           
+                            value={stats.totalBuyTrades}
+                            readOnly
+                        />
+                    </div>
+                    <div className='w-full flex justify-between items-center '>
+                        <span className='font-bold text-white text-sm'>Total Sell</span>
+
+                        <input
+                            className="h-5 text-center w-19 rounded text-white bg-[#413f3f] m-1 px-2"
+                            type="number"
+                            
+                            value={stats.totalSellTrades}
+                            readOnly
+                        />
+                    </div>
+                    <div className='w-full flex justify-between items-center '>
+                        <span className='font-bold text-white text-sm'>Total Investment</span>
+
+                        <input
+                            className="h-5 text-xs text-center w-19 rounded text-white bg-[#413f3f] m-1 px-2"
+                            type="text"
+                           
+                            value={`${stats.totalInvested} USDT`}
+                            readOnly
+                        />
+                    </div>
+                  
+                    </div>
                     <div className='w-full flex justify-center items-center '>
-                        <button onClick={()=>logoutUser()} type="button" className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Logout</button>
+                        <button onClick={() => logoutUser()} type="button" className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Logout</button>
                     </div>
                 </div>
 

@@ -193,11 +193,11 @@ if (!token) {
   return (
     <>
       <div className='flex items-center justify-between  p-2 w-full   '> <img className='w-12  border border-[#21b121] rounded-xl' src="/logo.png" alt="logo" />
-        <h2 className=' font-bold  text-xl text-[#21b121] '>Dashboard</h2></div>
-      <div className='flex items-center mt-3  p-2 border-[#21b121] border-3 border-r-0  rounded-l-lg '>
+        <h2 className=' font-bold  text-xl text-black '>Dashboard</h2></div>
+      <div className='flex items-center mt-3  p-2 border-black border-2  rounded-lg '>
         <div>
-          <h3 className='text-sm font-bold text-[#808080]'>Total Balance</h3>
-          <h1 className='font-bold text-xl text-[#21b121]  '>{Number(actualBalance).toFixed(2)}  <span className='font-bolder text-sm rounded bg-black text-white'>{currencyType}</span></h1>
+          <h3 className='text-sm font-bold text-black'>Total Balance</h3>
+          <h1 className='font-bold text-xl text-white  '>{Number(actualBalance).toFixed(2)}  <span className='font-bolder text-sm p-2 rounded bg-black text-white'>{currencyType}</span></h1>
 
           <p className='bg-[#21b121] text-center w-1/2 rounded font-bold text-sm text-white'>{
             parseFloat(portfolioInfo?.totalProfitLossPercentage.toFixed(2))} %</p>
@@ -206,7 +206,7 @@ if (!token) {
 
       </div>
 
-      <div className='w-full px-2 mt-3 bg-[#000000] rounded border-2 border-[#21b121] overflow-x-auto space-x-4 flex items-start'>
+      <div className='w-full px-2 mt-3  bg-linear-to-r/srgb from-indigo-500 to-teal-400 rounded   overflow-x-auto space-x-4 flex items-start'>
         {displayList?.map((crypto) => (
           <div
             onClick={() => findToken(crypto?.item?.symbol, crypto)}
@@ -231,8 +231,8 @@ if (!token) {
       </div>
 
       <div className='flex justify-between p-1'>
-        <h1 className=' font-bold text-[#808080]  text-center '>My Portfolio</h1>
-        <Link to='/portfolio' className=' font-bold text-[#21b121]   text-center   '>View All</Link>
+        <h1 className=' font-bold text-white  text-center '>My Portfolio</h1>
+        <Link to='/portfolio' className=' font-bold text-white   text-center   '>View All</Link>
 
       </div>
       <div className='w-full h-33 p-2'>
@@ -261,11 +261,11 @@ if (!token) {
       </div>
 
       <div className='flex justify-between p-1'>
-        <h1 className=' font-bold text-[#808080] text-sm  text-center   '>Weekly Stats</h1>
-        <Link to='/portfolio' className=' font-bold text-[#21b121] text-sm  text-center   '>View All</Link>
+        <h1 className=' font-bold text-white text-sm  text-center   '>Weekly Stats</h1>
+        <Link to='/portfolio' className=' font-bold text-white text-sm  text-center   '>View All</Link>
       </div>
       <div className="w-full px-4 py-3">
-        <div className="bg-[#0e0e0e] rounded-xl p-3 w-full">
+        <div className="bg-black rounded-xl p-3 w-full">
           <h2 className="text-sm text-white font-bold mb-2">Portfolio Performance</h2>
           {chartSeries[0].data.length === 0 ? (
             <p className="text-[#888] text-sm">No performance data</p>
