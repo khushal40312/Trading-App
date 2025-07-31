@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react'
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import {  Route, Routes, useNavigate } from 'react-router-dom'
 import Start from './Pages/Start'
 import Loading from './Components/Loading'
 import Login from './Pages/Login'

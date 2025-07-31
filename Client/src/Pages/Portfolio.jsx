@@ -6,12 +6,14 @@ import axios from 'axios'
 import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom'
 
+
 const Portfolio = () => {
 
   const token = localStorage.getItem('token')
   const [inrPrice, setinrPrice] = useState(0);
   const [currency, setCurrency] = useState(Cookies.get('currency'));
   const [balance, setBalance] = useState(0);
+  const theme = Cookies.get('theme') || 'light'
 
   const navigate = useNavigate()
 
@@ -81,7 +83,7 @@ const Portfolio = () => {
 
 return (
   <>
-    <div className='h-[108vh] overflow-y-auto w-full bg-linear-to-r/srgb from-indigo-500 to-teal-400 '>
+    <div className={`h-[108vh] overflow-y-auto w-full  ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400' : 'bg-black/90'} `}>
 
       <AnalysisSection setBalance={setBalance} balance={balance} inrPrice={inrPrice} currency={currency} setCurrency={setCurrency} />
       <AssetSection inrPrice={inrPrice} currency={currency} balance={balance} />

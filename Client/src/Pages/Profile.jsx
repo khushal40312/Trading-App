@@ -14,6 +14,7 @@ const Profile = () => {
     const [selectedTheme, setSelectedTheme] = useState(Cookies.get('theme'));
     const [selectedCurrency, setSelectedCurrency] = useState(Cookies.get('currency'));
     const [stats, setStats] = useState({});
+   const theme = Cookies.get('theme') || 'light'
  
 
     // Cookies.set('username', 'JohnDoe', { expires: 7 });
@@ -182,7 +183,7 @@ const Profile = () => {
 
     return (
         <>
-            <div className='h-screen overflow-y-auto w-full bg-linear-to-r/srgb from-indigo-500 to-teal-400 p-5 '>
+            <div className={`h-screen overflow-y-auto w-full ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400' : 'bg-black/90'}  p-5 `}>
                 <h1 className='text-white font-bold text-xl m-2 '>Profile</h1>
                 <div className='flex p-3 gap-5 rounded-xl flex-col w-full h-[80vh] bg-black/80'>
                     <div className='w-full flex justify-between items-center px-2 mt-2'>

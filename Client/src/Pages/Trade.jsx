@@ -8,6 +8,7 @@ import gsap from 'gsap';
 import BuySellPanel from '../Components/BuySellPanel';
 import TokenInfoPanel from '../Components/TokenInfoPanel';
 import { selectedTokenAction } from '../store/seletedTokenSlice';
+import Cookies from 'js-cookie'
 
 const Trade = () => {
   const [selectedSide, setSelectedSide] = useState('buy');
@@ -25,9 +26,11 @@ const Trade = () => {
   const recentTrade = localStorage.getItem('trade');
   const { token } = useParams();
   const token_auth = localStorage.getItem('token');
-  const tradecoin = (token || recentTrade||"BTC")?.toUpperCase();
+  const tradecoin = (token || recentTrade || "BTC")?.toUpperCase();
   const selectedToken = useSelector((store) => store.selectedToken);
   const dispatch = useDispatch()
+  const theme = Cookies.get('theme') || 'light'
+
   const processQueue = () => {
     if (isProcessing.current || tradeQueue.current.length === 0) return;
 
@@ -55,11 +58,11 @@ const Trade = () => {
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (!token_auth &&!tradecoin&& !recentTrade && !selectedToken ) return;
+      if (!token_auth && !tradecoin && !recentTrade && !selectedToken) return;
 
 
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/trades/get-suggestions?q=${recentTrade||tradecoin}`, {
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/trades/get-suggestions?q=${recentTrade || tradecoin}`, {
           headers: {
             Authorization: `Bearer ${token_auth}`
           }
@@ -141,24 +144,25 @@ const Trade = () => {
     navigate(`/trade/${tradecoin}/candles`)
 
   }
+  // ${theme === 'light' ?'border-white':'border-green-300'} 
   const imageSrc = selectedToken?.image || selectedToken?.thumb || tempTokenInfo?.image;
   return (
-    <div className="w-screen h-screen  bg-linear-to-r/srgb from-indigo-500 to-teal-400">
+    <div className={`w-screen h-screen  ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400 ' : 'bg-black'}`}>
       <div className="h-full w-screen bg-black/20 p-3 flex flex-col">
         {/* Header */}
-        <div className="w-full h-20  bg-linear-to-r/srgb from-indigo-500 to-teal-400 rounded flex items-center px-3 justify-between border border-white border-2 rounded">
-          <h1 className="text-xl font-bold text-black">{tradecoin}/USDT</h1>
+        <div className={`w-full h-20  ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400 border-white' : 'bg-black  border-green-300'} rounded flex items-center px-3 justify-between border  border-2 rounded`}>
+          <h1 className={`text-xl font-bold ${theme === 'light' ?'text-black':'text-white'}`}>{tradecoin}/USDT</h1>
           <h1 className='flex gap-2'>
-          <span onClick={() => gotoGraph()}> <VscGraph className="" size={23} /></span>
-          
+            <span onClick={() => gotoGraph()}> <VscGraph className={`${theme === 'light' ?'text-black':'text-white'}`} size={23} /></span>
+
 
           </h1>
         </div>
 
         {/* Main Section */}
-        <div className="flex border border-white rounded">
-          <BuySellPanel TokenDetails={selectedToken || tempTokenInfo} tradecoin={tradecoin} livePrice={tradeRef.current?.PRICE} token_auth={token_auth} selectedSide={selectedSide} setSelectedSide={setSelectedSide} />
-          <TokenInfoPanel recentTrades={recentTrades} tradeRef={tradeRef} lastTrade={lastTrade} animate={animate} token={token} imageSrc={imageSrc} priceRef={priceRef} tradecoin={tradecoin} qtyRef={qtyRef} />
+        <div className={`flex border ${theme === 'light' ? ' border-white' : '  border-green-300'} rounded`}>
+          <BuySellPanel theme={theme} TokenDetails={selectedToken || tempTokenInfo} tradecoin={tradecoin} livePrice={tradeRef.current?.PRICE} token_auth={token_auth} selectedSide={selectedSide} setSelectedSide={setSelectedSide} />
+          <TokenInfoPanel theme={theme} recentTrades={recentTrades} tradeRef={tradeRef} lastTrade={lastTrade} animate={animate} token={token} imageSrc={imageSrc} priceRef={priceRef} tradecoin={tradecoin} qtyRef={qtyRef} />
 
         </div>
       </div>

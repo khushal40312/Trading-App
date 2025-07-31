@@ -8,6 +8,7 @@ import { SearchAction } from '../store/trendingSearchSlice';
 import Navbar from '../Components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import { selectedTokenAction } from '../store/seletedTokenSlice';
+import Cookies from 'js-cookie'
 
 const Search = () => {
     const [input, setInput] = useState('');
@@ -97,10 +98,11 @@ const Search = () => {
         dispatch(selectedTokenAction.addToken(info))
         navigate(`/trade/${token}`);
     };
+      const theme = Cookies.get('theme') || 'light'
 
     
     return (
-        <div className="w-full  bg-linear-to-r/srgb from-indigo-500 to-teal-400">
+        <div className={`w-full  ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400' : 'bg-black'}`}>
             <form onSubmit={submitHandler} className="relative">
                 <span className="absolute top-8 left-3">
                     <CiSearch size={30} />

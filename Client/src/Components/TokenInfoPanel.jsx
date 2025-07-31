@@ -5,12 +5,13 @@ const TokenInfoPanel = React.memo(({
   tradeRef, 
   lastTrade, 
   animate, 
-  token, 
+
   imageSrc, 
   priceRef, 
   tradecoin, 
   qtyRef, 
-  recentTrades 
+  recentTrades ,
+  theme
 }) => {
   // Format price and quantity to avoid duplication of logic
   const formatPrice = (price) => {
@@ -28,7 +29,7 @@ const TokenInfoPanel = React.memo(({
   }, [recentTrades]); // Only re-compute when `recentTrades` changes
 
   return (
-    <div className="w-[44vw] h-[70vh]  bg-linear-to-r/srgb from-indigo-500 to-teal-400 rounded text-white p-1 ">
+    <div className={`w-[44vw] h-[70vh]  ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400' : 'bg-black  border-l-1 border-green-300'} rounded text-white p-1 `}>
       <div className="flex items-center justify-center my-2">
         <img
           className="w-12 rounded-2xl"

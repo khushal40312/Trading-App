@@ -2,6 +2,8 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import UserInfo from "./userProfileSlice";
 import trendingSearches from "./trendingSearchSlice"
 import selectedToken from "./seletedTokenSlice"
+import selectedTheme from "./themeSlice"
+
 
 
 
@@ -9,6 +11,7 @@ const appReducer = combineReducers({
     user: UserInfo,
     search:trendingSearches,
     selectedToken:selectedToken,
+    selectedTheme:selectedTheme
    
 })
 const rootReducer = (state, action) => {

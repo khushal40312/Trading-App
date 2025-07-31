@@ -23,17 +23,19 @@ const Dashboard = () => {
   const trendingSearch = useSelector(store => store.search)
   const navigate = useNavigate()
   const token = localStorage.getItem('token')
-  const currencyType = Cookies.get('currency')
+  const currencyType = Cookies.get('currency') || 'INR'
+  const theme = Cookies.get('theme') || 'light'
+
   const actualBalance = currencyType === 'INR' ? (balance + summary?.currentValue) * inrPrice : balance + summary?.currentValue;
-useEffect(()=>{
+  useEffect(() => {
 
-if (!token) {
-  navigate('/login')
-  
-}
+    if (!token) {
+      navigate('/login')
+
+    }
 
 
-},[])
+  }, [])
 
   useEffect(() => {
 
@@ -128,8 +130,8 @@ if (!token) {
         fetchStocks()
       }
       const getCurrencyRates = async (name) => {
-       
-        
+
+
         try {
           const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/get-currency/${name}`, {
             headers: {
@@ -150,13 +152,13 @@ if (!token) {
         }
       }
       getCurrencyRates(currencyType)
-    
+
 
       fetchUserProtfolio()
       fetchUserBalance()
     }
 
-  }, [navigate, token,currencyType])
+  }, [navigate, token, currencyType])
 
 
 
@@ -193,10 +195,10 @@ if (!token) {
   return (
     <>
       <div className='flex items-center justify-between  p-2 w-full   '> <img className='w-12  border border-[#21b121] rounded-xl' src="/logo.png" alt="logo" />
-        <h2 className=' font-bold  text-xl text-black '>Dashboard</h2></div>
-      <div className='flex items-center mt-3  p-2 border-black border-2  rounded-lg '>
+        <h2 className={` font-bold  text-xl ${theme === 'light' ? 'text-black' : 'text-white'} `}>Dashboard</h2></div>
+      <div className={`flex items-center mt-3  p-2 ${theme === 'light' ?'border-white':'border-green-300'}  border-1  rounded-lg `}>
         <div>
-          <h3 className='text-sm font-bold text-black'>Total Balance</h3>
+          <h3 className={`text-sm font-bold ${theme === 'light' ? 'text-black' : 'text-white'} `}>Total Balance</h3>
           <h1 className='font-bold text-xl text-white  '>{Number(actualBalance).toFixed(2)}  <span className='font-bolder text-sm p-2 rounded bg-black text-white'>{currencyType}</span></h1>
 
           <p className='bg-[#21b121] text-center w-1/2 rounded font-bold text-sm text-white'>{
@@ -206,14 +208,14 @@ if (!token) {
 
       </div>
 
-      <div className='w-full px-2 mt-3  bg-linear-to-r/srgb from-indigo-500 to-teal-400 rounded   overflow-x-auto space-x-4 flex items-start'>
+      <div className={`w-full px-2 mt-3  ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400' : 'bg-black'} rounded   overflow-x-auto space-x-4 flex items-start`}>
         {displayList?.map((crypto) => (
           <div
             onClick={() => findToken(crypto?.item?.symbol, crypto)}
             key={crypto?.item?.symbol}
-            className='flex flex-col items-center min-w-[100px] bg-[#000000] rounded border border-[#21b121]'
+            className={`flex flex-col items-center min-w-[100px] ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400 border-white ' : 'bg-black border-green-300 '} rounded-xl border `}
           >
-            <h1 className='font-bold text-sm text-[#808080]'>
+            <h1 className='font-bold text-sm text-gray-200'>
               {crypto?.item?.data?.price.toString().startsWith('0.0')
                 ? `${crypto.item.data.price.toFixed(5)}$`
                 : `${crypto.item.data.price.toFixed(2)}$`}
@@ -223,7 +225,7 @@ if (!token) {
               src={crypto?.item?.thumb}
               alt={crypto?.item?.symbol}
             />
-            <p className='font-bold text-md text-[#21b121] text-center'>
+            <p className={`font-bold text-md  ${theme === 'light' ? 'text-black' : 'text-white'} text-center`}>
               {crypto?.item?.symbol}
             </p>
           </div>
@@ -231,7 +233,7 @@ if (!token) {
       </div>
 
       <div className='flex justify-between p-1'>
-        <h1 className=' font-bold text-white  text-center '>My Portfolio</h1>
+        <h1 className=' font-bold text-white text-sm text-center '>My Portfolio</h1>
         <Link to='/portfolio' className=' font-bold text-white   text-center   '>View All</Link>
 
       </div>
@@ -240,16 +242,16 @@ if (!token) {
         <div className='flex overflow-x-auto space-x-4 h-full'>
           {/* Card 1 */}
           {portfolioInfo?.assets.length === 0 && <div className='flex justify-center h-full items-center'><h2 className="p-3 bg-[#21b121] text-white font-bold rounded-md hover:bg-green-700 transition text-center">No assets Lets Buy some </h2></div>}
-          {portfolioInfo?.assets.length !== 0 && portfolioInfo?.assets?.map(data => (<div key={data._id} className='min-w-56 flex justify-between bg-[#0e0e0e] rounded p-3'>
+          {portfolioInfo?.assets.length !== 0 && portfolioInfo?.assets?.map(data => (<div key={data._id} className={`min-w-56 flex justify-between ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400 border-1 border-white ' : 'bg-black border-2 border-green-300 '}  rounded-xl p-3`}>
             <div className='flex flex-col justify-between h-full'>
               <div>
-                <p className='text-[#808080] font-bold text-sm'>{data?.name}</p>
-                <h2 className='text-white font-bold'>{data?.symbol}</h2>
+                <p className='text-white font-bold text-sm'>{data?.name}</p>
+                <h2 className={`${theme === 'light' ? 'text-black' : 'text-white'} font-bold`}>{data?.symbol}</h2>
               </div>
               <h2 className='text-white font-bold'>{data?.quantity.toFixed(3)}</h2>
             </div>
             <div className='flex flex-col justify-between items-center'>
-              <img className='w-7 h-7 rounded-xl ' src={data?.imageURL?.small} alt="token_logo" />
+              <img className='w-7 h-7 rounded-xl border-1 border-black ' src={data?.imageURL?.small} alt="token_logo" />
               <p className='bg-[#21b121] text-center w-14 h-6 rounded font-bold text-sm text-white'>{data?.profitLossPercentage.toFixed(2)}%</p>
             </div>
           </div>))}
@@ -265,7 +267,7 @@ if (!token) {
         <Link to='/portfolio' className=' font-bold text-white text-sm  text-center   '>View All</Link>
       </div>
       <div className="w-full px-4 py-3">
-        <div className="bg-black rounded-xl p-3 w-full">
+        <div className={`bg-black rounded-xl border-2 ${theme === 'light' ?'border-white':'border-green-300'} p-3 w-full`}>
           <h2 className="text-sm text-white font-bold mb-2">Portfolio Performance</h2>
           {chartSeries[0].data.length === 0 ? (
             <p className="text-[#888] text-sm">No performance data</p>

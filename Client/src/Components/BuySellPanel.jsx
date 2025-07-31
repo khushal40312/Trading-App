@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, livePrice, tradecoin, TokenDetails }) => {
+const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, livePrice, tradecoin, TokenDetails,theme }) => {
     const [amount, setAmount] = useState('');
     const [price, setPrice] = useState(0);
     const [availableBalance, setAvailableBalance] = useState(0);
@@ -251,7 +251,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
     }
 
     return (
-        <div className="w-[50vw] h-[70vh]  bg-linear-to-r/srgb from-indigo-500 to-teal-400 rounded py-6">
+        <div className={`w-[50vw] h-[70vh]  ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400 ' : 'bg-black  border-r-1 border-green-300'} rounded py-6`}>
             <div className="flex justify-center gap-2 mt-2">
                 {['buy', 'sell'].map((side) => (
                     <button
@@ -312,7 +312,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                         ))}
                     </div>
 
-                    <p className="text-black text-xs mt-2">
+                    <p className={`${theme === 'light' ?'text-black':'text-white'} text-xs mt-2`}>
                         Balance: {selectedSide === 'buy' ? formatPrice(availableBalance) : formatPrice(availableToken)} {selectedSide === 'buy' ? 'USDT' : tradecoin}
                     </p>
                 </div>
