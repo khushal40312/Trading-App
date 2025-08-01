@@ -8,19 +8,20 @@ import { SearchAction } from '../store/trendingSearchSlice';
 import Navbar from '../Components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import { selectedTokenAction } from '../store/seletedTokenSlice';
-import Cookies from 'js-cookie'
+
 
 const Search = () => {
     const [input, setInput] = useState('');
     const [suggestions, setSuggestions] = useState({});
     const [loading, setLoading] = useState(false);
     const [loading2, setLoading2] = useState(false);
-    const [iconUrl, setIconUrl] = useState(null);
+
     const token = localStorage.getItem('token')
     const debouncedInput = useDebounce(input.toUpperCase(), 600);
     const trendingSearch = useSelector(store => store.search)
     const dispatch = useDispatch()
     const navigate = useNavigate()
+      const theme = useSelector(store=>store.selectedTheme)
     
     useEffect(() => {
         const fetchSuggestions = async () => {
@@ -36,13 +37,8 @@ const Search = () => {
                 setSuggestions(response.data)
             } catch (error) {
                 console.error('Error fetching suggestions:', error);
-                if (
-                    
-                    error.response?.data?.message?.toLowerCase().includes('session expired')
-                  ) {
-                    localStorage.removeItem('token');
-                    navigate('/session-expired');
-                  }
+                                handleSessionError(error, navigate);
+                
             } finally {
                 setLoading(false);
             }
@@ -75,13 +71,8 @@ const Search = () => {
                 } catch (error) {
                     console.error(error)
                     setLoading2(false)
-                    if (
-                       
-                        error.response?.data?.message?.toLowerCase().includes('session expired')
-                      ) {
-                        localStorage.removeItem('token');
-                        navigate('/session-expired');
-                      }
+                                   handleSessionError(error, navigate);
+                   
                 } finally {
 
                     setLoading2(false)
@@ -98,11 +89,11 @@ const Search = () => {
         dispatch(selectedTokenAction.addToken(info))
         navigate(`/trade/${token}`);
     };
-      const theme = Cookies.get('theme') || 'light'
+   
 
     
     return (
-        <div className={`w-full  ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400' : 'bg-black'}`}>
+        <div className={`w-full  ${theme === 'light' ? 'bg-gradient-to-r from-green-400 via-green-400 to-green-800' : 'bg-gradient-to-r from-zinc-900 via-gray-800 to-stone-900'}`}>
             <form onSubmit={submitHandler} className="relative">
                 <span className="absolute top-8 left-3">
                     <CiSearch size={30} />

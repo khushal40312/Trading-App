@@ -8,12 +8,14 @@ import { selectedTokenAction } from '../store/seletedTokenSlice';
 import { Link, useNavigate } from 'react-router-dom';
 import ReactApexChart from 'react-apexcharts';
 import Cookies from 'js-cookie';
+import { handleSessionError } from '../Functions/HandleSessionError';
+
 
 
 
 
 const Dashboard = () => {
-  const [balance, setBalance] = useState('----');
+  const [balance, setBalance] = useState(0);
   const [portfolioInfo, setportfolioInfo] = useState();
   const [stocks, setStocks] = useState([]);
   const [inrPrice, setinrPrice] = useState(0);
@@ -24,9 +26,12 @@ const Dashboard = () => {
   const navigate = useNavigate()
   const token = localStorage.getItem('token')
   const currencyType = Cookies.get('currency') || 'INR'
-  const theme = Cookies.get('theme') || 'light'
-
-  const actualBalance = currencyType === 'INR' ? (balance + summary?.currentValue) * inrPrice : balance + summary?.currentValue;
+  const theme = useSelector(store => store.selectedTheme)
+  // const theme = Cookies.get('theme') 
+  
+  const currentValue = summary?.currentValue || 0;
+  const actualBalance = currencyType === 'INR' ? (balance + currentValue) * inrPrice : balance + currentValue;
+  
   useEffect(() => {
 
     if (!token) {
@@ -52,13 +57,8 @@ const Dashboard = () => {
           setSummary(response.data)
         } catch (error) {
           console.error(error)
-          if (
+          handleSessionError(error, navigate);
 
-            error.response?.data?.message?.toLowerCase().includes('session expired')
-          ) {
-            localStorage.removeItem('token');
-            navigate('/session-expired');
-          }
         }
       }
       fetchUserSummary()
@@ -73,13 +73,8 @@ const Dashboard = () => {
           setBalance(response.data.balance)
         } catch (error) {
           console.error(error)
-          if (
+          handleSessionError(error, navigate);
 
-            error.response?.data?.message?.toLowerCase().includes('session expired')
-          ) {
-            localStorage.removeItem('token');
-            navigate('/session-expired');
-          }
         }
       }
       const fetchUserProtfolio = async () => {
@@ -93,13 +88,8 @@ const Dashboard = () => {
           setportfolioInfo(response.data)
         } catch (error) {
           console.error(error)
-          if (
+          handleSessionError(error, navigate);
 
-            error.response?.data?.message?.toLowerCase().includes('session expired')
-          ) {
-            localStorage.removeItem('token');
-            navigate('/session-expired');
-          }
         }
       }
       if (trendingSearch.length === 0 && token) {
@@ -116,13 +106,8 @@ const Dashboard = () => {
 
           } catch (error) {
             console.error(error)
-            if (
+            handleSessionError(error, navigate);
 
-              error.response?.data?.message?.toLowerCase().includes('session expired')
-            ) {
-              localStorage.removeItem('token');
-              navigate('/session-expired');
-            }
 
           }
         }
@@ -142,13 +127,8 @@ const Dashboard = () => {
           setinrPrice(response.data.price)
         } catch (error) {
           console.error(error)
-          if (
+          handleSessionError(error, navigate);
 
-            error.response?.data?.message?.toLowerCase().includes('session expired')
-          ) {
-            localStorage.removeItem('token');
-            navigate('/session-expired');
-          }
         }
       }
       getCurrencyRates(currencyType)
@@ -192,14 +172,17 @@ const Dashboard = () => {
     navigate(`/trade/${token}`);
   };
   const displayList = stocks?.length === 0 ? trendingSearch?.coins : stocks;
+
+
+
   return (
     <>
       <div className='flex items-center justify-between  p-2 w-full   '> <img className='w-12  border border-[#21b121] rounded-xl' src="/logo.png" alt="logo" />
         <h2 className={` font-bold  text-xl ${theme === 'light' ? 'text-black' : 'text-white'} `}>Dashboard</h2></div>
-      <div className={`flex items-center mt-3  p-2 ${theme === 'light' ?'border-white':'border-green-300'}  border-1  rounded-lg `}>
-        <div>
+      <div className={`flex items-center mt-3  p-2 ${theme === 'light' ? 'border-white' : 'border-green-300'} bg-black/20 backdrop-blur-xs  border-1  rounded-lg `}>
+        <div className=' '>
           <h3 className={`text-sm font-bold ${theme === 'light' ? 'text-black' : 'text-white'} `}>Total Balance</h3>
-          <h1 className='font-bold text-xl text-white  '>{Number(actualBalance).toFixed(2)}  <span className='font-bolder text-sm p-2 rounded bg-black text-white'>{currencyType}</span></h1>
+          <h1 className='font-bold text-xl text-white  '>{Number(actualBalance)?.toFixed(2)}  <span className='font-bolder text-sm p-2 rounded bg-black text-white'>{currencyType}</span></h1>
 
           <p className='bg-[#21b121] text-center w-1/2 rounded font-bold text-sm text-white'>{
             parseFloat(portfolioInfo?.totalProfitLossPercentage.toFixed(2))} %</p>
@@ -208,12 +191,12 @@ const Dashboard = () => {
 
       </div>
 
-      <div className={`w-full px-2 mt-3  ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400' : 'bg-black'} rounded   overflow-x-auto space-x-4 flex items-start`}>
+      <div className={`w-full px-2 mt-3  ${theme === 'light' ? 'bg-gradient-to-r from-green-400 via-green-400 to-green-800' : 'bg-gradient-to-r from-zinc-900 via-gray-800 to-stone-900'} rounded   overflow-x-auto space-x-4 flex items-start`}>
         {displayList?.map((crypto) => (
           <div
             onClick={() => findToken(crypto?.item?.symbol, crypto)}
             key={crypto?.item?.symbol}
-            className={`flex flex-col items-center min-w-[100px] ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400 border-white ' : 'bg-black border-green-300 '} rounded-xl border `}
+            className={`flex flex-col items-center min-w-[100px] ${theme === 'light' ? 'bg-black/20 border-white ' : 'bg-black/30 border-green-300 '} rounded-xl border backdrop-blur-xs  `}
           >
             <h1 className='font-bold text-sm text-gray-200'>
               {crypto?.item?.data?.price.toString().startsWith('0.0')
@@ -242,7 +225,7 @@ const Dashboard = () => {
         <div className='flex overflow-x-auto space-x-4 h-full'>
           {/* Card 1 */}
           {portfolioInfo?.assets.length === 0 && <div className='flex justify-center h-full items-center'><h2 className="p-3 bg-[#21b121] text-white font-bold rounded-md hover:bg-green-700 transition text-center">No assets Lets Buy some </h2></div>}
-          {portfolioInfo?.assets.length !== 0 && portfolioInfo?.assets?.map(data => (<div key={data._id} className={`min-w-56 flex justify-between ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400 border-1 border-white ' : 'bg-black border-2 border-green-300 '}  rounded-xl p-3`}>
+          {portfolioInfo?.assets.length !== 0 && portfolioInfo?.assets?.map(data => (<div key={data._id} className={`min-w-56 flex justify-between ${theme === 'light' ? 'bg-gradient-to-r from-green-800 via-green-400 to-green-500 border-white ' : 'bg-gradient-to-r from-zinc-900 via-gray-800 to-stone-900  border-green-500  '} border-1  rounded-xl p-3`}>
             <div className='flex flex-col justify-between h-full'>
               <div>
                 <p className='text-white font-bold text-sm'>{data?.name}</p>
@@ -267,7 +250,7 @@ const Dashboard = () => {
         <Link to='/portfolio' className=' font-bold text-white text-sm  text-center   '>View All</Link>
       </div>
       <div className="w-full px-4 py-3">
-        <div className={`bg-black rounded-xl border-2 ${theme === 'light' ?'border-white':'border-green-300'} p-3 w-full`}>
+        <div className={` rounded-xl border-2 ${theme === 'light' ? 'border-white' : 'border-green-300 '} p-3 w-full bg-black`}>
           <h2 className="text-sm text-white font-bold mb-2">Portfolio Performance</h2>
           {chartSeries[0].data.length === 0 ? (
             <p className="text-[#888] text-sm">No performance data</p>

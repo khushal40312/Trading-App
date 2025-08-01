@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { formatPrice } from '../Functions/FormatPrice';
+import { handleSessionError } from '../Functions/HandleSessionError';
+
 
 const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, livePrice, tradecoin, TokenDetails,theme }) => {
     const [amount, setAmount] = useState('');
@@ -10,7 +13,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
     const [availableToken, setAvailableToken] = useState(0);
     const [selected, setSelected] = useState('USDT');
     const navigate = useNavigate();
-    // console.log(availableBalance)
+    
     useEffect(() => {
         const fetchBalance = async () => {
             try {
@@ -21,10 +24,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                 setAvailableBalance(response.data.balance); // assume USDT balance
             } catch (error) {
                 console.error('Error fetching balance:', error);
-                if (error.response?.data?.message?.toLowerCase().includes('session expired')) {
-                    localStorage.removeItem('token');
-                    navigate('/session-expired');
-                }
+                handleSessionError(error, navigate);
             }
         };
         fetchBalance();
@@ -40,10 +40,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                 setAvailableToken(response?.data?.asset?.quantity); // assume USDT balance
             } catch (error) {
                 console.error('Error fetching asset:', error);
-                if (error.response?.data?.message?.toLowerCase().includes('session expired')) {
-                    localStorage.removeItem('token');
-                    navigate('/session-expired');
-                }
+                handleSessionError(error, navigate);
             }
         };
         fetchAsset();
@@ -51,6 +48,11 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
 
     const buyAsset = (payload) => {
         const { tradecoin, assetName, price, amount } = payload;
+        if (price <= 0 || amount <= 0) {
+            toast.error("Invalid price or amount");
+            return;
+          }
+          
         if (!tradecoin || !assetName || !price || !amount) return;
         let RoundoffQuantity = Number(formatPrice(amount / price));
 
@@ -98,8 +100,13 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
     };
     const sellAsset = (payload) => {
         const { tradecoin, assetName, price, amount } = payload;
+        if (price <= 0 || amount <= 0) {
+            toast.error("Invalid price or amount");
+            return;
+          }
+          
         if (!tradecoin || !assetName || !price || !amount) return;
-        console.log(amount)
+        
         let RoundoffQuantity = Number(formatPrice(amount / price));
         let RoundoffAmount = Number(formatPrice(amount))
 
@@ -128,7 +135,8 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                     render({ data }) {
                         const res = data.data;
                         setAvailableBalance(res.balance)
-                        const tokenQuantity = res.portfolioSummary?.assets.find((element) => element.symbol === "C");
+                        const tokenQuantity = res.portfolioSummary?.assets.find((element) => element.symbol === tradecoin);
+
                         setAvailableToken(tokenQuantity.quantity)
                         return `sold ${tradecoin} ${selected === 'USDT' ? RoundoffQuantity : RoundoffAmount} price: ${price}!`;
                     }
@@ -152,7 +160,8 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
         setSelectedSide(side);
         setAmount('');
     };
-
+ 
+      
     const handlePercentageClick = (percent) => {
         if (!livePrice || livePrice <= 0) return;
 
@@ -187,8 +196,9 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
         setAmount('');
 
     };
-
-    const handleAmountChange = (e) => {
+   
+      
+      const handleAmountChange = (e) => {
 
 
         let input = e.target.value;
@@ -238,29 +248,19 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
             }
         }
     };
-    const formatPrice = (price) => {
-        let num;
-        num = Number(price)
-        if (num?.toString().startsWith('0.0')) {
-            return num?.toFixed(6)
-        } else if (num >= 0.1) {
-            return num?.toFixed(4)
-        } else {
-            return num?.toFixed(3)
-        }
-    }
 
     return (
-        <div className={`w-[50vw] h-[70vh]  ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400 ' : 'bg-black  border-r-1 border-green-300'} rounded py-6`}>
+        <div className={`w-[50vw] h-[70vh]  ${theme === 'light' ? 'bg-black/30  border-r-1 border-white  ' : 'bg-gradient-to-r from-zinc-900 via-gray-800 to-stone-900  border-r-1 border-green-300'} rounded py-6 backdrop-blur-xs`}>
             <div className="flex justify-center gap-2 mt-2">
                 {['buy', 'sell'].map((side) => (
                     <button
                         key={side}
                         onClick={() => handleSideClick(side)}
-                        className={`border border-2 px-5 py-2 rounded-xl font-bold text-white ${selectedSide === side
-                            ? `bg-${side === 'buy' ? 'green' : 'red'}-500 border-white-500`
-                            : 'bg-black border-white'
-                            }`}
+                        className={`border border-2 px-5 py-2 rounded-xl font-bold text-white ${
+                            selectedSide === side
+                              ? (side === 'buy' ? 'bg-green-500 border-white' : 'bg-red-500 border-white')
+                              : 'bg-gradient-to-r from-zinc-900 via-gray-800 to-stone-900 border-white'
+                          }`}
                     >
                         {side.toUpperCase()}
                     </button>

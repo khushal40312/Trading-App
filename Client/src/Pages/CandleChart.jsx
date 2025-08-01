@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Navbar from '../Components/Navbar';
 import Loading from '../Components/Loading';
+import { handleSessionError } from '../Functions/HandleSessionError';
 
 const CandleChart = () => {
   const [tempTokenInfo, setTempTokenInfo] = useState({});
@@ -84,6 +85,8 @@ const CandleChart = () => {
         setSeries([{ data: candles }]);
       } catch (err) {
         console.error('Bitget fetch error:', err);
+        handleSessionError(err, navigate);
+
       } finally {
         setLoading(false);
       }
@@ -112,6 +115,7 @@ const CandleChart = () => {
         setSeries([{ data: candles }]);
       } catch (err) {
         console.error('CoinGecko fetch error:', err);
+        handleSessionError(err, navigate);
 
 
       } finally {

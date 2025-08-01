@@ -2,23 +2,15 @@ import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 
 import { useNavigate } from 'react-router-dom';
+import { handleSessionError } from '../Functions/HandleSessionError'
+import { formatPrice } from '../Functions/FormatPrice';
 
 const AssetSection = ({ inrPrice, currency, balance }) => {
     const [Assets, setAssets] = useState([]);
     const navigate = useNavigate()
     const token = localStorage.getItem('token')
 
-    const formatPrice = (price) => {
-        let num;
-        num = Number(price)
-        if (num?.toString().startsWith('0.0')) {
-            return num?.toFixed(6)
-        } else if (num >= 0.1) {
-            return num?.toFixed(4)
-        } else {
-            return num?.toFixed(3)
-        }
-    }
+  
     useEffect(() => {
 
 

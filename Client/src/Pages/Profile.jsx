@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import Navbar from '../Components/Navbar'
 import { FaEdit } from "react-icons/fa";
 import Cookies from 'js-cookie';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectedThemeAction } from '../store/themeSlice';
 const Profile = () => {
     const navigate = useNavigate()
     const token = localStorage.getItem('token')
@@ -11,13 +13,10 @@ const Profile = () => {
     const [isZoomed, setIsZoomed] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
-    const [selectedTheme, setSelectedTheme] = useState(Cookies.get('theme'));
     const [selectedCurrency, setSelectedCurrency] = useState(Cookies.get('currency'));
     const [stats, setStats] = useState({});
-   const theme = Cookies.get('theme') || 'light'
- 
-
-    // Cookies.set('username', 'JohnDoe', { expires: 7 });
+    const theme = useSelector(store => store.selectedTheme)
+    const dispatch = useDispatch();
 
 
     const logoutUser = async () => {
@@ -60,6 +59,7 @@ const Profile = () => {
                         }
                     })
                     setuser(response.data.user)
+                    
 
                     Cookies.set('theme', response?.data?.user.settings.theme);
                     Cookies.set('currency', response?.data?.user.settings.currency);
@@ -79,7 +79,7 @@ const Profile = () => {
                             Authorization: `Bearer ${token}`
                         }
                     })
-                    setStats(response.data.data)
+                    setStats(response?.data?.data)
 
                 } catch (error) {
                     console.error(error)
@@ -170,9 +170,10 @@ const Profile = () => {
 
                 }
             });
+            dispatch(selectedThemeAction.changeTheme(response?.data?.updatedUser.settings.theme))
             Cookies.set('theme', response?.data?.updatedUser.settings.theme);
             Cookies.set('currency', response?.data?.updatedUser.settings.currency);
-            setSelectedTheme(response?.data?.updatedUser.settings.theme)
+          
             setSelectedCurrency(response?.data?.updatedUser.settings.currency)
 
         } catch (error) {
@@ -183,7 +184,7 @@ const Profile = () => {
 
     return (
         <>
-            <div className={`h-screen overflow-y-auto w-full ${theme === 'light' ? 'bg-linear-to-r/srgb from-indigo-500 to-teal-400' : 'bg-black/90'}  p-5 `}>
+            <div className={`h-screen overflow-y-auto w-full ${theme === 'light' ? 'bg-gradient-to-r from-green-400 via-green-400 to-green-800 ' : 'bg-gradient-to-r from-zinc-900 via-gray-800 to-stone-900'}  p-5 `}>
                 <h1 className='text-white font-bold text-xl m-2 '>Profile</h1>
                 <div className='flex p-3 gap-5 rounded-xl flex-col w-full h-[80vh] bg-black/80'>
                     <div className='w-full flex justify-between items-center px-2 mt-2'>
@@ -199,7 +200,7 @@ const Profile = () => {
                     <h1 className='text-gray-200 text-md font-bold'>Settings </h1>
                     <div className='w-full flex justify-between items-center '>
                         <span className='font-bold text-white text-sm'>Theme</span>
-                        <select value={selectedTheme} onChange={(e) => handleSettingChanges({ value: e.target.value, type: "theme" })} className=' text-white font-bold rounded-xl text-sm'>
+                        <select value={theme} onChange={(e) => handleSettingChanges({ value: e.target.value, type: "theme" })} className=' text-white font-bold rounded-xl text-sm'>
 
 
                             <option className='bg-black text-white rounded' value="dark">DARK</option>
@@ -214,53 +215,49 @@ const Profile = () => {
                         </select>
                     </div>
                     <div className='flex flex-col gap-3'>
-                    <h1 className='text-gray-200 text-md font-bold mb-2'>Stats </h1>
+                        <h1 className='text-gray-200 text-md font-bold mb-2'>Stats </h1>
 
-                    <div className='w-full flex justify-between items-center '>
-                        <span className='font-bold text-white text-sm'>Total Trades</span>
+                        <div className='w-full flex justify-between items-center '>
+                            <span className='font-bold text-white text-sm'>Total Trades</span>
 
-                        <input
-                            className="h-5 text-center w-19 rounded text-white bg-[#413f3f] m-1 px-2"
-                            type="number"
+                            <span
+                                className=" text-center w-19 rounded text-white bg-[#413f3f] m-1 px-2"
+                                // type="text"
+
+                                
+                                // readOnly
+                            >{stats?.totalTrades} </span>
+                        </div>
+                        <div className='w-full flex justify-between items-center '>
+                            <span className='font-bold text-white text-sm'>Total Buy</span>
+                            <span
+                                className=" text-center w-19 rounded text-white bg-[#413f3f] m-1 px-2"
+                                // type="text"
+
+                                
+                                // readOnly
+                            >{stats?.totalBuyTrades} </span>
                            
-                            value={stats.totalTrades}
-                            readOnly
-                        />
-                    </div>
-                    <div className='w-full flex justify-between items-center '>
-                        <span className='font-bold text-white text-sm'>Total Buy</span>
+                        </div>
+                        <div className='w-full flex justify-between items-center '>
+                            <span className='font-bold text-white text-sm'>Total Sell</span>
+                            <span
+                                className=" text-center w-19 rounded text-white bg-[#413f3f] m-1 px-2"
+                                // type="text"
 
-                        <input
-                            className="h-5 text-center w-19 rounded text-white bg-[#413f3f] m-1 px-2"
-                            type="number"
+                                
+                                // readOnly
+                            >{stats?.totalSellTrades} </span>
                            
-                            value={stats.totalBuyTrades}
-                            readOnly
-                        />
-                    </div>
-                    <div className='w-full flex justify-between items-center '>
-                        <span className='font-bold text-white text-sm'>Total Sell</span>
-
-                        <input
-                            className="h-5 text-center w-19 rounded text-white bg-[#413f3f] m-1 px-2"
-                            type="number"
+                        </div>
+                        <div className='w-full flex justify-between items-center '>
+                            <span className='font-bold text-white text-sm'>Total Investment</span>
+                            <span
+                                className=" text-center w-19 rounded text-xs  text-white bg-[#413f3f] m-1 py-1"
+                            >{stats?.totalInvested} USDT </span>
                             
-                            value={stats.totalSellTrades}
-                            readOnly
-                        />
-                    </div>
-                    <div className='w-full flex justify-between items-center '>
-                        <span className='font-bold text-white text-sm'>Total Investment</span>
+                        </div>
 
-                        <input
-                            className="h-5 text-xs text-center w-19 rounded text-white bg-[#413f3f] m-1 px-2"
-                            type="text"
-                           
-                            value={`${stats.totalInvested} USDT`}
-                            readOnly
-                        />
-                    </div>
-                  
                     </div>
                     <div className='w-full flex justify-center items-center '>
                         <button onClick={() => logoutUser()} type="button" className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Logout</button>

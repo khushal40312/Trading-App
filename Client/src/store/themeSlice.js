@@ -1,8 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
-
+import Cookies from 'js-cookie'
 const selectedTheme = createSlice({
     name: 'selectedTheme',
-    initialState: 'Light',
+    initialState: '',
     reducers: {
         changeTheme: (state, action) => {
 

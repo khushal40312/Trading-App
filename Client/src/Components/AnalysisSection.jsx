@@ -6,7 +6,8 @@ import ReactApexChart from 'react-apexcharts';
 import { useNavigate } from 'react-router-dom';
 import { IoMdAddCircle } from "react-icons/io";
 import { MdOutlinePendingActions } from "react-icons/md";
-
+import { formatPrice } from '../Functions/FormatPrice';
+import { handleSessionError } from '../Functions/HandleSessionError';
 import AddFunds from './AddFunds';
 import TradeHistory from './TradeHistory';
 const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance }) => {
@@ -39,13 +40,8 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
 
 
           console.error(error)
-          if (
-
-            error.response?.data?.message?.toLowerCase().includes('session expired')
-          ) {
-            localStorage.removeItem('token');
-            navigate('/session-expired');
-          }
+                        handleSessionError(error, navigate);
+        
         }
       }
 
@@ -64,13 +60,8 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
         setportfolioInfo(response.data)
       } catch (error) {
         console.error(error)
-        if (
-
-          error.response?.data?.message?.toLowerCase().includes('session expired')
-        ) {
-          localStorage.removeItem('token');
-          navigate('/session-expired');
-        }
+                       handleSessionError(error, navigate);
+       
       }
     }
     fetchUserProtfolio()
@@ -85,13 +76,8 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
         setSummary(response.data)
       } catch (error) {
         console.error(error)
-        if (
-
-          error.response?.data?.message?.toLowerCase().includes('session expired')
-        ) {
-          localStorage.removeItem('token');
-          navigate('/session-expired');
-        }
+                       handleSessionError(error, navigate);
+       
       }
     }
     fetchUserSummary()
@@ -107,9 +93,9 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
   }
 
 
+  const currentValue = summary?.currentValue || 0;
+  const totalBalance = currency === 'INR' ? (balance + currentValue) * inrPrice : balance + currentValue;
 
-  const totalBalance = (balance || 0) + (summary?.currentValue || 0);
-  const INR = inrPrice && totalBalance ? inrPrice * totalBalance : '------';
 
 
   const filteredPerformance = (portfolioInfo?.performanceHistory || [])
@@ -132,18 +118,6 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
     }
   ];
 
-  const formatPrice = (price) => {
-    let num;
-    num = Number(price)
-    if (num?.toString().startsWith('0.0')) {
-      return num?.toFixed(6)
-    } else if (num >= 0.1) {
-      return num?.toFixed(4)
-    } else {
-      return num?.toFixed(3)
-    }
-
-  }
  
 
   return (
@@ -164,9 +138,9 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
       <div className='flex px-2 gap-1 items-center my-1 '>
         {showBalance ? (
           <h1 className='font-bold text-2xl text-white'>
-            {currency === 'USDT'
-              ? formatPrice(totalBalance) || '-------'
-              : formatPrice(INR) || '-------'}
+          
+              { formatPrice(totalBalance)} 
+             
           </h1>
         ) : (
           <h1 className='font-bold text-2xl text-white'>*****</h1>
