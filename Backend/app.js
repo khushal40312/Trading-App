@@ -9,6 +9,12 @@ const tradeRoutes = require('./routes/trade.route.js')
 
 
 
+const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5173'; // fallback for dev
+
+app.use(cors({
+  origin: allowedOrigin,
+  credentials: true,
+}));
 
 connectToDb();
 const app = express();
