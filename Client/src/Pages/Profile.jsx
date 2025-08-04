@@ -254,7 +254,7 @@ const Profile = () => {
                             <span className='font-bold text-white text-sm'>Total Investment</span>
                             <span
                                 className=" text-center w-19 rounded text-xs  text-white bg-[#413f3f] m-1 py-1"
-                            >{stats?.totalInvested} USDT </span>
+                            >{stats?.totalInvested||0} USDT </span>
                             
                         </div>
 
