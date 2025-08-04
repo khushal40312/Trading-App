@@ -46,7 +46,7 @@ module.exports.buyAssets = async (req, res) => {
             price,
             fees,
             notes,
-            imageURL
+            imageURL:imageURL||"logo.png"
         });
 
         await trade.execute(); // sets executedAt, status, and saves

@@ -1,5 +1,5 @@
 # Use a smaller, more secure base image
-FROM node:20.19.0-alpine
+FROM node:20
 
 # Create app directory
 WORKDIR /app

@@ -729,7 +729,7 @@ module.exports.getPortfolios = async (req, res) => {
 module.exports.getUserAssets = async (req, res) => {
   try {
     const portfolio = await Portfolio.findOne({ user: req.user.id });
-    console.log(portfolio.assets);
+    
 
     res.status(200).json({ assets: portfolio.assets });
   } catch (error) {

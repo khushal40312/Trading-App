@@ -50,8 +50,11 @@ const Trade = () => {
      setLastTrade(nextTrade.SIDE);
      handleNewTrade(nextTrade);
    
-     gsap.fromTo(priceRef.current, { scale: 1 }, { scale: 1.1, duration: 0.3 });
-     gsap.fromTo(qtyRef.current, { y: -5 }, { y: 0, duration: 0.3 });
+     if (priceRef.current && qtyRef.current) {
+      gsap.fromTo(priceRef.current, { scale: 1 }, { scale: 1.1, duration: 0.3 });
+      gsap.fromTo(qtyRef.current, { y: -5 }, { y: 0, duration: 0.3 });
+    }
+    
    
      timeoutRef.current = setTimeout(() => {
        isProcessing.current = false;

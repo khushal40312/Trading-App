@@ -19,13 +19,13 @@ module.exports = getStockQuote;
 
 
 
-cron.schedule('*/5 * * * *', async () => {
+cron.schedule('*/15 * * * *', async () => {
   const portfolios = await Portfolio.find({});
   for (const portfolio of portfolios) {
     await portfolio.updatePrices(getStockQuote);
     await portfolio.save();
   }
-  console.log('Portfolio prices updated every 5 minutes.');
+  console.log('Portfolio prices updated every 15 minutes.');
 });
 
 module.exports = getStockQuote;

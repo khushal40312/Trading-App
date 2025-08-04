@@ -81,7 +81,7 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                 success: {
                     render({ data }) {
                         const res = data.data;
-                        console.log(typeof (res.balance))
+                       
                         setAvailableBalance(Number(res.balance))
                         const tokenQuantity = res.portfolioSummary?.assets.find((element) => element.symbol === "C");
                         setAvailableToken(Number(tokenQuantity.quantity))

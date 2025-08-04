@@ -180,7 +180,7 @@ module.exports.addUserBalance = async (req, res) => {
     }
 };
 module.exports.getUserBalance = async (req, res) => {
-    // console.log(req.user)
+   
     try {
         res.status(200).json({ balance: req.user.balance })
     } catch (error) {

@@ -6,7 +6,7 @@ const COINMARKETCAP_API_KEY = 'a9bd5d89-f8cd-4a2c-af0b-9de77d9c5a55';
 
 
 module.exports.findPortfolio = async (userId) => {
-  // console.log(user.id)
+
   return await portfolioModel.findOne({ user: userId })
 
 }
