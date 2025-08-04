@@ -21,75 +21,58 @@ const Login = () => {
       toast.error("Enter email first");
       return;
     }
-
+  
     try {
-      toast.promise(
-        axios.post(`${import.meta.env.VITE_BASE_URL}/users/send-otp`, { email }),
-        {
-          pending: 'Sending OTP...',
-          success: {
-            render() {
-              setOtpSent(true);
-              return 'OTP sent successfully!';
-            }
-          },
-          error: {
-            render({ data }) {
-              return data?.response?.data?.message || 'Failed to send OTP';
-            }
-          }
-        }
-      );
+      toast.info("Sending OTP...");
+      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/send-otp`, { email });
+      setOtpSent(true);
+      toast.success("OTP sent successfully!");
     } catch (err) {
       console.log("OTP error:", err.message);
+      toast.error(err?.response?.data?.message || "Failed to send OTP");
     }
   };
-
+  
   const submitHandler = async (e) => {
-
     e.preventDefault();
+  
     if (!email || !password || !otp) {
       toast.error("All Fields are Required");
       return;
     }
-
+  
     const newUser = {
       email,
       password,
-      otp  // You can also remove this if OTP is not required in login API
-    }
-
-    toast.promise(
-      axios.post(`${import.meta.env.VITE_BASE_URL}/users/login`, newUser),
-      {
-        pending: 'Logging in...',
-        success: {
-          render({ data }) {
-            const res = data.data;
-            localStorage.setItem('token', res.token)
-            dispatch(UserAction.addUserInfo(res))
-            navigate('/home');
-            return 'Login successful!';
-          },
-        },
-        error: {
-          render({ data }) {
-            if (data?.response?.data?.message !== 'OTP expired or invalid') {
-              setOtp('')
-              setEmail('')
-              setPassword('')
-              setOtpSent(true)
-            }
-            return data?.response?.data?.message || 'Login failed';
-          },
-        },
+      otp
+    };
+  
+    try {
+      toast.info("Logging in...");
+      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/login`, newUser);
+      const userData = res.data;
+  
+      localStorage.setItem('token', userData.token);
+      dispatch(UserAction.addUserInfo(userData));
+      toast.success("Login successful!");
+      navigate('/home');
+  
+      setEmail('');
+      setPassword('');
+      setOtp('');
+    } catch (err) {
+      const message = err?.response?.data?.message || "Login failed";
+      toast.error(message);
+  
+      if (message !== "OTP expired or invalid") {
+        setEmail('');
+        setPassword('');
+        setOtp('');
+        setOtpSent(false);
       }
-    );
-
-    setEmail('')
-    setPassword('')
-    setOtp('')
-  }
+    }
+  };
+  
 
   return (
     <div className='p-7 h-screen flex flex-col justify-between '>

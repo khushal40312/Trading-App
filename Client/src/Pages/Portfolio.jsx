@@ -48,6 +48,8 @@ const Portfolio = () => {
 
 
     const getCurrencyRates = async (name) => {
+      if (name !== 'INR') return
+
       try {
         const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/get-currency/${name}`, {
           headers: {

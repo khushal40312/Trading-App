@@ -14,7 +14,5 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker Images
-        run: docker-compose build
-
-      # Optional: push to DockerHub if needed
+      - name: Build Docker Image
+        run: docker build -t backend-app -f Backend/Dockerfile

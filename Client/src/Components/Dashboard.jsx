@@ -28,10 +28,10 @@ const Dashboard = () => {
   const currencyType = Cookies.get('currency') || 'INR'
   const theme = useSelector(store => store.selectedTheme)
   // const theme = Cookies.get('theme') 
-  
+
   const currentValue = summary?.currentValue || 0;
   const actualBalance = currencyType === 'INR' ? (balance + currentValue) * inrPrice : balance + currentValue;
-  
+
   useEffect(() => {
 
     if (!token) {
@@ -115,7 +115,7 @@ const Dashboard = () => {
         fetchStocks()
       }
       const getCurrencyRates = async (name) => {
-
+        if (name !== 'INR') return
 
         try {
           const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/get-currency/${name}`, {

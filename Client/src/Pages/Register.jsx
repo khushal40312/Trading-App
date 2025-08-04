@@ -18,85 +18,55 @@ const register = () => {
       toast.error("Enter email first");
       return;
     }
-
+  
     try {
-      toast.promise(
-        axios.post(`${import.meta.env.VITE_BASE_URL}/users/send-otp`, { email }),
-        {
-          pending: 'Sending OTP...',
-          success: {
-            render() {
-              setOtpSent(true);
-              return 'OTP sent successfully!';
-            }
-          },
-          error: {
-            render({ data }) {
-              return data?.response?.data?.message || 'Failed to send OTP';
-            }
-          }
-        }
-      );
+      toast.info("Sending OTP...");
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/send-otp`, { email });
+      setOtpSent(true);
+      toast.success("OTP sent successfully!");
     } catch (err) {
       console.log("OTP error:", err.message);
+      toast.error(err?.response?.data?.message || "Failed to send OTP");
     }
   };
-
+  
   const submitHandler = async (e) => {
     e.preventDefault();
-
+  
     if (!email || !password || !otp || !firstname) {
       toast.error("All Fields are Required");
       return;
     }
-
-    const newUser = ({
+  
+    const newUser = {
       fullname: {
         firstname,
-        lastname
+        lastname,
       },
       email,
       password,
-      otp
-
-
-    })
-    toast.promise(
-      axios.post(`${import.meta.env.VITE_BASE_URL}/users/register`, newUser),
-      {
-        pending: 'Creating account...',
-        success: {
-          render({ data }) {
-            const res = data.data;
-
-            navigate('/login');
-            return 'Signup successful!';
-          },
-        },
-        error: {
-          render({ data }) {
-            if (data?.response?.data?.message !== 'OTP expired or invalid') {
-              setOtp('')
-              setEmail('')
-              setPassword('')
-              setFirstname('')
-              setLastname('')
-              setOtpSent(true)
-            }
-            return data?.response?.data?.message || 'Signup failed';
-          },
-
-        },
+      otp,
+    };
+  
+    try {
+      toast.info("Creating account...");
+      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/register`, newUser);
+      toast.success("Signup successful!");
+      navigate("/login");
+    } catch (err) {
+      const message = err?.response?.data?.message || "Signup failed";
+      if (message !== "OTP expired or invalid") {
+        setOtp("");
+        setEmail("");
+        setPassword("");
+        setFirstname("");
+        setLastname("");
+        setOtpSent(false);
       }
-    );
-
-
-
-
-
-
-  }
-
+      toast.error(message);
+    }
+  };
+  
 
 
 
