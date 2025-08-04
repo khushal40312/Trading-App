@@ -19,7 +19,7 @@ module.exports = getStockQuote;
 
 
 
-cron.schedule('*/15 * * * *', async () => {
+cron.schedule('*/5 * * * *', async () => {
   const portfolios = await Portfolio.find({});
   for (const portfolio of portfolios) {
     await portfolio.updatePrices(getStockQuote);

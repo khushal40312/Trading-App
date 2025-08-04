@@ -179,7 +179,6 @@ const CandleChart = () => {
 
   return (
     <>
-    
       {(loading || !tempTokenInfo?.symbol && !selectedToken?.symbol) && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-md z-50">
           <Loading />
@@ -189,18 +188,12 @@ const CandleChart = () => {
       {tempTokenInfo?.symbol || selectedToken?.symbol ? (
         <div className='flex w-full h-screen bg-black justify-center items-center'>
           <div className="p-4 text-white bg-gray-900 w-full h-screen rounded">
-            <div className="max-w-4xl mx-auto border border-green-600  rounded border-4 p-3 h-[90vh]">
-            <div className='flex items-center justify-between'>
-
-            <img
+            <div className="max-w-4xl mx-auto border border-green-600 rounded border-4 p-3 h-[90vh]">
+              <img
                 className="w-12 rounded-2xl"
                 src={imageSrc}
                 alt="logo"
               />
-            <span className='text-xs'>Data provided by <a className='text-sm font-bold text-green-500' href="https://www.coingecko.com">CoinGecko</a>  </span>
-            </div>
-              
-
               <h2 className="text-xl font-bold mb-2">
                 {tempTokenInfo?.symbol || selectedToken?.symbol}/USDT
               </h2>
@@ -227,6 +220,7 @@ const CandleChart = () => {
                 height={500}
               />
             </div>
+            
           </div>
 
           <Navbar />
