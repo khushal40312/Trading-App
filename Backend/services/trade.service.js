@@ -122,6 +122,7 @@ module.exports.getCandlesfromBitget = async (payload) => {
         const response = await axios.get(
             `https://api.bitget.com/api/v2/spot/market/candles`,
             {
+
                 params: {
                     symbol: `${symbol}USDT`,
                     granularity: interval,
@@ -138,40 +139,45 @@ module.exports.getCandlesfromBitget = async (payload) => {
 
     } catch (error) {
         console.log(error, "error during fetching BG candles ")
-}
-}
-    module.exports.getImages = async (symbol) => {
-
-        if (!symbol) return
-        try {
-            const response = await axios.get(
-                `https://api.coingecko.com/api/v3/coins/${symbol}`,
-                {
-                    params: {
-
-                        localization: false,
-                        tickers: false,
-                        market_data: false,
-                        community_data: false,
-                        developer_data: false,
-                        sparkline: false
-                    },
-                }
-            );
-
-console.log(response?.statusText)
-            return response.data.image;
-
-
-        } catch (error) {
-            console.log(error, "error during fetching images ")
-        }
-
-
-
-
-
     }
+}
+module.exports.getImages = async (symbol) => {
+    console.log(symbol)
+
+    if (!symbol) return
+    try {
+        const response = await axios.get(
+            `https://api.coingecko.com/api/v3/coins/${symbol}`,
+            {
+                headers: {
+                    accept: 'application/json',
+                    'x-cg-demo-api-key': process.env.COINGEKO_API // Replace with your actual CoinGecko key
+                },
+                params: {
+
+                    localization: false,
+                    tickers: false,
+                    market_data: false,
+                    community_data: false,
+                    developer_data: false,
+                    sparkline: false
+                },
+            }
+        );
+
+
+        return response.data.image;
+
+
+    } catch (error) {
+        console.log(error, "error during fetching images ")
+    }
+
+
+
+
+
+}
 
 
 
