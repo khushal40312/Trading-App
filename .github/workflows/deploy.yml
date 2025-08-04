@@ -20,4 +20,5 @@ jobs:
       - name: 📦 Push Backend Image to DockerHub
         run: docker push ${{ secrets.DOCKER_USERNAME }}/mern-backend:latest
 
-      
+      - name: 🚀 Trigger Backend Deploy on Render
+        run: curl -X POST ${{ secrets.RENDER_HOOK_BACKEND }}
