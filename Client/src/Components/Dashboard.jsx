@@ -173,7 +173,11 @@ const Dashboard = () => {
   };
   const displayList = stocks?.length === 0 ? trendingSearch?.coins : stocks;
 
+const handleNoAsset=()=>{
 
+navigate('/search')
+
+}
 
   return (
     <>
@@ -182,7 +186,7 @@ const Dashboard = () => {
       <div className={`flex items-center mt-3  p-2 ${theme === 'light' ? 'border-white' : 'border-green-300'} bg-black/20 backdrop-blur-xs  border-1  rounded-lg `}>
         <div className=' '>
           <h3 className={`text-sm font-bold ${theme === 'light' ? 'text-black' : 'text-white'} `}>Total Balance</h3>
-          <h1 className='font-bold text-xl text-white  '>{Number(actualBalance)?.toFixed(2)}  <span className='font-bolder text-sm p-2 rounded bg-black text-white'>{currencyType}</span></h1>
+          <h1 className='font-bold text-xl text-white  '>{Number(actualBalance)?.toFixed(2)||'----'}  <span className='font-bolder text-xs p-2 rounded bg-black text-white'>{currencyType}</span></h1>
 
           <p className='bg-[#21b121] text-center w-1/2 rounded font-bold text-sm text-white'>{
             parseFloat(portfolioInfo?.totalProfitLossPercentage.toFixed(2))||0} %</p>
@@ -224,7 +228,7 @@ const Dashboard = () => {
 
         <div className='flex overflow-x-auto space-x-4 h-full'>
           {/* Card 1 */}
-          {portfolioInfo?.assets.length === 0 && <div className='flex justify-center h-full items-center'><h2 className="p-3 bg-[#21b121] text-white font-bold rounded-md hover:bg-green-700 transition text-center">No assets Lets Buy some </h2></div>}
+          {portfolioInfo?.assets.length === 0 && <div className='flex justify-center h-full items-center'><h2 onClick={()=> handleNoAsset()} className="p-3 bg-[#21b121] text-white font-bold rounded-md hover:bg-green-700 transition text-center">No assets Lets Buy some </h2></div>}
           {portfolioInfo?.assets.length !== 0 && portfolioInfo?.assets?.map(data => (<div key={data._id} className={`min-w-56 flex justify-between ${theme === 'light' ? 'bg-gradient-to-r from-green-800 via-green-400 to-green-500 border-white ' : 'bg-gradient-to-r from-zinc-900 via-gray-800 to-stone-900  border-green-500  '} border-1  rounded-xl p-3`}>
             <div className='flex flex-col justify-between h-full'>
               <div>

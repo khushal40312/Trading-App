@@ -188,10 +188,10 @@ const Profile = () => {
                 <h1 className='text-white font-bold text-xl m-2 '>Profile</h1>
                 <div className='flex p-3 gap-5 rounded-xl flex-col w-full h-[80vh] bg-black/80'>
                     <div className='w-full flex justify-between items-center px-2 mt-2'>
-                        <h1 className='text-white text-2xl font-bold'>{user?.fullname?.firstname} {user?.fullname?.lastname}</h1>
+                        <h1 className='text-white text-2xl font-bold'>{user?.fullname?.firstname||'------'} {user?.fullname?.lastname||'-----'}</h1>
                         <img
                             className='w-25 h-17 rounded-full border-3 border-green-400 cursor-pointer'
-                            src={user?.profilePicture}
+                            src={user?.profilePicture||'/default.png'}
                             alt="Profile"
                             onClick={handleImageClick}
                         />
@@ -226,7 +226,7 @@ const Profile = () => {
 
                                 
                                 // readOnly
-                            >{stats?.totalTrades} </span>
+                            >{stats?.totalTrades||0} </span>
                         </div>
                         <div className='w-full flex justify-between items-center '>
                             <span className='font-bold text-white text-sm'>Total Buy</span>
@@ -236,7 +236,7 @@ const Profile = () => {
 
                                 
                                 // readOnly
-                            >{stats?.totalBuyTrades} </span>
+                            >{stats?.totalBuyTrades||0} </span>
                            
                         </div>
                         <div className='w-full flex justify-between items-center '>
@@ -247,7 +247,7 @@ const Profile = () => {
 
                                 
                                 // readOnly
-                            >{stats?.totalSellTrades} </span>
+                            >{stats?.totalSellTrades||0} </span>
                            
                         </div>
                         <div className='w-full flex justify-between items-center '>
