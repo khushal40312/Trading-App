@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { CgMail } from 'react-icons/cg'
 import { FaLock } from 'react-icons/fa'
 import { Link, useNavigate } from 'react-router-dom'
@@ -13,57 +13,69 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
+  const otpInputRef = useRef(null); // <-- NEW
   const navigate = useNavigate();
   const dispatch = useDispatch()
 
+  const handleOtpChange = (e) => {
+    const value = e.target.value;
+    // Ensure only digits and up to 6 characters
+    if (/^\d{0,6}$/.test(value)) {
+      setOtp(value);
+    }
+  };
   const sendOtpHandler = async () => {
     if (!email) {
       toast.error("Enter email first");
       return;
     }
-  
+
     try {
       toast.info("Sending OTP...");
       const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/send-otp`, { email });
       setOtpSent(true);
       toast.success("OTP sent successfully!");
+
+      setTimeout(() => {
+        otpInputRef.current?.focus();
+      }, 100);
     } catch (err) {
       console.log("OTP error:", err.message);
       toast.error(err?.response?.data?.message || "Failed to send OTP");
     }
   };
-  
+
   const submitHandler = async (e) => {
     e.preventDefault();
-  
+
     if (!email || !password || !otp) {
       toast.error("All Fields are Required");
       return;
     }
-  
+
     const newUser = {
       email,
       password,
       otp
     };
-  
+
     try {
       toast.info("Logging in...");
       const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/login`, newUser);
       const userData = res.data;
-  
+
       localStorage.setItem('token', userData.token);
       dispatch(UserAction.addUserInfo(userData));
       toast.success("Login successful!");
       navigate('/home');
-  
+
       setEmail('');
       setPassword('');
       setOtp('');
     } catch (err) {
       const message = err?.response?.data?.message || "Login failed";
       toast.error(message);
-  
+
       if (message !== "OTP expired or invalid") {
         setEmail('');
         setPassword('');
@@ -72,7 +84,7 @@ const Login = () => {
       }
     }
   };
-  
+
 
   return (
     <div className='p-7 h-screen flex flex-col justify-between '>
@@ -111,11 +123,14 @@ const Login = () => {
           <div className='relative'>
             <h3 className='absolute left-1 top-2'><GiCombinationLock size={22} /></h3>
             <input
-              type="number"
+              type="text"
+              ref={otpInputRef}
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={handleOtpChange}
               className='bg-[#eeeeee] rounded pl-9 pr-24 py-2 w-full text-lg placeholder:text-base mb-5'
-              placeholder='OTP'
+              placeholder='OTP (6 digits)'
+              maxLength={6}
+              inputMode="numeric"
             />
             <button
               type="button"
@@ -128,8 +143,8 @@ const Login = () => {
             </button>
           </div>
 
-          <button  className='font-semibold w-full bg-[#21b121] text-white py-3 rounded'>Let's Go</button>
-          <p className='my-2 text-center'>New User? <Link to='/home' className='text-blue-600'>Sign up here</Link></p>
+          <button className='font-semibold w-full bg-[#21b121] text-white py-3 rounded'>Let's Go</button>
+          <p className='my-2 text-center'>New User? <Link to='/register' className='text-blue-600'>Sign up here</Link></p>
         </form>
       </div>
     </div>

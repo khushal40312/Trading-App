@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CgMail } from "react-icons/cg";
 import { FaLock } from "react-icons/fa";
@@ -12,32 +12,42 @@ const register = () => {
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
+  const otpInputRef = useRef(null); // <-- NEW
   const navigate = useNavigate();
   const sendOtpHandler = async () => {
     if (!email) {
       toast.error("Enter email first");
       return;
     }
-  
+
     try {
       toast.info("Sending OTP...");
       const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/send-otp`, { email });
       setOtpSent(true);
+      setTimeout(() => {
+        otpInputRef.current?.focus();  // <-- FOCUS HERE
+      }, 100);
       toast.success("OTP sent successfully!");
     } catch (err) {
       console.log("OTP error:", err.message);
       toast.error(err?.response?.data?.message || "Failed to send OTP");
     }
   };
-  
+  const handleOtpChange = (e) => {
+    const value = e.target.value;
+    // Ensure only digits and up to 6 characters
+    if (/^\d{0,6}$/.test(value)) {
+      setOtp(value);
+    }
+  };
   const submitHandler = async (e) => {
     e.preventDefault();
-  
+
     if (!email || !password || !otp || !firstname) {
       toast.error("All Fields are Required");
       return;
     }
-  
+
     const newUser = {
       fullname: {
         firstname,
@@ -47,7 +57,7 @@ const register = () => {
       password,
       otp,
     };
-  
+
     try {
       toast.info("Creating account...");
       const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/register`, newUser);
@@ -66,7 +76,7 @@ const register = () => {
       toast.error(message);
     }
   };
-  
+
 
 
 
@@ -117,12 +127,16 @@ const register = () => {
           <div className='relative'>
             <h3 className='absolute left-1 top-2'><GiCombinationLock size={22} /></h3>
             <input
-              type="number"
+              type="text"
+              ref={otpInputRef}
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={handleOtpChange}
               className='bg-[#eeeeee] rounded pl-9 pr-24 py-2 w-full text-lg placeholder:text-base mb-5'
-              placeholder='OTP'
+              placeholder='OTP (6 digits)'
+              maxLength={6}
+              inputMode="numeric"
             />
+
             <button
               type="button"
               onClick={sendOtpHandler}
