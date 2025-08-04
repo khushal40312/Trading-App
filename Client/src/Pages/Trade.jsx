@@ -84,7 +84,7 @@ const Trade = () => {
     };
   
     fetchSuggestions();
-  }, [tradecoin, token_auth, selectedToken]);
+  }, [tradecoin, token_auth, selectedToken?.symbol]);
   
 
   useEffect(() => {

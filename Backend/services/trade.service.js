@@ -159,7 +159,7 @@ module.exports.getCandlesfromBitget = async (payload) => {
                 }
             );
 
-
+console.log(response?.statusText)
             return response.data.image;
 
 
