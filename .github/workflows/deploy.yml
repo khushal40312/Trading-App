@@ -29,5 +29,5 @@ jobs:
       - name: Trigger Backend Deploy on Render
         run: curl -X POST ${{ secrets.RENDER_HOOK_BACKEND }}
 
-    - name: Trigger Client Deploy on Render
-      run: curl -X POST ${{ secrets.RENDER_HOOK_CLIENT }}
+      - name: Trigger Client Deploy on Render
+        run: curl -X POST ${{ secrets.RENDER_HOOK_CLIENT }}
