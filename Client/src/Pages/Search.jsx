@@ -112,8 +112,11 @@ const Search = () => {
                 {loading2 ? (
                     <Skeleton count={10} height={40} containerClassName="space-y-3" />
                 ) : (
-                    trendingSearch?.coins?.map((item, index) => (
-                        <div onClick={() => findToken(item.item.symbol, item.item)} key={index} className="flex items-center my-3 p-2  border border-black/30 rounded-xl cursor-pointer active:border-green-500 transition justify-between">
+                    trendingSearch?.coins?.map((item) => (
+                        <div onClick={() => findToken(item.item.symbol, {coingeckoId:item.item.id,
+                            image:item.item.thumb,name:item.item.name,symbol:item.item.symbol,
+                            source:item.item.slug
+                        })} key={item.item.symbol}  className="flex items-center my-3 p-2  border border-black/30 rounded-xl cursor-pointer active:border-green-500 transition justify-between">
                             <div className='flex items-center w-10'> <img src={item.item.thumb || ''} alt={item.item.name} className="w-10 h-10 rounded-full bg-[#eeeeee] mr-3 object-contain" />
                                 <h4 className="font-medium text-white">{item.item.symbol || 'Unknown Token'}</h4>
                             </div>

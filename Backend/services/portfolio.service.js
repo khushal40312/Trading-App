@@ -44,10 +44,10 @@ module.exports.getCryptoTrendingPortfolio = async () => {
 // }
 module.exports.getCurrency = async (name) => {
 
-  try {
-    const { data } = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${name}&api_key=${process.env.FASTFOREX_API_KEY}`)
+  try {  
+    const { data } = await axios.get(` https://v6.exchangerate-api.com/v6/${process.env.EXCHANGERATE_API_KEY}/pair/USD/${name}`)
 
-    return data.result;
+    return data.conversion_rate;
   } catch (error) {
     console.error(`Error fetching ${name}:`, error.message);
 

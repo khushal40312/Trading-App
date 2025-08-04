@@ -155,10 +155,11 @@ module.exports.getDashboardStocks = async (req, res) => {
 
 module.exports.getCurrencyRates = async (req, res) => {
   const name = req.params.name.toUpperCase();
+ 
   try {
     const price = await portfolioService.getCurrency(name)
 
-    res.status(201).json({ price: price.INR })
+    res.status(201).json({ price })
   } catch (error) {
     res.status(500).json({ message: 'Error fetching currency price', error: error.message });
 
