@@ -82,9 +82,9 @@ const BuySellPanel = React.memo(({ selectedSide, setSelectedSide, token_auth, li
                     render({ data }) {
                         const res = data.data;
                        
-                        setAvailableBalance(Number(res.balance))
-                        const tokenQuantity = res.portfolioSummary?.assets.find((element) => element.symbol === "C");
-                        setAvailableToken(Number(tokenQuantity.quantity))
+                        setAvailableBalance(Number(res?.balance))
+                        const tokenQuantity = res?.portfolioSummary?.assets.find((element) => element.symbol === tradecoin);
+                        setAvailableToken(Number(tokenQuantity?.quantity))
 
 
                         return `✅Bought ${tradecoin} ${selected === 'USDT' ? RoundoffQuantity : RoundoffAmount} price: ${price}!`;

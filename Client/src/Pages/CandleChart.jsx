@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ApexCharts from 'react-apexcharts';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -21,9 +21,14 @@ const CandleChart = () => {
   const token_ID = token ? token : recentToken;
   const navigate = useNavigate();
   // const symbol = token.
+  const tokenInfo = useMemo(() => {
+    return Object.keys(selectedToken).length ? selectedToken : tempTokenInfo;
+  }, [selectedToken, tempTokenInfo]);
+  
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (!token_auth || !Object.keys(selectedToken || {}).length === 0 || !token_ID) return;
+      if (!token_auth || Object.keys(selectedToken || {}).length === 0 || !token_ID) return;
+
 
 
       try {
@@ -125,17 +130,15 @@ const CandleChart = () => {
   };
 
   useEffect(() => {
-    const symbolReady = tempTokenInfo?.symbol || selectedToken?.symbol;
-    const geckoReady = tempTokenInfo?.coingeckoId || selectedToken?.coingeckoId;
-
-    if (!symbolReady && !geckoReady) return;
-
+    if (!tokenInfo?.symbol && !tokenInfo?.coingeckoId) return;
+  
     if (['1min', '3min', '5min', '15min', '30min', '1h'].includes(selected)) {
       fetchFromBitget(selected);
     } else {
       fetchFromCoinGecko(selected);
     }
-  }, [selected, tempTokenInfo, selectedToken]);
+  }, [selected, tokenInfo?.symbol, tokenInfo?.coingeckoId]);
+  
 
 
   const options = {
