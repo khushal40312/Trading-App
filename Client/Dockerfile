@@ -1,5 +1,5 @@
 # Use full Node instead of Alpine
-FROM node:18-alpine
+FROM node:20.19.0-alpine
 
 WORKDIR /app
 
