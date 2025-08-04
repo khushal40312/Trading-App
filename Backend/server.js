@@ -8,11 +8,6 @@ const port = process.env.PORT || 5000
 const server = http.createServer(app)
 
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    socketService.destroy();
-    server.close();
-  });
 
 server.listen(port, () => {
 
