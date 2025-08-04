@@ -26,8 +26,8 @@ jobs:
       - name: Push Client Image to DockerHub
         run: docker push ${{ secrets.DOCKER_USERNAME }}/mern-client:latest
 
-- name: Trigger Backend Deploy on Render
-  run: curl -X POST ${{ secrets.RENDER_HOOK_BACKEND }}
+      - name: Trigger Backend Deploy on Render
+        run: curl -X POST ${{ secrets.RENDER_HOOK_BACKEND }}
 
-- name: Trigger Client Deploy on Render
-  run: curl -X POST ${{ secrets.RENDER_HOOK_CLIENT }}
+    - name: Trigger Client Deploy on Render
+      run: curl -X POST ${{ secrets.RENDER_HOOK_CLIENT }}
