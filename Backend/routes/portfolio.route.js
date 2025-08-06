@@ -14,7 +14,7 @@ router.get('/assets/:symbol',authMiddleware.authUser,portfolioController.getUser
 // router.put('/me/refresh', authMiddleware.authUser, portfolioController.refreshPortfolioPrices)
 // router.get('/me/performance', authMiddleware.authUser, portfolioController.getPerformanceHistory)
 router.get('/me/summary', authMiddleware.authUser, portfolioController.getPortfolioSummary)
-// router.get('/me/analytics', authMiddleware.authUser, portfolioController.getPortfolioAnalytics)
+router.get('/me/analytics', authMiddleware.authUser, portfolioController.getPortfolioAnalytics)
 router.get('/dashboard-stocks',authMiddleware.authUser, portfolioController.getDashboardStocks);
 router.get('/get-currency/:name',authMiddleware.authUser, portfolioController.getCurrencyRates);
 

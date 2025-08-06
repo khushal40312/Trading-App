@@ -6,6 +6,8 @@ const connectToDb = require('./config/db');
 const userRoutes = require('./routes/user.route')
 const portfolioRoutes = require('./routes/portfolio.route.js')
 const tradeRoutes = require('./routes/trade.route.js')
+const aiRoutes = require('./routes/ai.route.js')
+
 
 
 
@@ -20,6 +22,8 @@ app.use(cors())
 app.use('/users', userRoutes)
 app.use('/portfolios', portfolioRoutes)
 app.use('/trades', tradeRoutes)
+app.use('/ai', aiRoutes)
+
 app.get('/', (req, res) => {
     res.status(200).json({ success: true })
 

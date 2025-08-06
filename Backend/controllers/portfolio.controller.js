@@ -2,7 +2,7 @@ const { validationResult } = require('express-validator');
 const portfolioService = require('../services/portfolio.service.js');
 const portfolioModel = require('../models/portfolio.model.js');
 const getStockQuote = require('../getStockQuote.js');
-const CRYPTO_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT'];
+
 module.exports.getPortfolio = async (req, res, next) => {
   try {
 

@@ -2,6 +2,15 @@
 **/node_modules/
 node_modules/
 
+**/.github/
+.github/
+
+**/.dockerignore/
+.dockerignore/
 # Environment variables
 .env
 .env.*  # e.g., .env.production, .env.local
+
+
+**/Dockerfile/
+Dockerfile/

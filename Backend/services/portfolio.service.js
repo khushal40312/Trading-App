@@ -27,21 +27,8 @@ module.exports.getCryptoTrendingPortfolio = async () => {
 };
 
 
-// module.exports.getStockQuotePortfolio= async (symbol)=> {
-//     try {
-//         const { data } = await axios.get('https://finnhub.io/api/v1/quote', {
-//           params: {
-//             symbol: `BINANCE:${symbol}`,
-//             token: API_KEY
-//           }
-//         });
 
-//         return { symbol, price: data.c }; // c = current price
-//       } catch (error) {
-//         console.error(`Error fetching ${symbol}:`, error.message);
-//         return { symbol, price: null, error: true };
-//       }
-// }
+
 module.exports.getCurrency = async (name) => {
 
   try {  
@@ -53,7 +40,6 @@ module.exports.getCurrency = async (name) => {
 
   }
 }
-
 
 
 

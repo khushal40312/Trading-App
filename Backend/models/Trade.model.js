@@ -42,7 +42,7 @@ const tradeSchema = new Schema({
   quantity: {
     type: Number,
     required: true,
-    min: [0.0001, 'Quantity must be greater than 0']
+    min: [0.00001, 'Quantity must be greater than 0']
   },
   price: {
     type: Number,
