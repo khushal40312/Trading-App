@@ -6,9 +6,8 @@ const connectToDb = require('./config/db');
 const userRoutes = require('./routes/user.route')
 const portfolioRoutes = require('./routes/portfolio.route.js')
 const tradeRoutes = require('./routes/trade.route.js')
-const aiRoutes = require('./routes/ai.route.js')
-
-
+const aiRoutes = require('./routes/ai.route.js');
+const { getVectorStore } = require('./vector/vectorStore.js');
 
 
 const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5173'; // fallback for dev
@@ -25,13 +24,14 @@ app.use('/trades', tradeRoutes)
 app.use('/ai', aiRoutes)
 
 app.get('/', (req, res) => {
-    res.status(200).json({ success: true })
-
-
+  res.status(200).json({ success: true })
 })
+
+
+
 app.use(cors({
-    origin: allowedOrigin,
-    credentials: true,
-  }));
-  
+  origin: allowedOrigin,
+  credentials: true,
+}));
+
 module.exports = app;

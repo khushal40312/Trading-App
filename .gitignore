@@ -1,16 +1,13 @@
-# Node modules (in any folder)
-**/node_modules/
+# Node modules
 node_modules/
 
-**/.github/
+# GitHub config (usually safe to ignore unless CI/CD is needed)
 .github/
 
-**/.dockerignore/
-.dockerignore/
+# Docker-related
+.dockerignore
+Dockerfile
+
 # Environment variables
 .env
-.env.*  # e.g., .env.production, .env.local
-
-
-**/Dockerfile/
-Dockerfile/
+.env.*
