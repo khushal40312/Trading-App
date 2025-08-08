@@ -1,22 +1,14 @@
 const { model } = require("../aiModel/gemini");
-const { memoryTool } = require("./memoryTool");
 
-
-const { retrieveMemoryTool } = require("./retriveMemoryTool");
 
 const extractTradingEntities = {
-    name: "extractTradingEntitiesToJson",
-    description: "Extract Input Into JSON Format",
+  name: "extractTradingEntitiesToJson",
+  description: "Extract Input Into JSON Format",
 
-    func: async ({ input, userId }) => {
-        // const memoryContext = await retrieveMemoryTool.func({
-        //     input,
-        //     userId,
-        // });
+  func: async ({ input, user }) => {
 
-        // console.log("Context:\n", memoryContext);
 
-        const extractionPrompt = `
+    const extractionPrompt = `
     You are a trading command parser. Extract the following entities from user input:
     - action: buy or sell
     - symbol: trading pair or crypto name
@@ -44,21 +36,15 @@ const extractTradingEntities = {
     
     User Input: "${input}"
     `;
-        const result = await model.invoke(extractionPrompt);
-        const cleaned = result.content.replace(/```json|```/g, '').trim();
-        const jsonObject = JSON.parse(cleaned);
-     
-
-        const response = await memoryTool.func({
-            userInput: input,
-            aiResponse: JSON.stringify(jsonObject),
-            userId
-        });
-        console.log(response)
-        return jsonObject;
+    const result = await model.invoke(extractionPrompt);
+    const cleaned = result.content.replace(/```json|```/g, '').trim();
+    const jsonObject = JSON.parse(cleaned);
 
 
-    }
+    return jsonObject;
+
+
+  }
 
 };
 module.exports = { extractTradingEntities }

@@ -1,23 +1,15 @@
-const {  model } = require("../aiModel/gemini");
+const { model } = require("../aiModel/gemini");
 
-
-const { retrieveMemoryTool } = require("./retriveMemoryTool");
-
- const classifyTool = {
+const classifyTool = {
   name: "classifyInput",
   description: "Classifies the user's message into categories.",
 
-  func: async ({ input, userId }) => {
-    const memoryContext = await retrieveMemoryTool.func({
-      input,
-      userId,
-    });
-    
-    console.log("Context:\n", memoryContext);
+  func: async ({ input, user, sessionId }) => {
 
+    let memoryContext = ''
     const classificationPrompt = `
 
-      Classify the user fresh input + old Conversation memory context into one of these categories based on a trading app rather  :
+      Classify the user fresh input + old Conversation memory context into one of these categories based on a trading app   :
       - TRADING
       - PORTFOLIO
       - MARKET_ANALYSIS
@@ -34,12 +26,12 @@ const { retrieveMemoryTool } = require("./retriveMemoryTool");
       - just the category name or out of context .
        `;
 
-       const result = await model.invoke(classificationPrompt);
-           return result.content.trim();
-  
+    const result = await model.invoke(classificationPrompt);
+    return result.content.trim();
+
   }
 
 };
-module.exports={classifyTool}
+module.exports = { classifyTool }
 
 

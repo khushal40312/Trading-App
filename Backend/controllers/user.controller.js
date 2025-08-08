@@ -18,7 +18,7 @@ module.exports.registerUser = async (req, res, next) => {
     if (isUserAlreadyExist) {
         return res.status(401).json({ message: "User already exists " })
     }
-    const storedOtp = await redisClient.get(`otp:${email}`);
+    const storedOtp = await redisClient.set(`otp:${email}`);
     if (!storedOtp) return res.status(400).json({ message: 'OTP expired or invalid' });
     if (storedOtp !== otp) return res.status(401).json({ message: 'Invalid OTP' });
 

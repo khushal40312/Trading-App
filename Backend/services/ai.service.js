@@ -4,6 +4,7 @@ const portfolioServices = require('../services/portfolio.service');
 const tradeServices = require('../services/trade.service');
 
 const getStockQuote = require("../getStockQuote");
+const redisClient = require("../config/redisClient");
 
 const memoryStore = new Map(); // { userId: [ { role, content } ] }
 
@@ -196,7 +197,7 @@ async function getRiskProfile(userId) {
     return rateUserRiskProfile(stats)
 }
 module.exports.enrichTradingContext = async (entities, user) => {
-
+    
     let sentimentWithName = await getMarketSentiment(entities.symbol)
     const { Sentiment, assetName } = sentimentWithName;
     const context = {
@@ -245,38 +246,49 @@ module.exports.assessRisk = ({ entities, context }) => {
 
 
 module.exports.generateAIResponse = async (payload) => {
-    const { entities, context, riskAssessment } = payload;
+    const { entities, context } = payload;
     const prompt = `
-  You are a trading assistant. Based on the user's input and risk profile, generate a helpful, honest, and friendly response.
-
-  Entities:
-  - Action: ${entities.action}
-  - Symbol: ${entities.symbol}
-  - Amount: ${entities.amount}
-  - Order Type: ${entities.orderType}
-  - Condition: ${entities.condition || "None"}
-  
-  Context:
-  - Current Price: $${context.currentPrice}
-  - User Balance: $${context.user.balance}
-  - User Risk Profile: ${context.riskProfile}
-  - Market Sentiment: ${context.marketSentiment}
-  
-  Risk Assessment:
-  - Required USDT: $${riskAssessment.requiredUSDT}
-  - Position Size: ${riskAssessment.positionSizePercent.toFixed(1)}%
-  - Risk Level: ${riskAssessment.riskLevel}
-  - Warnings: ${riskAssessment.warnings.join("; ") || "None"}
-  
-  🔁 Instructions:
-  - Warn about any risk if HIGH.
-  - If position is large, suggest smaller amount.
-  - Keep it clear and friendly.
-  -  Always Ask user if they want to confirm the trade [include "confirm" work]  .
-
-  
- User Name is ${context.user.fullname.firstname} Respond as if you’re chatting directly with the user .
-  `;
+    You're a friendly and responsible AI trading assistant. Use the dynamic data provided below to generate a trade plan summary for the user. 
+    
+    Your job is to help the user (named ${context.user.fullname.firstname}) understand their trading action clearly and safely.
+    
+    ---
+    
+    📥 **User Intent**:
+    - Action: ${entities.action?.toUpperCase()}
+    - Asset: ${entities.symbol}
+    - Amount: ${entities.amount}
+    - Order Type: ${entities.orderType}
+    - Condition: Buy at current price (${context.currentPrice} ${context.user.settings.currency})
+    
+    ---
+    
+    📊 **User Portfolio Summary**:
+    - Balance: ₹${context.user.balance.toFixed(2)}
+    - Risk Profile: ${context.riskProfile}
+    - Total Investment: ₹${context.portfolio.totalInvestment.toFixed(2)}
+    - Current Value: ₹${context.portfolio.currentValue.toFixed(2)}
+    - P&L: ₹${context.portfolio.totalProfitLoss.toFixed(2)} (${context.portfolio.totalProfitLossPercentage.toFixed(2)}%)
+    
+    ---
+    
+    📈 **Market Sentiment**: ${context.marketSentiment.replace('_', ' ')}
+    
+    ---
+    
+    🛡️ **Instructions** for your response:
+    1. Clearly summarize the user's intention to **${entities.action} ${entities.amount} ${entities.symbol} at ₹${context.currentPrice}**.
+    2. If this position costs more than 30% of their balance, suggest reducing the trade size.
+    3. Mention their current portfolio loss if applicable, gently and supportively.
+    4. If marketSentiment is "EXTREMELY_BULLISH", remind that sentiment is high, but markets are volatile—caution is still wise.
+    5. Since their risk profile is **${context.riskProfile}**, suggest balance and diversification.
+    6. Be warm, friendly, and clear in tone.
+    7. Close with: 
+       **"Would you like me to go ahead and place this order, or would you like to modify the amount or explore other assets?"**
+    
+    Keep the tone helpful, optimistic, and informative — like a trusted financial friend.
+    `;
+    
 
     const response = await model.invoke(prompt);
     return response.content.trim();
@@ -513,3 +525,47 @@ module.exports.cancelConditionalTrade = (tradeId) => {
     return `Trade ${tradeId} cancelled and removed from monitoring`;
 };
 
+const storeSessionInRedis = async (state) => {
+    try {
+      const userId = state.user._id.toString();
+      const sessionId = state.sessionId;
+      
+      // Create clean session data (convert ObjectIds to strings)
+      const sessionData = {
+        input: state.input,
+        user: {
+          ...state.user,
+          _id: state.user._id.toString(),
+          portfolioId: state.user.portfolioId ? state.user.portfolioId.toString() : null
+        },
+        category: state.category,
+        entities: state.entities,
+        sessionId: state.sessionId,
+        context: state.context ? {
+          ...state.context,
+          user: state.context.user ? {
+            ...state.context.user,
+            _id: state.context.user._id ? state.context.user._id.toString() : null,
+            portfolioId: state.context.user.portfolioId ? state.context.user.portfolioId.toString() : null
+          } : null,
+          portfolio: state.context.portfolio ? {
+            ...state.context.portfolio,
+            _id: state.context.portfolio._id ? state.context.portfolio._id.toString() : null,
+            user: state.context.portfolio.user ? state.context.portfolio.user.toString() : null
+          } : null
+        } : {},
+        tradeClassification: state.tradeClassification,
+        reply: state.reply,
+        timestamp: new Date().toISOString()
+      };
+  
+      // Store in Redis with 15 minutes (900 seconds) expiry
+      await redisClient.setEx(`session:data:${userId}:${sessionId}`, 900, JSON.stringify(sessionData));
+      console.log(`Session stored in Redis: session:${userId}:${sessionId}`);
+    } catch (error) {
+      console.error('Failed to store session in Redis:', error);
+    }
+  };
+
+  
+    module.exports={getRiskProfile,getMarketSentiment,storeSessionInRedis}
