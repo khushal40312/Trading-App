@@ -197,7 +197,7 @@ async function getRiskProfile(userId) {
     return rateUserRiskProfile(stats)
 }
 module.exports.enrichTradingContext = async (entities, user) => {
-    
+
     let sentimentWithName = await getMarketSentiment(entities.symbol)
     const { Sentiment, assetName } = sentimentWithName;
     const context = {
@@ -288,7 +288,7 @@ module.exports.generateAIResponse = async (payload) => {
     
     Keep the tone helpful, optimistic, and informative — like a trusted financial friend.
     `;
-    
+
 
     const response = await model.invoke(prompt);
     return response.content.trim();
@@ -339,7 +339,7 @@ module.exports.executeTrade = async ({ userId, entities, context }) => {
         orderType: entities.orderType,
         currentPrice: context.currentPrice,
         timestamp: new Date().toISOString(),
-        assetName:context.assetName
+        assetName: context.assetName
     };
 
     executedTrades.push(trade);
@@ -438,7 +438,8 @@ const executeBuyAsset = async (trade) => {
             quantity: trade.amount,
             price: trade.currentPrice,
             notes: `Conditional trade executed: ${trade.condition}`,
-            userId: trade.userId
+            userId: trade.userId,
+
         };
 
         // Call your buy asset function here
@@ -527,45 +528,35 @@ module.exports.cancelConditionalTrade = (tradeId) => {
 
 const storeSessionInRedis = async (state) => {
     try {
-      const userId = state.user._id.toString();
-      const sessionId = state.sessionId;
-      
-      // Create clean session data (convert ObjectIds to strings)
-      const sessionData = {
-        input: state.input,
-        user: {
-          ...state.user,
-          _id: state.user._id.toString(),
-          portfolioId: state.user.portfolioId ? state.user.portfolioId.toString() : null
-        },
-        category: state.category,
-        entities: state.entities,
-        sessionId: state.sessionId,
-        context: state.context ? {
-          ...state.context,
-          user: state.context.user ? {
-            ...state.context.user,
-            _id: state.context.user._id ? state.context.user._id.toString() : null,
-            portfolioId: state.context.user.portfolioId ? state.context.user.portfolioId.toString() : null
-          } : null,
-          portfolio: state.context.portfolio ? {
-            ...state.context.portfolio,
-            _id: state.context.portfolio._id ? state.context.portfolio._id.toString() : null,
-            user: state.context.portfolio.user ? state.context.portfolio.user.toString() : null
-          } : null
-        } : {},
-        tradeClassification: state.tradeClassification,
-        reply: state.reply,
-        timestamp: new Date().toISOString()
-      };
-  
-      // Store in Redis with 15 minutes (900 seconds) expiry
-      await redisClient.setEx(`session:data:${userId}:${sessionId}`, 900, JSON.stringify(sessionData));
-      console.log(`Session stored in Redis: session:${userId}:${sessionId}`);
-    } catch (error) {
-      console.error('Failed to store session in Redis:', error);
-    }
-  };
+        const userId = state.user._id.toString();
+        const sessionId = state.sessionId;
+        const sessionData = {
+            pendingTrades: {
+                entities: state.entities,
+                context: state.context,
+                tradeClassification: state.tradeClassification,
+                category: state.category,
+                sessionId,
+                status:"WAITING_FOR_CONFIRMATION",
+                timestamp: new Date().toISOString()
+            },
+            interaction:{
+            input: state.input,
+            reply: state.reply,
+            }
+        };
 
-  
-    module.exports={getRiskProfile,getMarketSentiment,storeSessionInRedis}
+        // Store in Redis with 15 minutes (900 seconds) expiry
+        let ab = await redisClient.setEx(`session:data:${userId}:${sessionId}`, 900, JSON.stringify(sessionData));
+        console.log(ab)
+        console.log(`Session stored in Redis: session:${userId}:${sessionId}`);
+    } catch (error) {
+        console.error('Failed to store session in Redis:', error);
+    }
+};
+
+
+module.exports = { getRiskProfile, getMarketSentiment, storeSessionInRedis }
+
+
+

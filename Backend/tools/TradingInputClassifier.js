@@ -1,14 +1,22 @@
 const { model } = require("../aiModel/gemini");
+const redisClient = require("../config/redisClient");
 
 const tradingInputClassifierTool = {
   name: "tradingInputClassifier",
   description: "Classifies the user's trade input ",
 
   func: async ({ input,user, sessionId }) => {
+    const data = await redisClient.get(`session:data:${user.id}:${sessionId}`)
+    let memoryContext;
+    if (!data) {
+      memoryContext = ''
+    } else {
 
-    let context = ''
+      memoryContext = JSON.parse(data);
+    }
+    
     const classificationPrompt = `
-      Context: ${JSON.stringify(context)}
+      Context: ${JSON.stringify(memoryContext.interaction)}
       Current Input: "${input}"
       
       Classify this input:

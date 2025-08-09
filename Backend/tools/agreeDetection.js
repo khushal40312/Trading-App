@@ -1,37 +1,50 @@
 const { model } = require("../aiModel/gemini");
+const redisClient = require("../config/redisClient");
 
 
 
 
-const agreeDetection = {
-    name: "inputAgreeDetection",
-    description: "detect that user input is agreewith old genration or Not based on its tone and old memory.",
-    func: async ({ input, user }) => {
+const AgreementDetector = {
+    name: "AgreementDetector",
+    description: "detect user response tone level",
+    func: async ({ input, user ,sessionId}) => {
 
-
-    const detectionPrompt = `
-
-      You are an agreeDetector, Analyse Fresh User Input and Memory Context (if available) an tell that is user confirming to someting  :
-      - YES
-      - NO
-
-      
-     📌 Memory Context:
-         ${memoryContext}
-
-     Fresh User Input: "${input}",
+        const data = await redisClient.get(`session:data:${user.id}:${sessionId}`)
+        let memoryContext;
+        if (!data) {
+          memoryContext = ''
+        } else {
     
-      🔁 Instructions:
-      - Always read recent conversation before response if coversation available.
-      - return only just the  YES or NO .
-       `;
-
-    const result = await model.invoke(detectionPrompt);
-    return result.content.trim();
+          memoryContext = JSON.parse(data);
+        }
+        const agreementPrompt = `
+        User Fresh Input: "${input}"
+        Context: ${JSON.stringify(memoryContext.interaction)}
+        Pending Trade: ${memoryContext.pendingTrade ? JSON.stringify(memoryContext.pendingTrade) : 'None'}
+        
+        Determine agreement level:
+        - STRONG_YES: Clear confirmation (yes, go ahead, confirm, execute, etc.)
+        - WEAK_YES: Probable agreement but unclear (ok, sure, maybe)
+        - CLARIFICATION_NEEDED: User asking questions about the trade
+        - MODIFICATION_REQUEST: Want to change something
+        - STRONG_NO: Clear rejection (no, cancel, stop, etc.)
+        - UNCLEAR: Cannot determine intent
+        
+        Return: {
+          "agreement": "...",
+          "confidence": 0.9,
+          "extracted_concerns": [...],
+          "needs_clarification": boolean
+        }
+      `;
+      const result = await model.invoke(agreementPrompt);
+      const cleaned = result.content.replace(/```json|```/g, '').trim();
+      const jsonObject = JSON.parse(cleaned);
+      return jsonObject
 
 }
 }
 
-module.exports = { agreeDetection }
+module.exports = { AgreementDetector }
 
 

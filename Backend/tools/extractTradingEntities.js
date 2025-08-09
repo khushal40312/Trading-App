@@ -29,7 +29,7 @@ const extractTradingEntities = {
       "action": "buy",
       "symbol": "BTC",
       "amount": 0.5,
-      "condition": "price < 40000"or context.currentPrice,
+      "condition": "currentPrice < 40000"or context.currentPrice,
       "orderType": "conditional"
     }
     

@@ -1,12 +1,24 @@
 const { model } = require("../aiModel/gemini");
+const redisClient = require("../config/redisClient");
 
 const classifyTool = {
   name: "classifyInput",
   description: "Classifies the user's message into categories.",
 
   func: async ({ input, user, sessionId }) => {
+    console.log(input)
+    const data = await redisClient.get(`session:data:${user.id}:${sessionId}`)
 
-    let memoryContext = ''
+    let memoryContext;
+    if (data == null) {
+      memoryContext = ''
+    } else {
+      let parsed = JSON.parse(data);
+      memoryContext = JSON.stringify(parsed.interaction)
+
+    }
+
+
     const classificationPrompt = `
 
       Classify the user fresh input + old Conversation memory context into one of these categories based on a trading app   :
@@ -16,8 +28,7 @@ const classifyTool = {
       - EDUCATION
       - GENERAL_CHAT
       
-     📌 Memory Context:
-         ${memoryContext}
+     📌 Memory Context:{${memoryContext}}
 
      Fresh User Input: "${input}",
     
