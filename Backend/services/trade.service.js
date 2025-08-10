@@ -387,7 +387,69 @@ module.exports.getMyTradingStats= async(userId)=>{
         
     }
  }
+ module.exports.sellAssets= async (payload) => {
+    const { symbol, assetName, quantity, price, notes ,userId} = payload
+    
+    const tradeType = 'sell';
+    const fees = 0.005 * (quantity * price);
+    
+    try {
+        const imageURL= await getImages(assetName);
 
+        const user = await userModel.findById(userId);
+        let portfolio = await portfolioModel.findOne({ user: userId });
+
+        if (!portfolio) {
+            return res.status(404).json({ error: "Portfolio not found." });
+        }
+
+        const asset = portfolio.assets.find(a => a.symbol === symbol.toUpperCase());
+        if (!asset) {
+            return res.status(400).json({ error: `Asset ${symbol} not found in portfolio.` });
+        }
+        if (asset.quantity < quantity) {
+            return res.status(400).json({ error: `Not enough quantity to sell. Available: ${asset.quantity}` });
+        }
+
+        const trade = new tradeModel({
+            user: userId,
+            portfolio: portfolio._id,
+            symbol,
+            assetName,
+            tradeType,
+            quantity,
+            price,
+            fees,
+            notes,
+            imageURL
+        });
+
+        await trade.execute();
+        portfolio.removeAsset(symbol, quantity);
+        await portfolio.updatePrices(getStockQuote);
+        await portfolio.save();
+
+        user.balance += trade.netAmount;
+        user.trades.push(trade._id);
+        await user.save();
+
+        return {
+            message: 'Trade executed successfully',
+            trade,
+            balance: user.balance,
+            portfolioSummary: {
+                currentValue: portfolio.currentValue,
+                totalInvestment: portfolio.totalInvestment,
+                totalProfitLoss: portfolio.totalProfitLoss,
+                totalProfitLossPercentage: portfolio.totalProfitLossPercentage,
+                assets: portfolio.assets,
+            }
+        }
+
+    } catch (error) {
+        console.error('Sell asset error:', error);
+    }
+ }
  const getImages = async (symbol) => {
     // console.log(symbol)
 

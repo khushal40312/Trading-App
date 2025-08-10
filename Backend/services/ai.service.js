@@ -1,30 +1,10 @@
 
-const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
-const portfolioServices = require('../services/portfolio.service');
 const tradeServices = require('../services/trade.service');
-
+const { v4: uuidv4 } = require('uuid');
+const pendingTradesModel = require('../models/pendingTrades.model')
 const getStockQuote = require("../getStockQuote");
 const redisClient = require("../config/redisClient");
-
-const memoryStore = new Map(); // { userId: [ { role, content } ] }
-
-module.exports.saveMessageToMemory = (userId, role, content) => {
-    if (!memoryStore.has(userId)) memoryStore.set(userId, []);
-    memoryStore.get(userId).push({ role, content });
-};
-
-module.exports.getRecentMemory = (userId, lastN = 5) => {
-    const history = memoryStore.get(userId) || [];
-    return history.slice(-lastN);
-};
-const formatChatHistory = (history) => {
-    return history.map(msg => `${msg.role === 'user' ? '👤' : '🤖'}: ${msg.content}`).join('\n');
-};
-
-const getRecentMemory = (userId, lastN = 5) => {
-    const history = memoryStore.get(userId) || [];
-    return history.slice(-lastN);
-};
+const { memoryTool } = require("../tools/memoryTool");
 
 function rateUserRiskProfile(data) {
     const {
@@ -78,111 +58,6 @@ function rateUserRiskProfile(data) {
     return "low";                           // 0-3 points
 }
 
-function analyzeSentiment(upPercentage, downPercentage) {
-    if (upPercentage < 0 || upPercentage > 100 || downPercentage < 0 || downPercentage > 100) {
-        throw new Error('Percentages must be between 0 and 100');
-    }
-
-    const sentimentScore = upPercentage;
-    let level;
-    if (sentimentScore >= 75) {
-        level = "EXTREMELY_BULLISH";
-
-    }
-    else if (sentimentScore >= 60) {
-        level = "BULLISH";
-    }
-    else if (sentimentScore >= 40) {
-        level = "NEUTRAL";
-    }
-    else {
-        level = "BEARISH";
-    }
-
-    return level
-}
-const model = new ChatGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_API_KEY,
-    model: "gemini-2.5-flash",
-});
-
-module.exports.extractTradingEntities = async (input) => {
-    const extractionPrompt = `
-  You are a trading command parser. Extract the following entities from user input:
-  - action: buy or sell
-  - symbol: trading pair or crypto name
-  - amount: quantity in number
-  - condition: any price condition or threshold
-  - orderType: "market", "limit", or "conditional" (based on context)
-  
-  Respond in this JSON format, Respond ONLY with JSON. No explanation.:
-  {
-    "action": "",
-    "symbol": "",
-    "amount": ,
-    "condition": "",
-    "orderType": ""
-  }
-    Example:
-     {
-    "action": "buy",
-    "symbol": "BTC",
-    "amount": 0.5,
-    "condition": "price < 40000",
-    "orderType": "conditional"
-  }
-  
-  
-  User Input: "${input}"
-  `;
-
-
-    const result = await model.invoke(extractionPrompt)
-
-    try {
-        const cleaned = result.content.replace(/```json|```/g, '').trim();
-        const jsonObject = JSON.parse(cleaned);
-
-
-        return jsonObject;
-    } catch (err) {
-        console.error("⚠️ Could not parse response as JSON:", result.content);
-        throw new Error("Invalid response format");
-    }
-};
-module.exports.classifyInput = async ({ userInput, userId }) => {
-    const memory = getRecentMemory(userId) || [];
-
-    const previousAiRes = memory?.find(item => item.role === 'ai')?.content.reply || ''
-    const previousUser = memory?.find(item => item.role === 'user')?.content.message || ''
-
-
-
-    // console.log(memory)
-    const classificationPrompt = `
-
-
-  Classify the user fresh input + old Conversation into one of these categories based on a trading app rather say out of context :
-  - TRADING
-  - PORTFOLIO
-  - MARKET_ANALYSIS
-  - EDUCATION
-  - GENERAL_CHAT
-  
-  
-  old conversation: User Said :${previousUser} and you said :${previousAiRes} 
- Fresh User Input: "${userInput}",
-
-  🔁 Instructions:
-  - Always read recent conversation before response if coversation available.
-  - just the category name or out of context .
-  `;
-
-    const result = await model.invoke(classificationPrompt);
-    console.log(result)
-    return result.content.trim();  // e.g. "TRADING"
-};
-
 async function getMarketSentiment(symbol) {
     const id = await tradeServices.getSuggestion(symbol)
 
@@ -196,25 +71,6 @@ async function getRiskProfile(userId) {
     const stats = await tradeServices.getMyTradingStats(userId);
     return rateUserRiskProfile(stats)
 }
-module.exports.enrichTradingContext = async (entities, user) => {
-
-    let sentimentWithName = await getMarketSentiment(entities.symbol)
-    const { Sentiment, assetName } = sentimentWithName;
-    const context = {
-        user: user,
-        portfolio: await portfolioServices.findPortfolio(user.id),
-        currentPrice: await getStockQuote(entities.symbol),
-        marketSentiment: Sentiment,
-        userHistory: await tradeServices.getTradingHistory(user.id, entities.symbol),
-        riskProfile: await getRiskProfile(user.id),
-        assetName: assetName
-
-    };
-
-    return context;
-};
-
-
 
 
 module.exports.assessRisk = ({ entities, context }) => {
@@ -245,114 +101,133 @@ module.exports.assessRisk = ({ entities, context }) => {
 };
 
 
-module.exports.generateAIResponse = async (payload) => {
-    const { entities, context } = payload;
-    const prompt = `
-    You're a friendly and responsible AI trading assistant. Use the dynamic data provided below to generate a trade plan summary for the user. 
-    
-    Your job is to help the user (named ${context.user.fullname.firstname}) understand their trading action clearly and safely.
-    
-    ---
-    
-    📥 **User Intent**:
-    - Action: ${entities.action?.toUpperCase()}
-    - Asset: ${entities.symbol}
-    - Amount: ${entities.amount}
-    - Order Type: ${entities.orderType}
-    - Condition: Buy at current price (${context.currentPrice} ${context.user.settings.currency})
-    
-    ---
-    
-    📊 **User Portfolio Summary**:
-    - Balance: ₹${context.user.balance.toFixed(2)}
-    - Risk Profile: ${context.riskProfile}
-    - Total Investment: ₹${context.portfolio.totalInvestment.toFixed(2)}
-    - Current Value: ₹${context.portfolio.currentValue.toFixed(2)}
-    - P&L: ₹${context.portfolio.totalProfitLoss.toFixed(2)} (${context.portfolio.totalProfitLossPercentage.toFixed(2)}%)
-    
-    ---
-    
-    📈 **Market Sentiment**: ${context.marketSentiment.replace('_', ' ')}
-    
-    ---
-    
-    🛡️ **Instructions** for your response:
-    1. Clearly summarize the user's intention to **${entities.action} ${entities.amount} ${entities.symbol} at ₹${context.currentPrice}**.
-    2. If this position costs more than 30% of their balance, suggest reducing the trade size.
-    3. Mention their current portfolio loss if applicable, gently and supportively.
-    4. If marketSentiment is "EXTREMELY_BULLISH", remind that sentiment is high, but markets are volatile—caution is still wise.
-    5. Since their risk profile is **${context.riskProfile}**, suggest balance and diversification.
-    6. Be warm, friendly, and clear in tone.
-    7. Close with: 
-       **"Would you like me to go ahead and place this order, or would you like to modify the amount or explore other assets?"**
-    
-    Keep the tone helpful, optimistic, and informative — like a trusted financial friend.
-    `;
 
-
-    const response = await model.invoke(prompt);
-    return response.content.trim();
-};
-module.exports.generateAIResponseWithMemory = async (payload) => {
-    const { entities, context, riskAssessment, userId } = payload;
-
-    const memory = formatChatHistory(getRecentMemory(userId));
-
-    const prompt = `
-You are an AI trading assistant.
-Here's the recent conversation:
-${memory}
-
-The user now asked to buy or sell ${entities.amount} ${entities.symbol} under ${entities.condition}.
-
-Context:
-- Current price: $${context.currentPrice}
-- Balance: $${context.user.balance}
-- Risk: ${riskAssessment.riskLevel}, Position Size: ${riskAssessment.positionSizePercent.toFixed(1)}%
-
-Respond with:
-- Acknowledge current request
-- Mention past related trades if found in memory
-- Ask if user confirms the trade use confirm word if user can afford
-
-Respond naturally.
-`;
-
-    const response = await model.invoke(prompt);
-    return response.content.trim();
-};
-module.exports.isConfirmed = (userReply) => {
-    const yesWords = ["yes", "confirm", "place it", "go ahead", "do it"];
-    return yesWords.some(word => userReply.toLowerCase().includes(word));
-};
 let executedTrades = []; // In-memory store
 let monitoringIntervalId = null; // Store interval ID globally
 
-module.exports.executeTrade = async ({ userId, entities, context }) => {
-    const trade = {
-        id: "tx_" + Date.now(),
-        userId,
-        action: entities.action,
-        symbol: entities.symbol,
-        amount: entities.amount,
-        condition: entities.condition || null,
-        orderType: entities.orderType,
-        currentPrice: context.currentPrice,
-        timestamp: new Date().toISOString(),
-        assetName: context.assetName
-    };
 
-    executedTrades.push(trade);
-    return trade;
-};
-module.exports.formatTradeConfirmation = (trade) => {
+module.exports.executeTrade = async ({ finalJson, oldMemory }) => {
+    const { action, symbol, amount, condition, assetName, userId, orderType, riskProfile } = finalJson;
+
+
+    if (condition == 'currentPrice' && action == 'buy') {
+        const currentPrice = await getStockQuote(symbol)
+        const trade = {
+            symbol,
+            assetName, // You might want to get the full name
+            quantity: amount,
+            price: currentPrice,
+            notes: ` trade executed: ${finalJson.condition}`,
+            userId
+        }
+        const data = await executeBuyAsset(trade);
+
+        const format = formatTradeConfirmation(data, finalJson.condition)
+
+        const response = await memoryTool.func({
+            Conversations: { oldMemory, format }, userId
+        });
+        await pendingTradesModel.create({ userId, action, symbol, amount, condition, orderType, price: currentPrice, assetName, riskProfile, status: "CONFIRMED", })
+
+        console.log(response)
+    } else if (condition == 'currentPrice' && action == 'sell') {
+
+
+        const currentPrice = await getStockQuote(symbol)
+        const trade = {
+            symbol,
+            assetName, // You might want to get the full name
+            quantity: amount,
+            price: currentPrice,
+            notes: ` trade executed: ${finalJson.condition}`,
+            userId
+        }
+        const data = await executeSellAsset(trade);
+        const format = formatTradeConfirmation(data, finalJson.condition)
+        const response = await memoryTool.func({
+            Conversations: { oldMemory, format }, userId
+        });
+        await pendingTradesModel.create({ userId, action, symbol, amount, condition, orderType, price: currentPrice, assetName, riskProfile, status: "CONFIRMED", })
+
+        console.log(response)
+    } else {
+        if (action == 'buy') {
+
+            const data = await pendingTradesModel.create({ userId, action, symbol, amount, condition, orderType, price: currentPrice, assetName, riskProfile, status: "PENDING", })
+            const { id,
+                userId,
+                action,
+                symbol,
+                amount,
+                condition,
+                orderType,
+                currentPrice,
+                assetName,
+                createdAt } = data
+            const trade = {
+                id,
+                userId,
+                action,
+                symbol,
+                amount,
+                condition,
+                orderType,
+                currentPrice: price,
+                timestamp: createdAt,
+                assetName: assetName
+            };
+
+            executedTrades.push(trade);
+            const format = formatTradeConfirmation(data, finalJson.condition)
+            await memoryTool.func({
+                Conversations: { oldMemory, format }, userId
+            });
+
+        } else if (action == 'sell') {
+            const data = await pendingTradesModel.create({ userId, action, symbol, amount, condition, orderType, price: currentPrice, assetName, riskProfile, status: "PENDING", })
+            const { id,
+                userId,
+                action,
+                symbol,
+                amount,
+                condition,
+                orderType,
+                currentPrice,
+                assetName,
+                createdAt } = data
+            const trade = {
+                id,
+                userId,
+                action,
+                symbol,
+                amount,
+                condition,
+                orderType,
+                currentPrice: price,
+                timestamp: createdAt,
+                assetName: assetName
+            };
+
+            executedTrades.push(trade);
+            const format = formatTradeConfirmation(data, finalJson.condition)
+            await memoryTool.func({
+                Conversations: { oldMemory, format }, userId
+            });
+        }
+    }
+
+
+}
+// const monitoringInterval = startTradeMonitoring(getStockQuote, 1);
+
+const formatTradeConfirmation = (trade, condition) => {
     return `
   ✅ Trade Executed!
-  🔹 ID: ${trade.id}
-  🔹 Action: ${trade.action.toUpperCase()} ${trade.amount} ${trade.symbol}
+  🔹 ID: ${trade.trade.id}
+  🔹 Action: ${trade.trade.tradeType.toUpperCase()} ${trade.trade.price} ${trade.trade.symbol}
   🔹 Type: ${trade.orderType}
-  🔹 Condition: ${trade.condition || "None"}
-  📅 Time: ${new Date(trade.timestamp).toLocaleString()}
+  🔹 Condition: ${condition || "None"}
+  📅 Time: ${trade.trade.executedAt.toString()}
   `;
 };
 
@@ -397,6 +272,7 @@ module.exports.checkAndExecuteTrades = async (getStockQuote) => {
 
                 if (trade.action.toLowerCase() === 'buy') {
                     await executeBuyAsset(trade);
+                    await PendingTrade.findByIdAndDelete(trade.id);
                 } else if (trade.action.toLowerCase() === 'sell') {
                     console.log(`Executing sell for trade ${trade.id}`);
                 }
@@ -424,6 +300,7 @@ module.exports.checkAndExecuteTrades = async (getStockQuote) => {
         console.log('✅ All trades executed. Monitoring stopped automatically.');
     }
 };
+
 module.exports.isMonitoringActive = () => {
     return monitoringIntervalId !== null;
 };
@@ -452,7 +329,29 @@ const executeBuyAsset = async (trade) => {
         throw error;
     }
 };
+const executeSellAsset = async (trade) => {
+    try {
+        // Assuming you have a sell function or API endpoint
+        const sellData = {
+            symbol: trade.symbol,
+            assetName: trade.assetName, // You might want to get the full name
+            quantity: trade.amount,
+            price: trade.currentPrice,
+            notes: `Conditional trade executed: ${trade.condition}`,
+            userId: trade.userId,
 
+        };
+
+        // Call your buy asset function here
+        const result = await tradeServices.sellAssets(sellData);
+        console.log(`Executing buy asset for trade ${trade.id}:`, buyData);
+
+        return result;
+    } catch (error) {
+        console.error(`Error executing buy asset for trade ${trade.id}:`, error);
+        throw error;
+    }
+};
 
 // Function to add a conditional trade to monitoring
 module.exports.addConditionalTrade = (trade) => {
@@ -531,18 +430,20 @@ const storeSessionInRedis = async (state) => {
         const userId = state.user._id.toString();
         const sessionId = state.sessionId;
         const sessionData = {
-            pendingTrades: {
-                entities: state.entities,
-                context: state.context,
-                tradeClassification: state.tradeClassification,
-                category: state.category,
-                sessionId,
-                status:"WAITING_FOR_CONFIRMATION",
-                timestamp: new Date().toISOString()
-            },
-            interaction:{
-            input: state.input,
-            reply: state.reply,
+            pendingTrades: [
+                {
+                    entities: state.entities,
+                    context: state.context,
+                    tradeClassification: state.tradeClassification,
+                    category: state.category,
+                    sessionId,
+                    userId: state.user._id.toString(),
+                    status: "WAITING_FOR_CONFIRMATION",
+                    timestamp: new Date().toISOString()
+                }],
+            interaction: {
+                input: state.input,
+                reply: state.reply,
             }
         };
 

@@ -6,7 +6,7 @@ const { agreeDetection, AgreementDetector } = require("../tools/agreeDetection")
 const { extractTradingContext } = require("../tools/enrichTradingContext");
 const { tradingInputClassifierTool } = require("../tools/TradingInputClassifier");
 const { generateAIResponse } = require("../tools/generateAIResponse");
-const {storeSessionInRedis} = require("../services/ai.service");
+const { storeSessionInRedis } = require("../services/ai.service");
 const { finalTradeExtractorTool } = require("../tools/FinalTradingEntityExtractor");
 // 1. Node function: classify
 const classifyNode = async (state) => {
@@ -146,7 +146,7 @@ const finalTradeExtractorToolNode = async (state) => {
     const finalJson = await finalTradeExtractorTool.func({
       input: state.input,
       sessionId: state.sessionId,
-      user:state.user
+      user: state.user
     });
 
     return {
@@ -174,8 +174,8 @@ const graphBuilder = new StateGraph({
     tradeClassification: "object",
     reply: "string",
     error: "string",
-    agreeDetection:"string",
-    finalJson:"object"
+    agreeDetection: "string",
+    finalJson: "object"
   }
 });
 
@@ -208,7 +208,7 @@ graphBuilder.addConditionalEdges(
 
     if (state.tradeClassification.category === "FRESH_TRADING_REQUEST") return "extractTradingEntitiesToJson";
     if (state.tradeClassification.category === "TRADE_CONFIRMATION") return "AgreementDetector";
-    
+
     return END;
   }
 );
@@ -229,6 +229,20 @@ graphBuilder.addConditionalEdges(
   }
 
 );
+graphBuilder.addConditionalEdges(
+  "finalTradeExtractor",
+  (state) => {
+    if (state.error) return END;
+
+    if (state.finalJson.jsonObject.reply === "No Pending trade found in memory") return END;
+
+    if (state.finalJson.jsonObject.reply === "PASS") return "finalTradeExtractor";
+
+    return END;
+  }
+
+);
+
 graphBuilder.addEdge("finalTradeExtractor", END);
 
 // Final edge to END
