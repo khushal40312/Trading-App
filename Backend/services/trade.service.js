@@ -42,7 +42,7 @@ module.exports.getSuggestion = async (input) => {
 
 
                 const info = tokenInfoRes.data.data?.attributes;
-                console.log(info)
+               
                 return {
                     name: info.name,
                     symbol: info.symbol,

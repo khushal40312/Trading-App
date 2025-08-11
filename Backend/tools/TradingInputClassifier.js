@@ -1,22 +1,17 @@
 const { model } = require("../aiModel/gemini");
 const redisClient = require("../config/redisClient");
+const { getLatest2TradesandInteractions } = require("../services/ai.service");
 
 const tradingInputClassifierTool = {
   name: "tradingInputClassifier",
   description: "Classifies the user's trade input ",
 
-  func: async ({ input,user, sessionId }) => {
-    const data = await redisClient.get(`session:data:${user.id}:${sessionId}`)
-    let memoryContext;
-    if (!data) {
-      memoryContext = ''
-    } else {
+  func: async ({ input, user, sessionId }) => {
+    const data = await getLatest2TradesandInteractions(user.id, sessionId)
+    let memoryContext = data ? JSON.stringify(data) : "";
 
-      memoryContext = JSON.parse(data);
-    }
-    
     const classificationPrompt = `
-      Context: ${JSON.stringify(memoryContext.interaction)}
+      Context: ${JSON.stringify(memoryContext)}
       Current Input: "${input}"
       
       Classify this input:
@@ -24,7 +19,8 @@ const tradingInputClassifierTool = {
       2. TRADE_CONFIRMATION - Confirming a pending trade
       3. TRADE_MODIFICATION - Want to change pending trade
       4. TRADE_CANCELLATION - Cancel pending trade
-      5. GENERAL_QUESTION - Non-trading query
+      5. TRADE_INFORMATION  - any trade info
+      6. GENERAL_QUESTION - Non-trading query
       
       Also extract confidence level (0-1).
       

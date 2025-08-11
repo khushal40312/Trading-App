@@ -4,12 +4,12 @@ const redisClient = require("../config/redisClient");
 const finalTradeExtractorTool = {
   name: "finalTradeExtractor",
   description: "Generate Final entities for Trade",
-
   func: async ({ user, sessionId }) => {
+
     const data = await redisClient.get(`session:data:${user.id}:${sessionId}`);
 
     if (!data) {
-      return { jsonObject:{reply: "No Pending trade found in memory"} };
+      return { jsonObject: { reply: "No Pending trade found in memory" } };
     }
 
     let parsed;
@@ -22,7 +22,7 @@ const finalTradeExtractorTool = {
     }
 
     if (!Array.isArray(parsed.pendingTrades) || parsed.pendingTrades.length === 0) {
-      return { jsonObject:{reply: "No Pending trade found in memory"} };
+      return { jsonObject: { reply: "No Pending trade found in memory" } };
 
     }
 
@@ -32,7 +32,7 @@ const finalTradeExtractorTool = {
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
     if (!latestPending) {
-      return { jsonObject:{reply: "No Pending trade found in memory"} };
+      return { jsonObject: { reply: "No Pending trade found in memory" } };
 
     }
 
@@ -82,7 +82,7 @@ const finalTradeExtractorTool = {
     const cleaned = result.content.replace(/```json|```/g, "").trim();
     const jsonObject = JSON.parse(cleaned);
     const oldMemory = parsed.interaction;
-    return { jsonObject,oldMemory };
+    return { jsonObject, oldMemory };
   }
 };
 

@@ -10,17 +10,11 @@ const AgreementDetector = {
     func: async ({ input, user ,sessionId}) => {
 
         const data = await redisClient.get(`session:data:${user.id}:${sessionId}`)
-        let memoryContext;
-        if (!data) {
-          memoryContext = ''
-        } else {
-    
-          memoryContext = JSON.parse(data);
-        }
+        let memoryContext = data ? JSON.stringify(data) : "";
+       
         const agreementPrompt = `
         User Fresh Input: "${input}"
-        Context: ${JSON.stringify(memoryContext.interaction)}
-        Pending Trade: ${memoryContext.pendingTrade ? JSON.stringify(memoryContext.pendingTrade) : 'None'}
+        Old Memory and User's Pending Trades : ${memoryContext}
         
         Determine agreement level:
         - STRONG_YES: Clear confirmation (yes, go ahead, confirm, execute, etc.)

@@ -3,6 +3,7 @@ const { ChatPromptTemplate } = require("@langchain/core/prompts");
 const { StringOutputParser } = require("@langchain/core/output_parsers");
 const { model } = require("../aiModel/gemini");
 const redisClient = require("../config/redisClient");
+const { getLatest3Interactions } = require("../services/ai.service");
 
 const classifyPrompt = ChatPromptTemplate.fromTemplate(`
 Classify the user's fresh input + old Conversation memory context into one of these categories for a trading app:
@@ -24,8 +25,8 @@ const classifyTool = {
   name: "classifyInput",
   description: "Classifies the user's message into categories.",
   func: async ({ input, user, sessionId }) => {
-    const data = await redisClient.get(`session:data:${user.id}:${sessionId}`);
-    let memoryContext = data ? JSON.stringify(JSON.parse(data).interaction) : "";
+    const data = await getLatest3Interactions(user.id, sessionId)
+    let memoryContext = data ? JSON.stringify(data) : "";
 
     const chain = classifyPrompt
       .pipe(model) // Gemini LangChain wrapper
@@ -35,7 +36,7 @@ const classifyTool = {
       input,
       memoryContext
     });
-
+    console.log(category)
     return category.trim();
   }
 };

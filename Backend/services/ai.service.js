@@ -5,7 +5,7 @@ const pendingTradesModel = require('../models/pendingTrades.model')
 const getStockQuote = require("../getStockQuote");
 const redisClient = require("../config/redisClient");
 const { memoryTool } = require("../tools/memoryTool");
-
+const tradeModel= require('../models/Trade.model')
 function rateUserRiskProfile(data) {
     const {
         totalTrades,
@@ -57,7 +57,29 @@ function rateUserRiskProfile(data) {
     if (riskScore >= 4) return "moderate";  // 4-8 points
     return "low";                           // 0-3 points
 }
+function analyzeSentiment(upPercentage, downPercentage) {
+    if (upPercentage < 0 || upPercentage > 100 || downPercentage < 0 || downPercentage > 100) {
+        throw new Error('Percentages must be between 0 and 100');
+    }
 
+    const sentimentScore = upPercentage;
+    let level;
+    if (sentimentScore >= 75) {
+        level = "EXTREMELY_BULLISH";
+
+    }
+    else if (sentimentScore >= 60) {
+        level = "BULLISH";
+    }
+    else if (sentimentScore >= 40) {
+        level = "NEUTRAL";
+    }
+    else {
+        level = "BEARISH";
+    }
+
+    return level
+}
 async function getMarketSentiment(symbol) {
     const id = await tradeServices.getSuggestion(symbol)
 
@@ -106,118 +128,90 @@ let executedTrades = []; // In-memory store
 let monitoringIntervalId = null; // Store interval ID globally
 
 
-module.exports.executeTrade = async ({ finalJson, oldMemory }) => {
+const executeTrade = async ({ finalJson, oldMemory }) => {
     const { action, symbol, amount, condition, assetName, userId, orderType, riskProfile } = finalJson;
 
+    const currentPrice = await getStockQuote(symbol);
 
-    if (condition == 'currentPrice' && action == 'buy') {
-        const currentPrice = await getStockQuote(symbol)
-        const trade = {
+    if (condition === 'currentPrice' || condition === 'context.currentPrice') {
+        const pending = await pendingTradesModel.create({
+            userId, action, symbol, amount, condition,
+            orderType, price: currentPrice, assetName, riskProfile,
+            status: "CONFIRMED"
+        });
+        console.log("pendingID", pending.id)
+        const tradeData = {
+            id: pending.id,
             symbol,
-            assetName, // You might want to get the full name
+            assetName,
             quantity: amount,
             price: currentPrice,
-            notes: ` trade executed: ${finalJson.condition}`,
+            notes: `Trade executed: ${condition}`,
             userId
-        }
-        const data = await executeBuyAsset(trade);
+        };
 
-        const format = formatTradeConfirmation(data, finalJson.condition)
+        const data = (action === 'buy')
+            ? await executeBuyAsset(tradeData)
+            : await executeSellAsset(tradeData);
 
-        const response = await memoryTool.func({
-            Conversations: { oldMemory, format }, userId
-        });
-        await pendingTradesModel.create({ userId, action, symbol, amount, condition, orderType, price: currentPrice, assetName, riskProfile, status: "CONFIRMED", })
+        const receipt = {
+            trade: {
+                id: data.trade.id || 'N/A',
+                tradeType: action,
+                price: currentPrice,
+                symbol,
+                orderType,
+                executedAt: new Date()
+            },
+            orderType
+        };
 
-        console.log(response)
-    } else if (condition == 'currentPrice' && action == 'sell') {
+        const format = formatTradeConfirmation(receipt, condition);
+        await memoryTool.func({ Conversations: { oldMemory, format }, userId });
 
 
-        const currentPrice = await getStockQuote(symbol)
-        const trade = {
-            symbol,
-            assetName, // You might want to get the full name
-            quantity: amount,
-            price: currentPrice,
-            notes: ` trade executed: ${finalJson.condition}`,
-            userId
-        }
-        const data = await executeSellAsset(trade);
-        const format = formatTradeConfirmation(data, finalJson.condition)
-        const response = await memoryTool.func({
-            Conversations: { oldMemory, format }, userId
-        });
-        await pendingTradesModel.create({ userId, action, symbol, amount, condition, orderType, price: currentPrice, assetName, riskProfile, status: "CONFIRMED", })
-
-        console.log(response)
+        return { reply: format }
     } else {
-        if (action == 'buy') {
+        // Pending conditional trade
+        const pending = await pendingTradesModel.create({
+            userId, action, symbol, amount, condition,
+            orderType, price: currentPrice, assetName, riskProfile,
+            status: "PENDING"
+        });
 
-            const data = await pendingTradesModel.create({ userId, action, symbol, amount, condition, orderType, price: currentPrice, assetName, riskProfile, status: "PENDING", })
-            const { id,
-                userId,
-                action,
-                symbol,
-                amount,
-                condition,
-                orderType,
-                currentPrice,
-                assetName,
-                createdAt } = data
-            const trade = {
-                id,
-                userId,
-                action,
-                symbol,
-                amount,
-                condition,
-                orderType,
-                currentPrice: price,
-                timestamp: createdAt,
-                assetName: assetName
-            };
+        const trade = {
+            id: pending.id,
+            userId,
+            action,
+            symbol,
+            amount,
+            condition,
+            orderType,
+            currentPrice,
+            timestamp: pending.createdAt,
+            assetName
+        };
 
-            executedTrades.push(trade);
-            const format = formatTradeConfirmation(data, finalJson.condition)
-            await memoryTool.func({
-                Conversations: { oldMemory, format }, userId
-            });
+        executedTrades.push(trade);
 
-        } else if (action == 'sell') {
-            const data = await pendingTradesModel.create({ userId, action, symbol, amount, condition, orderType, price: currentPrice, assetName, riskProfile, status: "PENDING", })
-            const { id,
-                userId,
-                action,
+        const receipt = {
+            trade: {
+                id: pending.id,
+                tradeType: action,
+                price: currentPrice,
                 symbol,
-                amount,
-                condition,
                 orderType,
-                currentPrice,
-                assetName,
-                createdAt } = data
-            const trade = {
-                id,
-                userId,
-                action,
-                symbol,
-                amount,
-                condition,
-                orderType,
-                currentPrice: price,
-                timestamp: createdAt,
-                assetName: assetName
-            };
+                executedAt: pending.createdAt
+            },
+            orderType
+        };
 
-            executedTrades.push(trade);
-            const format = formatTradeConfirmation(data, finalJson.condition)
-            await memoryTool.func({
-                Conversations: { oldMemory, format }, userId
-            });
-        }
+        const format = formatTradeConfirmation(receipt, condition);
+        await memoryTool.func({ Conversations: { oldMemory, format }, userId });
+        return { reply: format }
     }
+};
 
-
-}
 // const monitoringInterval = startTradeMonitoring(getStockQuote, 1);
 
 const formatTradeConfirmation = (trade, condition) => {
@@ -232,14 +226,14 @@ const formatTradeConfirmation = (trade, condition) => {
 };
 
 
-module.exports.startTradeMonitoring = (getStockQuote, intervalMinutes = 5) => {
-    console.log(`Starting trade monitoring every ${intervalMinutes} minutes...`);
+const startTradeMonitoring = (getStockQuote, intervalMinutes = 10) => {
+    console.log(`Starting trade monitoring every ${intervalMinutes} seconds...`);
 
-    const intervalMs = intervalMinutes * 60 * 1000;
+    const intervalMs = intervalMinutes * 1000;
 
     monitoringIntervalId = setInterval(async () => {
         try {
-            await module.exports.checkAndExecuteTrades(getStockQuote);
+            await checkAndExecuteTrades(getStockQuote);
         } catch (error) {
             console.error('Error in trade monitoring:', error);
         }
@@ -248,7 +242,7 @@ module.exports.startTradeMonitoring = (getStockQuote, intervalMinutes = 5) => {
     return monitoringIntervalId;
 };
 
-module.exports.checkAndExecuteTrades = async (getStockQuote) => {
+const checkAndExecuteTrades = async (getStockQuote) => {
     console.log(`Checking ${executedTrades.length} pending conditional trades...`);
 
     const tradesToRemove = [];
@@ -272,9 +266,21 @@ module.exports.checkAndExecuteTrades = async (getStockQuote) => {
 
                 if (trade.action.toLowerCase() === 'buy') {
                     await executeBuyAsset(trade);
-                    await PendingTrade.findByIdAndDelete(trade.id);
+                    await pendingTradesModel.findByIdAndUpdate(
+                        trade.id,
+                        { status: "CONFIRMED" },
+                        { new: true }
+                    );
+
                 } else if (trade.action.toLowerCase() === 'sell') {
-                    console.log(`Executing sell for trade ${trade.id}`);
+                    await executeSellAsset(trade);
+
+                    await pendingTradesModel.findByIdAndUpdate(
+                        trade.id,
+                        { status: "CONFIRMED" },
+                        { new: true }
+                    );
+
                 }
 
                 tradesToRemove.push(trade.id);
@@ -301,19 +307,20 @@ module.exports.checkAndExecuteTrades = async (getStockQuote) => {
     }
 };
 
-module.exports.isMonitoringActive = () => {
+const isMonitoringActive = () => {
     return monitoringIntervalId !== null;
 };
 
 
 const executeBuyAsset = async (trade) => {
+
     try {
         // Assuming you have a buyAsset function or API endpoint
         const buyData = {
             symbol: trade.symbol,
             assetName: trade.assetName, // You might want to get the full name
-            quantity: trade.amount,
-            price: trade.currentPrice,
+            quantity: trade.quantity ? trade.quantity : trade.amount,
+            price: trade.price ? trade.price : trade.currentPrice,
             notes: `Conditional trade executed: ${trade.condition}`,
             userId: trade.userId,
 
@@ -321,7 +328,7 @@ const executeBuyAsset = async (trade) => {
 
         // Call your buy asset function here
         const result = await tradeServices.buyAssets(buyData);
-        console.log(`Executing buy asset for trade ${trade.id}:`, buyData);
+        console.log(`Executing buy asset for trade ${trade.id}:`);
 
         return result;
     } catch (error) {
@@ -335,8 +342,8 @@ const executeSellAsset = async (trade) => {
         const sellData = {
             symbol: trade.symbol,
             assetName: trade.assetName, // You might want to get the full name
-            quantity: trade.amount,
-            price: trade.currentPrice,
+            quantity: trade.quantity ? trade.quantity : trade.amount,
+            price: trade.price ? trade.price : trade.currentPrice,
             notes: `Conditional trade executed: ${trade.condition}`,
             userId: trade.userId,
 
@@ -344,7 +351,7 @@ const executeSellAsset = async (trade) => {
 
         // Call your buy asset function here
         const result = await tradeServices.sellAssets(sellData);
-        console.log(`Executing buy asset for trade ${trade.id}:`, buyData);
+        console.log(`Executing buy asset for trade ${trade.id}:`);
 
         return result;
     } catch (error) {
@@ -354,9 +361,9 @@ const executeSellAsset = async (trade) => {
 };
 
 // Function to add a conditional trade to monitoring
-module.exports.addConditionalTrade = (trade) => {
+const addConditionalTrade = (trade) => {
     if (trade.condition) {
-        pendingTrades.push(trade);
+        executeTrade.push(trade);
         console.log(`Added conditional trade to monitoring: ${trade.id}`);
     }
 };
@@ -407,7 +414,7 @@ const evaluateCondition = (condition, currentPrice) => {
 
 
 // Function to stop monitoring
-module.exports.stopTradeMonitoring = (intervalId) => {
+const stopTradeMonitoring = (intervalId) => {
     if (intervalId) {
         clearInterval(intervalId);
         console.log('Trade monitoring stopped');
@@ -415,7 +422,7 @@ module.exports.stopTradeMonitoring = (intervalId) => {
 };
 
 // Function to get all pending trades
-module.exports.getPendingTrades = () => {
+const getPendingTrades = () => {
     return [...executedTrades]; // Return a copy
 };
 
@@ -441,10 +448,13 @@ const storeSessionInRedis = async (state) => {
                     status: "WAITING_FOR_CONFIRMATION",
                     timestamp: new Date().toISOString()
                 }],
-            interaction: {
-                input: state.input,
-                reply: state.reply,
-            }
+            interaction: [
+                {
+                    input: state.input,
+                    reply: state.reply,
+                    timestamp: new Date().toISOString()
+                }
+            ]
         };
 
         // Store in Redis with 15 minutes (900 seconds) expiry
@@ -455,9 +465,89 @@ const storeSessionInRedis = async (state) => {
         console.error('Failed to store session in Redis:', error);
     }
 };
+const appendPendingTrade = async (userId, sessionId, newTrade) => {
+    const key = `session:data:${userId}:${sessionId}`;
+    let sessionStr = await redisClient.get(key);
+    if (!sessionStr) return false;
+
+    let sessionData = JSON.parse(sessionStr);
+
+    // Add the new pending trade
+    sessionData.pendingTrades.push({
+        ...newTrade,
+        timestamp: new Date().toISOString()
+    });
+
+    // Save back to Redis with same expiry (need to reset expiry)
+    await redisClient.setEx(key, 900, JSON.stringify(sessionData));
+    return true;
+};
+const appendInteraction = async (userId, sessionId, newInteraction) => {
+    const key = `session:data:${userId}:${sessionId}`;
+    let sessionStr = await redisClient.get(key);
+    if (!sessionStr) return false;
+
+    let sessionData = JSON.parse(sessionStr);
+
+    // Add the new interaction
+    sessionData.interaction.push({
+        ...newInteraction,
+        timestamp: new Date().toISOString()
+    });
+
+    // Save back
+    await redisClient.setEx(key, 900, JSON.stringify(sessionData));
+    return true;
+};
+const getLatest3Interactions = async (userId, sessionId) => {
+    const key = `session:data:${userId}:${sessionId}`;
+    let sessionStr = await redisClient.get(key);
+    if (!sessionStr) return [];
+
+    let sessionData = JSON.parse(sessionStr);
+
+    // Return last 3
+    return sessionData.interaction.slice(-3);
+};
+const getLatest3Trades = async (userId, sessionId) => {
+    const key = `session:data:${userId}:${sessionId}`;
+    let sessionStr = await redisClient.get(key);
+    if (!sessionStr) return [];
+
+    let sessionData = JSON.parse(sessionStr);
+
+    // Return last 3
+    return sessionData.pendingTrades.slice(-3);
+};
+const getLatest2TradesandInteractions = async (userId, sessionId) => {
+    const key = `session:data:${userId}:${sessionId}`;
+    let sessionStr = await redisClient.get(key);
+    if (!sessionStr) return [];
+
+    let sessionData = JSON.parse(sessionStr);
+
+    // Return last 3
+    return {
+        trades: sessionData.pendingTrades.slice(-2),
+        interactions: sessionData.interaction.slice(-3)
+    };
+};
 
 
-module.exports = { getRiskProfile, getMarketSentiment, storeSessionInRedis }
+async function getLast5Trades(userId) {
+    try {
+        const trades = await tradeModel.find({ user: userId })
+            .sort({ createdAt: -1 }) // newest first
+            .limit(5)
+            .lean(); // return plain JS objects
+
+        return trades;
+    } catch (err) {
+        console.error("Error fetching trades:", err);
+        throw err;
+    }
+}
+module.exports = { getRiskProfile, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions,getLast5Trades }
 
 
 

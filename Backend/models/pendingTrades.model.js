@@ -1,4 +1,6 @@
+
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
 const pendingTradeSchema = new mongoose.Schema({
     userId: {
@@ -27,7 +29,7 @@ const pendingTradeSchema = new mongoose.Schema({
   },
   orderType: {
     type: String,
-    enum: ['market', 'limit', 'stop'],
+    enum: ['market', 'limit', 'stop','conditional'],
     required: true
   },
   price: {

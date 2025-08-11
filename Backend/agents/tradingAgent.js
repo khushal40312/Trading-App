@@ -2,12 +2,14 @@
 const { StateGraph, START, END } = require("@langchain/langgraph");
 const { classifyTool } = require("../tools/classify");
 const { extractTradingEntities } = require("../tools/extractTradingEntities");
-const { agreeDetection, AgreementDetector } = require("../tools/agreeDetection");
+const { AgreementDetector } = require("../tools/agreeDetection");
 const { extractTradingContext } = require("../tools/enrichTradingContext");
 const { tradingInputClassifierTool } = require("../tools/TradingInputClassifier");
 const { generateAIResponse } = require("../tools/generateAIResponse");
 const { storeSessionInRedis } = require("../services/ai.service");
 const { finalTradeExtractorTool } = require("../tools/FinalTradingEntityExtractor");
+const { tradeExecutionTool } = require("../tools/executeTrade");
+const { tradeInformation } = require("../tools/tradeInformation");
 // 1. Node function: classify
 const classifyNode = async (state) => {
   try {
@@ -114,7 +116,7 @@ const generateAIResponseNode = async (state) => {
   } catch (error) {
     return {
       ...state,
-      tradeClassification: { type: "ERROR" },
+      reply: { type: "ERROR" },
       error: error.message
     };
   }
@@ -161,6 +163,45 @@ const finalTradeExtractorToolNode = async (state) => {
     };
   }
 };
+
+
+const tradeExecutionToolNode = async (state) => {
+  try {
+    const executedTrade = await tradeExecutionTool.func({
+      finalJson: state.finalJson,
+    });
+
+    return {
+      ...state,
+      reply: executedTrade.reply
+    };
+  } catch (error) {
+    return {
+      ...state,
+      reply: { type: "ERROR" },
+      error: error.message
+    };
+  }
+};
+
+const tradeInformationNode = async (state) => {
+  try {
+    const tradeInfoClassification = await tradeInformation.func({
+      input: state.input,
+    });
+
+    return {
+      ...state,
+      tradeInfoClassification
+    };
+  } catch (error) {
+    return {
+      ...state,
+      tradeInfoClassification: { type: "ERROR" },
+      error: error.message
+    };
+  }
+};
 // Create StateGraph with proper type definitions
 const graphBuilder = new StateGraph({
   channels: {
@@ -172,20 +213,26 @@ const graphBuilder = new StateGraph({
     sessionId: "string",
     context: "object",
     tradeClassification: "object",
-    reply: "string",
+    reply: "any",
     error: "string",
     agreeDetection: "string",
-    finalJson: "object"
+    finalJson: "object",
+    executedTrade: "object",
+    tradeInfoClassification: "string"
   }
 });
-
 graphBuilder.addNode("classify", classifyNode);
+
 graphBuilder.addNode("tradingInputClassifier", tradingInputClassifierNode);
 graphBuilder.addNode("extractTradingEntitiesToJson", extractTradingEntitiesNode);
 graphBuilder.addNode("extractTradingContext", extractTradingContextNode);
 graphBuilder.addNode("initialResponse", generateAIResponseNode);
 graphBuilder.addNode("AgreementDetector", AgreementDetectorNode);
 graphBuilder.addNode("finalTradeExtractor", finalTradeExtractorToolNode);
+graphBuilder.addNode("tradeExecutionTool", tradeExecutionToolNode);
+graphBuilder.addNode("tradeInformation", tradeInformationNode);
+
+
 
 
 
@@ -208,6 +255,9 @@ graphBuilder.addConditionalEdges(
 
     if (state.tradeClassification.category === "FRESH_TRADING_REQUEST") return "extractTradingEntitiesToJson";
     if (state.tradeClassification.category === "TRADE_CONFIRMATION") return "AgreementDetector";
+    if (state.tradeClassification.category === "TRADE_INFORMATION") return "tradeInformation";
+
+
 
     return END;
   }
@@ -236,15 +286,27 @@ graphBuilder.addConditionalEdges(
 
     if (state.finalJson.jsonObject.reply === "No Pending trade found in memory") return END;
 
-    if (state.finalJson.jsonObject.reply === "PASS") return "finalTradeExtractor";
+    if (state.finalJson.jsonObject.reply === "PASS") return "tradeExecutionTool";
 
     return END;
   }
 
 );
 
-graphBuilder.addEdge("finalTradeExtractor", END);
+graphBuilder.addEdge("tradeExecutionTool", END);
+// graphBuilder.addConditionalEdges(
+//   "tradeInformation",
+//   (state) => {
+//     if (state.error) return END;
+//     if (state.tradeInfoClassification === "PENDING_TRADES") return "tradeInformation";
+//     if (state.tradeInfoClassification === "EXECUTED_TRADES") return "tradeInformation";
 
+  
+
+//     return END;
+//   }
+
+// );
 // Final edge to END
 // 
 // 4. Compile the graph
