@@ -5,7 +5,7 @@ const pendingTradesModel = require('../models/pendingTrades.model')
 const getStockQuote = require("../getStockQuote");
 const redisClient = require("../config/redisClient");
 const { memoryTool } = require("../tools/memoryTool");
-const tradeModel= require('../models/Trade.model')
+const tradeModel = require('../models/Trade.model')
 function rateUserRiskProfile(data) {
     const {
         totalTrades,
@@ -547,7 +547,23 @@ async function getLast5Trades(userId) {
         throw err;
     }
 }
-module.exports = { getRiskProfile, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions,getLast5Trades }
+
+async function getLast5PendingTrades(userId) {
+    try {
+        const trades = await pendingTradesModel.find({ 
+            user: userId, 
+            status: 'PENDING' 
+          }).sort({ createdAt: -1 }) // newest first
+            .limit(5)
+            .lean(); // return plain JS objects
+
+        return trades;
+    } catch (err) {
+        console.error("Error fetching trades:", err);
+        throw err;
+    }
+}
+module.exports = { getRiskProfile, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
 
 
 

@@ -10,6 +10,8 @@ const { storeSessionInRedis } = require("../services/ai.service");
 const { finalTradeExtractorTool } = require("../tools/FinalTradingEntityExtractor");
 const { tradeExecutionTool } = require("../tools/executeTrade");
 const { tradeInformation } = require("../tools/tradeInformation");
+const { pendingTradeChecker } = require("../tools/pendingTradeChecker");
+const { executedTradeChecker } = require("../tools/executedTradeChecker");
 // 1. Node function: classify
 const classifyNode = async (state) => {
   try {
@@ -202,6 +204,48 @@ const tradeInformationNode = async (state) => {
     };
   }
 };
+
+const pendingTradeCheckerNode = async (state) => {
+  try {
+    const reply = await pendingTradeChecker.func({
+      input: state.input,
+      user: state.user,
+      sessionId: state.sessionId
+    });
+
+    return {
+      ...state,
+      reply
+    };
+  } catch (error) {
+    return {
+      ...state,
+      reply: { type: "ERROR" },
+      error: error.message
+    };
+  }
+};
+
+const executedTradeCheckerNode = async (state) => {
+  try {
+    const reply = await executedTradeChecker.func({
+      input: state.input,
+      user: state.user
+    });
+
+    return {
+      ...state,
+      reply
+    };
+  } catch (error) {
+    return {
+      ...state,
+      reply: { type: "ERROR" },
+      error: error.message
+    };
+  }
+};
+
 // Create StateGraph with proper type definitions
 const graphBuilder = new StateGraph({
   channels: {
@@ -231,6 +275,9 @@ graphBuilder.addNode("AgreementDetector", AgreementDetectorNode);
 graphBuilder.addNode("finalTradeExtractor", finalTradeExtractorToolNode);
 graphBuilder.addNode("tradeExecutionTool", tradeExecutionToolNode);
 graphBuilder.addNode("tradeInformation", tradeInformationNode);
+graphBuilder.addNode("pendingTradeChecker", pendingTradeCheckerNode);
+graphBuilder.addNode("executedTradeChecker", executedTradeCheckerNode);
+
 
 
 
@@ -294,21 +341,19 @@ graphBuilder.addConditionalEdges(
 );
 
 graphBuilder.addEdge("tradeExecutionTool", END);
-// graphBuilder.addConditionalEdges(
-//   "tradeInformation",
-//   (state) => {
-//     if (state.error) return END;
-//     if (state.tradeInfoClassification === "PENDING_TRADES") return "tradeInformation";
-//     if (state.tradeInfoClassification === "EXECUTED_TRADES") return "tradeInformation";
+graphBuilder.addConditionalEdges(
+  "tradeInformation",
+  (state) => {
+    if (state.error) return END;
+    if (state.tradeInfoClassification === "PENDING_TRADES") return "pendingTradeChecker";
+    if (state.tradeInfoClassification === "EXECUTED_TRADES") return "executedTradeChecker";
 
-  
+    return END;
+  }
 
-//     return END;
-//   }
+);
 
-// );
-// Final edge to END
-// 
+
 // 4. Compile the graph
 const tradingAgent = graphBuilder.compile();
 
