@@ -1,6 +1,6 @@
 const { model } = require("../aiModel/gemini");
-const redisClient = require("../config/redisClient");
 const { getLatest2TradesandInteractions } = require("../services/ai.service");
+const { retrieveMemoryTool } = require("./retriveMemoryTool");
 
 const tradingInputClassifierTool = {
   name: "tradingInputClassifier",
@@ -9,9 +9,12 @@ const tradingInputClassifierTool = {
   func: async ({ input, user, sessionId }) => {
     const data = await getLatest2TradesandInteractions(user.id, sessionId)
     let memoryContext = data ? JSON.stringify(data) : "";
+    const vectorMemory = await retrieveMemoryTool({ input, userId: user.id, dataType: 'TRADING' })
+
 
     const classificationPrompt = `
-      Context: ${JSON.stringify(memoryContext)}
+      Cached Memory Context: ${JSON.stringify(memoryContext)}
+      Vector long term Memory:${vectorMemory}
       Current Input: "${input}"
       
       Classify this input:

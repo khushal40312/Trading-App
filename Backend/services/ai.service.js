@@ -167,7 +167,7 @@ const executeTrade = async ({ finalJson, oldMemory }) => {
         };
 
         const format = formatTradeConfirmation(receipt, condition);
-        await memoryTool.func({ Conversations: { oldMemory, format }, userId });
+        await memoryTool.func({ Conversations: { oldMemory, format }, userId, dataType: 'TRADING' });
 
 
         return { reply: format }
@@ -207,7 +207,8 @@ const executeTrade = async ({ finalJson, oldMemory }) => {
         };
 
         const format = formatTradeConfirmation(receipt, condition);
-        await memoryTool.func({ Conversations: { oldMemory, format }, userId });
+        await memoryTool.func({ Conversations: { oldMemory, format }, userId, dataType: 'TRADING' });
+
         return { reply: format }
     }
 };
@@ -550,10 +551,10 @@ async function getLast5Trades(userId) {
 
 async function getLast5PendingTrades(userId) {
     try {
-        const trades = await pendingTradesModel.find({ 
-            user: userId, 
-            status: 'PENDING' 
-          }).sort({ createdAt: -1 }) // newest first
+        const trades = await pendingTradesModel.find({
+            user: userId,
+            status: 'PENDING'
+        }).sort({ createdAt: -1 }) // newest first
             .limit(5)
             .lean(); // return plain JS objects
 
