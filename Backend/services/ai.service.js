@@ -5,6 +5,7 @@ const pendingTradesModel = require('../models/pendingTrades.model')
 const getStockQuote = require("../getStockQuote");
 const redisClient = require("../config/redisClient");
 const { memoryTool } = require("../tools/memoryTool");
+const portfolioModel= require("../models/portfolio.model")
 const tradeModel = require('../models/Trade.model')
 function rateUserRiskProfile(data) {
     const {
@@ -470,7 +471,6 @@ const appendPendingTrade = async (userId, sessionId, newTrade) => {
     const key = `session:data:${userId}:${sessionId}`;
     let sessionStr = await redisClient.get(key);
     if (!sessionStr) return false;
-
     let sessionData = JSON.parse(sessionStr);
 
     // Add the new pending trade
@@ -564,7 +564,13 @@ async function getLast5PendingTrades(userId) {
         throw err;
     }
 }
-module.exports = { getRiskProfile, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
+const findPortfolio = async (userId) => {
+    return await portfolioModel
+      .findOne({ user: userId })
+      .select("-performanceHistory");
+  };
+
+module.exports = {findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
 
 
 

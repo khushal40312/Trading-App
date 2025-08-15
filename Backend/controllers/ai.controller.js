@@ -17,7 +17,7 @@ module.exports.aiChat = async (req, res) => {
         await redisClient.expire(`session:${user.id}:${sessionId}`, 900);
 
         const result = await tradingAgent.invoke({ input: message, user, sessionId });
-        console.log(result)
+        
         return res.json({ reply: result.reply || "No response generated." });
 
       } else {

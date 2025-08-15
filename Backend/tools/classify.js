@@ -2,7 +2,6 @@
 const { ChatPromptTemplate } = require("@langchain/core/prompts");
 const { StringOutputParser } = require("@langchain/core/output_parsers");
 const { model } = require("../aiModel/gemini");
-const redisClient = require("../config/redisClient");
 const { getLatest3Interactions } = require("../services/ai.service");
 
 const classifyPrompt = ChatPromptTemplate.fromTemplate(`

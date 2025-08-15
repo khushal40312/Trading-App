@@ -6,12 +6,11 @@ const { AgreementDetector } = require("../tools/agreeDetection");
 const { extractTradingContext } = require("../tools/enrichTradingContext");
 const { tradingInputClassifierTool } = require("../tools/TradingInputClassifier");
 const { generateAIResponse } = require("../tools/generateAIResponse");
-const { storeSessionInRedis } = require("../services/ai.service");
+const { storeSessionInRedis, appendInteraction } = require("../services/ai.service");
 const { finalTradeExtractorTool } = require("../tools/FinalTradingEntityExtractor");
 const { tradeExecutionTool } = require("../tools/executeTrade");
-const { tradeInformation } = require("../tools/tradeInformation");
-const { pendingTradeChecker } = require("../tools/pendingTradeChecker");
-const { executedTradeChecker } = require("../tools/executedTradeChecker");
+const { unifiedTradeAssistant } = require("../tools/unifiedTradeAssistant");
+const { appendPendingTrade } = require("../services/ai.service")
 // 1. Node function: classify
 const classifyNode = async (state) => {
   try {
@@ -111,10 +110,31 @@ const generateAIResponseNode = async (state) => {
       reply,
     };
 
+    const newTrade = {
+      entities: state.entities,
+      context: state.context,
+      tradeClassification: state.tradeClassification,
+      category: state.category,
+      sessionId,
+      userId: state.user._id.toString(),
+      status: "WAITING_FOR_CONFIRMATION",
+      timestamp: new Date().toISOString()
+    }
+    const newInteractions = {
+      input: state.input,
+      reply,
+      timestamp: new Date().toISOString()
+    }
+    const isExists = await appendPendingTrade(state.user.id, state.sessionId, finalState);
+    if (!isExists) {
+      await storeSessionInRedis(finalState);
+    } else {
+      await appendPendingTrade(state.user.id, state.sessionId, newTrade);
+      await appendInteraction(state.user.id, state.sessionId, newInteractions);
+    }
     // Store the complete session data in Redis
-    await storeSessionInRedis(finalState);
-
     return finalState;
+
   } catch (error) {
     return {
       ...state,
@@ -186,31 +206,12 @@ const tradeExecutionToolNode = async (state) => {
   }
 };
 
-const tradeInformationNode = async (state) => {
+const unifiedTradeAssistantNode = async (state) => {
   try {
-    const tradeInfoClassification = await tradeInformation.func({
-      input: state.input,
-    });
-
-    return {
-      ...state,
-      tradeInfoClassification
-    };
-  } catch (error) {
-    return {
-      ...state,
-      tradeInfoClassification: { type: "ERROR" },
-      error: error.message
-    };
-  }
-};
-
-const pendingTradeCheckerNode = async (state) => {
-  try {
-    const reply = await pendingTradeChecker.func({
+    const reply = await unifiedTradeAssistant.func({
       input: state.input,
       user: state.user,
-      sessionId: state.sessionId
+      sessionId:state.sessionId
     });
 
     return {
@@ -226,25 +227,6 @@ const pendingTradeCheckerNode = async (state) => {
   }
 };
 
-const executedTradeCheckerNode = async (state) => {
-  try {
-    const reply = await executedTradeChecker.func({
-      input: state.input,
-      user: state.user
-    });
-
-    return {
-      ...state,
-      reply
-    };
-  } catch (error) {
-    return {
-      ...state,
-      reply: { type: "ERROR" },
-      error: error.message
-    };
-  }
-};
 
 // Create StateGraph with proper type definitions
 const graphBuilder = new StateGraph({
@@ -274,9 +256,8 @@ graphBuilder.addNode("initialResponse", generateAIResponseNode);
 graphBuilder.addNode("AgreementDetector", AgreementDetectorNode);
 graphBuilder.addNode("finalTradeExtractor", finalTradeExtractorToolNode);
 graphBuilder.addNode("tradeExecutionTool", tradeExecutionToolNode);
-graphBuilder.addNode("tradeInformation", tradeInformationNode);
-graphBuilder.addNode("pendingTradeChecker", pendingTradeCheckerNode);
-graphBuilder.addNode("executedTradeChecker", executedTradeCheckerNode);
+graphBuilder.addNode("unifiedTradeAssistant", unifiedTradeAssistantNode);
+
 
 
 
@@ -290,6 +271,8 @@ graphBuilder.addConditionalEdges(
   (state) => {
     if (state.error) return END;
     if (state.category === "TRADING") return "tradingInputClassifier";
+    if (state.category === "PORTFOLIO") return "";
+
     return END;
   }
 );
@@ -302,7 +285,7 @@ graphBuilder.addConditionalEdges(
 
     if (state.tradeClassification.category === "FRESH_TRADING_REQUEST") return "extractTradingEntitiesToJson";
     if (state.tradeClassification.category === "TRADE_CONFIRMATION") return "AgreementDetector";
-    if (state.tradeClassification.category === "TRADE_INFORMATION") return "tradeInformation";
+    if (state.tradeClassification.category === "GENERAL_QUESTION") return "unifiedTradeAssistant";
 
 
 
@@ -341,17 +324,7 @@ graphBuilder.addConditionalEdges(
 );
 
 graphBuilder.addEdge("tradeExecutionTool", END);
-graphBuilder.addConditionalEdges(
-  "tradeInformation",
-  (state) => {
-    if (state.error) return END;
-    if (state.tradeInfoClassification === "PENDING_TRADES") return "pendingTradeChecker";
-    if (state.tradeInfoClassification === "EXECUTED_TRADES") return "executedTradeChecker";
 
-    return END;
-  }
-
-);
 
 
 // 4. Compile the graph

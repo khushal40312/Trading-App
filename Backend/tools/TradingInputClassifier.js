@@ -9,8 +9,8 @@ const tradingInputClassifierTool = {
   func: async ({ input, user, sessionId }) => {
     const data = await getLatest2TradesandInteractions(user.id, sessionId)
     let memoryContext = data ? JSON.stringify(data) : "";
-    const vectorMemory = await retrieveMemoryTool({ input, userId: user.id, dataType: 'TRADING' })
-
+    const vectorMemory = await retrieveMemoryTool.func({ input, userId: user.id, dataType: 'TRADING' })
+   
 
     const classificationPrompt = `
       Cached Memory Context: ${JSON.stringify(memoryContext)}
@@ -22,7 +22,6 @@ const tradingInputClassifierTool = {
       2. TRADE_CONFIRMATION - Confirming a pending trade
       3. TRADE_MODIFICATION - Want to change pending trade
       4. TRADE_CANCELLATION - Cancel pending trade
-      5. TRADE_INFORMATION  - any trade info
       6. GENERAL_QUESTION - Non-trading query
       
       Also extract confidence level (0-1).

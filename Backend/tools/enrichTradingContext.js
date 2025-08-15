@@ -1,10 +1,13 @@
 
-const portfolioServices = require('../services/portfolio.service')
+
 const getStockQuote = require('../getStockQuote')
-const { retrieveMemoryTool } = require("./retriveMemoryTool");
+const  {retrieveMemoryTool}  = require("./retriveMemoryTool");
 const { getMarketSentiment, getRiskProfile } = require("../services/ai.service");
 const tradeServices = require('../services/trade.service')
-
+const {
+    
+    findPortfolio
+  } = require("../services/ai.service");
 const extractTradingContext = {
     name: "extractTradingContext",
     description: "Extract Trading context",
@@ -16,7 +19,7 @@ const extractTradingContext = {
 
             const context = {
                 user,
-                portfolio: await portfolioServices.findPortfolio(user.id),
+                portfolio: await findPortfolio(user.id),
                 currentPrice: await getStockQuote(entities.symbol),
                 marketSentiment: Sentiment,
                 userHistory: await tradeServices.getTradingHistory(user.id, entities.symbol),
