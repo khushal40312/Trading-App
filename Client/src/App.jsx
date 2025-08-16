@@ -22,6 +22,7 @@ import useNetworkStatus from './Hooks/useNetworkStatus'
 import { RiSignalWifiOffLine } from "react-icons/ri";
 import PrivateRoute from './Components/PrivateRoute';
 import PublicRoute from './Components/PublicRoute';
+import TradePreview from './Pages/TradePreview'
 function App() {
   const [isOnline, setIsOnline] = useState(true);
   const token = localStorage.getItem("token");
@@ -127,6 +128,8 @@ function App() {
             </Route>
 
             <Route element={<PrivateRoute />}>
+            <Route path="/gg" element={<TradePreview />} />
+
               <Route path="/home" element={<Home />} />
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/profile" element={<Profile />} />

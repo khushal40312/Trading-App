@@ -211,9 +211,30 @@ const unifiedTradeAssistantNode = async (state) => {
     const reply = await unifiedTradeAssistant.func({
       input: state.input,
       user: state.user,
-      sessionId:state.sessionId
+      sessionId: state.sessionId
     });
+    const newInteractions = {
+      input: state.input,
+      reply,
+      timestamp: new Date().toISOString()
+    }
+    const structure = {
+      pendingTrades: [],
+      interaction: [
+        {
+          input: state.input,
+          reply: state.reply,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    };
+    const isExists = await appendPendingTrade(state.user.id, state.sessionId, structure);
+    if (!isExists) {
+      await storeSessionInRedis(structure);
+    } else {
 
+      await appendInteraction(state.user.id, state.sessionId, newInteractions);
+    }
     return {
       ...state,
       reply
@@ -271,7 +292,12 @@ graphBuilder.addConditionalEdges(
   (state) => {
     if (state.error) return END;
     if (state.category === "TRADING") return "tradingInputClassifier";
-    if (state.category === "PORTFOLIO") return "";
+    if (state.category === "PORTFOLIO") return "unifiedTradeAssistant";
+    if (state.category === "GENERAL_CHAT") return "unifiedTradeAssistant";
+    // if (state.category === "EDUCATION") return "unifiedTradeAssistant";
+
+
+
 
     return END;
   }
@@ -281,14 +307,9 @@ graphBuilder.addConditionalEdges(
   "tradingInputClassifier",
   (state) => {
     if (state.error) return END;
-
-
     if (state.tradeClassification.category === "FRESH_TRADING_REQUEST") return "extractTradingEntitiesToJson";
     if (state.tradeClassification.category === "TRADE_CONFIRMATION") return "AgreementDetector";
     if (state.tradeClassification.category === "GENERAL_QUESTION") return "unifiedTradeAssistant";
-
-
-
     return END;
   }
 );
