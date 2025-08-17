@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 
 const TradePreview = () => {
   const mockResponse = {
-    markdown: `***What is Bitcoin?***\n\nBitcoin (BTC) is a decentralized digital currency, without a central bank or single administrator, that can be sent from user to user on the peer-to-peer bitcoin network without the need for intermediaries.\n\n• **Decentralized**: It operates on a blockchain, a distributed public ledger, maintained by a network of computers.\n• **Cryptocurrency**: Transactions are verified by network nodes through cryptography and recorded in the blockchain.\n• **Limited Supply**: The total supply of Bitcoin is capped at 21 million coins, making it a finite asset.\n\n---\n*Is there anything else you’d like to know?*`,
+    markdown: `\n  ✅ Trade Executed!\n  🔹 ID: 68a1fbd8fa71b365d7345906\n  🔹 Action: BUY 0.3878 PI\n  🔹 Type: conditional\n  🔹 Condition: currentPrice < 0.39\n  📅 Time: Sun Aug 17 2025 21:27:12 GMT+0530 (India Standard Time)\n `,
   };
 
   const { markdown } = mockResponse;

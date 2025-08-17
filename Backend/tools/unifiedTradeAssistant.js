@@ -3,7 +3,8 @@ const {
   getLast5PendingTrades,
   getLatest3Trades,
   getLast5Trades,
-  findPortfolio
+  findPortfolio,
+  getLatest3Interactions
 } = require("../services/ai.service");
 const tradeServices = require('../services/trade.service')
 
@@ -13,18 +14,21 @@ const unifiedTradeAssistant = {
   func: async ({ input, user, sessionId }) => {
     try {
       // Fetch all relevant data
+
       const [
         pendingTrades,
         waitingForConfirmation,
         executedTrades,
         userPortfolio,
-        userStats
+        userStats,
+        oldChats
       ] = await Promise.all([
         getLast5PendingTrades(user.id),//pending
         getLatest3Trades(user.id, sessionId),//cached
         getLast5Trades(user.id),// executed
         findPortfolio(user.id),
-        tradeServices.getMyTradingStats(user.id)
+        tradeServices.getMyTradingStats(user.id),
+        getLatest3Interactions(user.id, sessionId)
 
       ]);
 
@@ -34,7 +38,7 @@ const unifiedTradeAssistant = {
       Never add information the user did not ask for. Always prioritize their input first.  
       
       ---
-      
+      tradeClassification
       ## USER INFORMATION
       - Name: ${user.fullname.firstname || 'Not provided'}
       - User ID: ${user.id}
@@ -55,7 +59,10 @@ const unifiedTradeAssistant = {
       
       5. **User Statistics:**  
       ${userStats ? JSON.stringify(userStats, null, 2) : "User statistics not available."}
-      
+      6.**User**
+      ${JSON.stringify(user, null, 2)}
+      7. **Recent Memory**
+      ${JSON.stringify(oldChats, null, 2)}
       ---
       
       ## USER INPUT
@@ -94,6 +101,7 @@ const unifiedTradeAssistant = {
          - If personal/non-trading input → reply accordingly, without trade data.  
       
       6. **Output Format:**  
+         - Always use USDT for prices or balances.
          - Entire response must be in **Markdown**.  
          - Output must be in a **single string** (no raw line breaks outside Markdown).  
          - Use **headers (##)**, **bold/italic**, bullet points, or definition style.  
@@ -124,7 +132,7 @@ const unifiedTradeAssistant = {
       *Is there anything else you’d like to know about your portfolio or trading activity?*  
       ---
       `;
-      
+
 
 
       const result = await model.invoke(Prompt);

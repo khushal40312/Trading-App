@@ -6,11 +6,12 @@ const { AgreementDetector } = require("../tools/agreeDetection");
 const { extractTradingContext } = require("../tools/enrichTradingContext");
 const { tradingInputClassifierTool } = require("../tools/TradingInputClassifier");
 const { generateAIResponse } = require("../tools/generateAIResponse");
-const { storeSessionInRedis, appendInteraction } = require("../services/ai.service");
+const { storeSessionInRedis, appendInteraction, storeSessionStructureInRedis } = require("../services/ai.service");
 const { finalTradeExtractorTool } = require("../tools/FinalTradingEntityExtractor");
 const { tradeExecutionTool } = require("../tools/executeTrade");
 const { unifiedTradeAssistant } = require("../tools/unifiedTradeAssistant");
-const { appendPendingTrade } = require("../services/ai.service")
+const { appendPendingTrade } = require("../services/ai.service");
+const { tradeCancellationResolverTool } = require("../tools/tradeCancellation");
 // 1. Node function: classify
 const classifyNode = async (state) => {
   try {
@@ -102,7 +103,8 @@ const generateAIResponseNode = async (state) => {
       user: state.user,
       sessionId: state.sessionId,
       context: state.context,
-      entities: state.entities
+      entities: state.entities,
+      tradeClassification: state.tradeClassification
     });
 
     const finalState = {
@@ -115,7 +117,7 @@ const generateAIResponseNode = async (state) => {
       context: state.context,
       tradeClassification: state.tradeClassification,
       category: state.category,
-      sessionId,
+      sessionId: state.sessionId,
       userId: state.user._id.toString(),
       status: "WAITING_FOR_CONFIRMATION",
       timestamp: new Date().toISOString()
@@ -191,6 +193,7 @@ const tradeExecutionToolNode = async (state) => {
   try {
     const executedTrade = await tradeExecutionTool.func({
       finalJson: state.finalJson,
+      sessionId: state.sessionId
     });
 
     return {
@@ -223,14 +226,14 @@ const unifiedTradeAssistantNode = async (state) => {
       interaction: [
         {
           input: state.input,
-          reply: state.reply,
+          reply,
           timestamp: new Date().toISOString()
         }
       ]
     };
     const isExists = await appendPendingTrade(state.user.id, state.sessionId, structure);
     if (!isExists) {
-      await storeSessionInRedis(structure);
+      await storeSessionStructureInRedis(structure, state.user.id, state.sessionId);
     } else {
 
       await appendInteraction(state.user.id, state.sessionId, newInteractions);
@@ -246,6 +249,66 @@ const unifiedTradeAssistantNode = async (state) => {
       error: error.message
     };
   }
+};
+const tradeCancellationResolverNode = async (state) => {
+  try {
+    const reply = await tradeCancellationResolverTool.func({
+      input: state.input,
+      sessionId: state.sessionId,
+      user: state.user
+    });
+
+    return {
+      ...state,
+      reply
+    };
+  } catch (error) {
+    return {
+      ...state,
+      reply: { type: "ERROR" },
+      error: error.message
+    };
+  }
+};
+const returnNotFound = async (state) => {
+  const reply = `
+  ***No Matching Trade Found***
+  
+  It looks like you’re trying to cancel a trade, but I couldn’t find any **pending trade** that matches your request.  
+  
+  Here are a few things you can try:
+  - Double-check the symbol, amount, or price you mentioned.  
+  - Make sure the trade is still pending (completed trades can’t be cancelled).  
+  - Try again with more details, for example:  
+    *"Cancel my pending BTC buy at 42000 USDT"*  
+  
+  ➤ *Would you like me to show you your latest pending trades so you can pick one to cancel?*
+  `;
+  const newInteractions = {
+    input: state.input,
+    reply,
+    timestamp: new Date().toISOString()
+  }
+  const structure = {
+    pendingTrades: [],
+    interaction: [
+      {
+        input: state.input,
+        reply,
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+  const isExists = await appendPendingTrade(state.user.id, state.sessionId, structure);
+  if (!isExists) {
+    await storeSessionStructureInRedis(structure, state.user.id, state.sessionId);
+  } else {
+
+    await appendInteraction(state.user.id, state.sessionId, newInteractions);
+  }
+  return reply;
+
+
 };
 
 
@@ -265,7 +328,8 @@ const graphBuilder = new StateGraph({
     agreeDetection: "string",
     finalJson: "object",
     executedTrade: "object",
-    tradeInfoClassification: "string"
+    tradeInfoClassification: "string",
+    reason: "string"
   }
 });
 graphBuilder.addNode("classify", classifyNode);
@@ -278,6 +342,10 @@ graphBuilder.addNode("AgreementDetector", AgreementDetectorNode);
 graphBuilder.addNode("finalTradeExtractor", finalTradeExtractorToolNode);
 graphBuilder.addNode("tradeExecutionTool", tradeExecutionToolNode);
 graphBuilder.addNode("unifiedTradeAssistant", unifiedTradeAssistantNode);
+graphBuilder.addNode("tradeCancellationResolver", tradeCancellationResolverNode);
+graphBuilder.addNode("returnNotFoundInPending", returnNotFound);
+
+
 
 
 
@@ -294,7 +362,6 @@ graphBuilder.addConditionalEdges(
     if (state.category === "TRADING") return "tradingInputClassifier";
     if (state.category === "PORTFOLIO") return "unifiedTradeAssistant";
     if (state.category === "GENERAL_CHAT") return "unifiedTradeAssistant";
-    // if (state.category === "EDUCATION") return "unifiedTradeAssistant";
 
 
 
@@ -310,6 +377,10 @@ graphBuilder.addConditionalEdges(
     if (state.tradeClassification.category === "FRESH_TRADING_REQUEST") return "extractTradingEntitiesToJson";
     if (state.tradeClassification.category === "TRADE_CONFIRMATION") return "AgreementDetector";
     if (state.tradeClassification.category === "GENERAL_QUESTION") return "unifiedTradeAssistant";
+    if (state.tradeClassification.category === "TRADE_MODIFICATION") return "extractTradingEntitiesToJson";
+    if (state.tradeClassification.category === "TRADE_CANCELLATION") return "tradeCancellationResolverNode";
+
+
     return END;
   }
 );
@@ -346,7 +417,19 @@ graphBuilder.addConditionalEdges(
 
 graphBuilder.addEdge("tradeExecutionTool", END);
 
+graphBuilder.addConditionalEdges(
+  "tradeCancellationResolverNode",
+  (state) => {
+    if (state.error) return END;
 
+
+    if (state.reply === "TRADE_NOT_FOUND") return "returnNotFoundInPending";
+    ;
+
+    return END;
+  }
+
+);
 
 // 4. Compile the graph
 const tradingAgent = graphBuilder.compile();

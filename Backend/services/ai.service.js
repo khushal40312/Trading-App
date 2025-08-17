@@ -5,7 +5,7 @@ const pendingTradesModel = require('../models/pendingTrades.model')
 const getStockQuote = require("../getStockQuote");
 const redisClient = require("../config/redisClient");
 const { memoryTool } = require("../tools/memoryTool");
-const portfolioModel= require("../models/portfolio.model")
+const portfolioModel = require("../models/portfolio.model")
 const tradeModel = require('../models/Trade.model')
 function rateUserRiskProfile(data) {
     const {
@@ -129,7 +129,7 @@ let executedTrades = []; // In-memory store
 let monitoringIntervalId = null; // Store interval ID globally
 
 
-const executeTrade = async ({ finalJson, oldMemory }) => {
+const executeTrade = async ({ finalJson, oldMemory, sessionId }) => {
     const { action, symbol, amount, condition, assetName, userId, orderType, riskProfile } = finalJson;
 
     const currentPrice = await getStockQuote(symbol);
@@ -162,14 +162,22 @@ const executeTrade = async ({ finalJson, oldMemory }) => {
                 price: currentPrice,
                 symbol,
                 orderType,
-                executedAt: new Date()
+                executedAt: new Date(),
+                amount
             },
             orderType
         };
 
         const format = formatTradeConfirmation(receipt, condition);
         await memoryTool.func({ Conversations: { oldMemory, format }, userId, dataType: 'TRADING' });
+        const sessionData = {
+            pendingTrades: [
+            ],
+            interaction: [
 
+            ]
+        };
+        await redisClient.setEx(`session:data:${userId}:${sessionId}`, 900, JSON.stringify(sessionData));
 
         return { reply: format }
     } else {
@@ -202,13 +210,22 @@ const executeTrade = async ({ finalJson, oldMemory }) => {
                 price: currentPrice,
                 symbol,
                 orderType,
-                executedAt: pending.createdAt
+                executedAt: pending.createdAt,
+                amount
             },
             orderType
         };
 
         const format = formatTradeConfirmation(receipt, condition);
         await memoryTool.func({ Conversations: { oldMemory, format }, userId, dataType: 'TRADING' });
+        const sessionData = {
+            pendingTrades: [
+            ],
+            interaction: [
+
+            ]
+        };
+        await redisClient.setEx(`session:data:${userId}:${sessionId}`, 900, JSON.stringify(sessionData));
 
         return { reply: format }
     }
@@ -220,7 +237,7 @@ const formatTradeConfirmation = (trade, condition) => {
     return `
   ✅ Trade Executed!
   🔹 ID: ${trade.trade.id}
-  🔹 Action: ${trade.trade.tradeType.toUpperCase()} ${trade.trade.price} ${trade.trade.symbol}
+  🔹 Action: ${trade.trade.tradeType.toUpperCase()} At ${trade.trade.price} , ${trade.trade.amount}  ${trade.trade.symbol}
   🔹 Type: ${trade.orderType}
   🔹 Condition: ${condition || "None"}
   📅 Time: ${trade.trade.executedAt.toString()}
@@ -436,7 +453,7 @@ module.exports.cancelConditionalTrade = (tradeId) => {
 
 const storeSessionInRedis = async (state) => {
     try {
-        const userId = state.user._id.toString();
+        const userId = state.user.id;
         const sessionId = state.sessionId;
         const sessionData = {
             pendingTrades: [
@@ -446,7 +463,7 @@ const storeSessionInRedis = async (state) => {
                     tradeClassification: state.tradeClassification,
                     category: state.category,
                     sessionId,
-                    userId: state.user._id.toString(),
+                    userId: state.user.id,
                     status: "WAITING_FOR_CONFIRMATION",
                     timestamp: new Date().toISOString()
                 }],
@@ -463,6 +480,18 @@ const storeSessionInRedis = async (state) => {
         let ab = await redisClient.setEx(`session:data:${userId}:${sessionId}`, 900, JSON.stringify(sessionData));
         console.log(ab)
         console.log(`Session stored in Redis: session:${userId}:${sessionId}`);
+    } catch (error) {
+        console.error('Failed to store session in Redis:', error);
+    }
+};
+
+const storeSessionStructureInRedis = async (structure, userId, sessionId) => {
+    try {
+
+        let ab = await redisClient.setEx(`session:data:${userId}:${sessionId}`, 900, JSON.stringify(structure));
+        console.log(ab)
+        console.log(`Session stored in Redis: session:${userId}:${sessionId}`);
+
     } catch (error) {
         console.error('Failed to store session in Redis:', error);
     }
@@ -566,11 +595,11 @@ async function getLast5PendingTrades(userId) {
 }
 const findPortfolio = async (userId) => {
     return await portfolioModel
-      .findOne({ user: userId })
-      .select("-performanceHistory");
-  };
+        .findOne({ user: userId })
+        .select("-performanceHistory");
+};
 
-module.exports = {findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
+module.exports = { storeSessionStructureInRedis, findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
 
 
 
