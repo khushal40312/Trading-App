@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 
 const TradePreview = () => {
   const mockResponse = {
-    markdown: `\n  ✅ Trade Executed!\n  🔹 ID: 68a1fbd8fa71b365d7345906\n  🔹 Action: BUY 0.3878 PI\n  🔹 Type: conditional\n  🔹 Condition: currentPrice < 0.39\n  📅 Time: Sun Aug 17 2025 21:27:12 GMT+0530 (India Standard Time)\n `,
+    markdown: `Khushal, based on your request for an \"opinion\" on your portfolio's performance, I can provide a factual analysis of what the current data shows:\n\n***Portfolio Performance Analysis 📉***\n\nCurrently, your overall portfolio shows a total loss of **-$2.18 (-9.68%)**. This indicates that the current value of your holdings is less than your total investment.\n\n***Key Observations***\n\n• **Chainbase (C)** is experiencing the most significant decline, with a loss of **-$1.50 (-40.69%)**. This asset is the primary contributor to your portfolio's overall negative performance.\n\n• **Pi Network (PI)** also shows a loss of **-$0.61 (-6.91%)**, contributing to the overall decline.\n\n• **The Open Network (TON)** is performing relatively close to its average buy price, with a minimal loss of **-$0.07 (-0.74%)**.\n\n---\n\n*Is there anything else you’d like to know about your portfolio or trading activity?*`,
   };
 
   const { markdown } = mockResponse;

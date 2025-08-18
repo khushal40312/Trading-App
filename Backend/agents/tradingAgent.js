@@ -145,7 +145,6 @@ const generateAIResponseNode = async (state) => {
     };
   }
 };
-
 const AgreementDetectorNode = async (state) => {
   try {
     const agreeDetection = await AgreementDetector.func({
@@ -166,7 +165,6 @@ const AgreementDetectorNode = async (state) => {
     };
   }
 };
-
 const finalTradeExtractorToolNode = async (state) => {
   try {
     const finalJson = await finalTradeExtractorTool.func({
@@ -187,8 +185,6 @@ const finalTradeExtractorToolNode = async (state) => {
     };
   }
 };
-
-
 const tradeExecutionToolNode = async (state) => {
   try {
     const executedTrade = await tradeExecutionTool.func({
@@ -208,7 +204,6 @@ const tradeExecutionToolNode = async (state) => {
     };
   }
 };
-
 const unifiedTradeAssistantNode = async (state) => {
   try {
     const reply = await unifiedTradeAssistant.func({
@@ -270,46 +265,7 @@ const tradeCancellationResolverNode = async (state) => {
     };
   }
 };
-const returnNotFound = async (state) => {
-  const reply = `
-  ***No Matching Trade Found***
-  
-  It looks like you’re trying to cancel a trade, but I couldn’t find any **pending trade** that matches your request.  
-  
-  Here are a few things you can try:
-  - Double-check the symbol, amount, or price you mentioned.  
-  - Make sure the trade is still pending (completed trades can’t be cancelled).  
-  - Try again with more details, for example:  
-    *"Cancel my pending BTC buy at 42000 USDT"*  
-  
-  ➤ *Would you like me to show you your latest pending trades so you can pick one to cancel?*
-  `;
-  const newInteractions = {
-    input: state.input,
-    reply,
-    timestamp: new Date().toISOString()
-  }
-  const structure = {
-    pendingTrades: [],
-    interaction: [
-      {
-        input: state.input,
-        reply,
-        timestamp: new Date().toISOString()
-      }
-    ]
-  };
-  const isExists = await appendPendingTrade(state.user.id, state.sessionId, structure);
-  if (!isExists) {
-    await storeSessionStructureInRedis(structure, state.user.id, state.sessionId);
-  } else {
 
-    await appendInteraction(state.user.id, state.sessionId, newInteractions);
-  }
-  return reply;
-
-
-};
 
 
 // Create StateGraph with proper type definitions
@@ -328,12 +284,10 @@ const graphBuilder = new StateGraph({
     agreeDetection: "string",
     finalJson: "object",
     executedTrade: "object",
-    tradeInfoClassification: "string",
-    reason: "string"
+    tradeInfoClassification: "string"
   }
 });
 graphBuilder.addNode("classify", classifyNode);
-
 graphBuilder.addNode("tradingInputClassifier", tradingInputClassifierNode);
 graphBuilder.addNode("extractTradingEntitiesToJson", extractTradingEntitiesNode);
 graphBuilder.addNode("extractTradingContext", extractTradingContextNode);
@@ -343,15 +297,6 @@ graphBuilder.addNode("finalTradeExtractor", finalTradeExtractorToolNode);
 graphBuilder.addNode("tradeExecutionTool", tradeExecutionToolNode);
 graphBuilder.addNode("unifiedTradeAssistant", unifiedTradeAssistantNode);
 graphBuilder.addNode("tradeCancellationResolver", tradeCancellationResolverNode);
-graphBuilder.addNode("returnNotFoundInPending", returnNotFound);
-
-
-
-
-
-
-
-
 
 graphBuilder.addEdge(START, "classify")
 
@@ -378,7 +323,7 @@ graphBuilder.addConditionalEdges(
     if (state.tradeClassification.category === "TRADE_CONFIRMATION") return "AgreementDetector";
     if (state.tradeClassification.category === "GENERAL_QUESTION") return "unifiedTradeAssistant";
     if (state.tradeClassification.category === "TRADE_MODIFICATION") return "extractTradingEntitiesToJson";
-    if (state.tradeClassification.category === "TRADE_CANCELLATION") return "tradeCancellationResolverNode";
+    if (state.tradeClassification.category === "TRADE_CANCELLATION") return "tradeCancellationResolver";
 
 
     return END;
@@ -417,19 +362,7 @@ graphBuilder.addConditionalEdges(
 
 graphBuilder.addEdge("tradeExecutionTool", END);
 
-graphBuilder.addConditionalEdges(
-  "tradeCancellationResolverNode",
-  (state) => {
-    if (state.error) return END;
 
-
-    if (state.reply === "TRADE_NOT_FOUND") return "returnNotFoundInPending";
-    ;
-
-    return END;
-  }
-
-);
 
 // 4. Compile the graph
 const tradingAgent = graphBuilder.compile();

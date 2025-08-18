@@ -19,7 +19,7 @@ const retrieveMemoryTool = {
             .map((doc) => `🔹 ${doc.pageContent}`)
             .join("\n");
 
-        console.log("memories:", memories);
+        // console.log("memories:", memories);
 
         return memories || "No relevant memory found.";
     },
