@@ -12,6 +12,7 @@ const { tradeExecutionTool } = require("../tools/executeTrade");
 const { unifiedTradeAssistant } = require("../tools/unifiedTradeAssistant");
 const { appendPendingTrade } = require("../services/ai.service");
 const { tradeCancellationResolverTool } = require("../tools/tradeCancellation");
+const { marketAnalysisAssistant } = require("../tools/marketAnalysisAssistant");
 // 1. Node function: classify
 const classifyNode = async (state) => {
   try {
@@ -265,6 +266,26 @@ const tradeCancellationResolverNode = async (state) => {
     };
   }
 };
+const marketAnalysisAssistantNode = async (state) => {
+  try {
+    const marketClassification = await marketAnalysisAssistant.func({
+      input: state.input,
+      sessionId: state.sessionId,
+      user: state.user
+    });
+
+    return {
+      ...state,
+      marketClassification
+    };
+  } catch (error) {
+    return {
+      ...state,
+      marketClassification: { type: "ERROR" },
+      error: error.message
+    };
+  }
+};
 
 
 
@@ -284,7 +305,8 @@ const graphBuilder = new StateGraph({
     agreeDetection: "string",
     finalJson: "object",
     executedTrade: "object",
-    tradeInfoClassification: "string"
+    tradeInfoClassification: "string",
+    marketClassification: 'object'
   }
 });
 graphBuilder.addNode("classify", classifyNode);
@@ -297,6 +319,8 @@ graphBuilder.addNode("finalTradeExtractor", finalTradeExtractorToolNode);
 graphBuilder.addNode("tradeExecutionTool", tradeExecutionToolNode);
 graphBuilder.addNode("unifiedTradeAssistant", unifiedTradeAssistantNode);
 graphBuilder.addNode("tradeCancellationResolver", tradeCancellationResolverNode);
+graphBuilder.addNode("marketAnalysisAssistant", marketAnalysisAssistantNode);
+
 
 graphBuilder.addEdge(START, "classify")
 
@@ -307,6 +331,8 @@ graphBuilder.addConditionalEdges(
     if (state.category === "TRADING") return "tradingInputClassifier";
     if (state.category === "PORTFOLIO") return "unifiedTradeAssistant";
     if (state.category === "GENERAL_CHAT") return "unifiedTradeAssistant";
+    if (state.category === "MARKET_ANALYSIS") return "marketAnalysisAssistant";
+
 
 
 
