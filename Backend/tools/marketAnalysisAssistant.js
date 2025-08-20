@@ -4,13 +4,13 @@ const { getLatest2TradesandInteractions } = require("../services/ai.service");
 const marketAnalysisAssistant = {
   name: "marketAnalysisAssistant",
   description: "Classifies the user's trade input and provides structured market analysis data requirements",
-  
+
   func: async ({ input, user, sessionId }) => {
     try {
       // Get context data with error handling
       const data = await getLatest2TradesandInteractions(user.id, sessionId);
       const memoryContext = data ? JSON.stringify(data) : "No previous trading history available";
-      
+
       const prompt = `
         You are a crypto market analysis classifier. Analyze the user's input and determine what data needs to be fetched.
 
@@ -25,7 +25,7 @@ const marketAnalysisAssistant = {
           "intent": "price_analysis" | "trend_analysis" | "market_research" | "forecast_request" | "general_inquiry",
           "requiredData": {
             "symbols": ["BTC", "ETH"],
-            "timeframes": ["1h", "24h", "7d"],
+            "timeframes": ["1min", "3min", "5min", "15min", "30min", "1h", "4h", "12h", "1day", "1week", "1M"],
             "dataTypes": ["price", "volume", "market_cap", "technical_indicators"],
             "analysisType": "technical" | "fundamental" | "sentiment"
           }
@@ -39,16 +39,16 @@ const marketAnalysisAssistant = {
       `;
 
       const result = await model.invoke(prompt);
-      
+
       // Clean and parse response with better error handling
       let cleaned = result.content;
       if (typeof cleaned !== 'string') {
         cleaned = JSON.stringify(cleaned);
       }
-      
+
       // Remove markdown code blocks
       cleaned = cleaned.replace(/```json|```/g, '').trim();
-      
+
       // Attempt to parse JSON
       let jsonObject;
       try {
@@ -66,13 +66,6 @@ const marketAnalysisAssistant = {
             dataTypes: ["price", "volume"],
             analysisType: "technical"
           },
-          apiEndpoints: [
-            {
-              endpoint: "/api/crypto/price",
-              params: { symbols: ["BTC", "ETH"], interval: "24h" },
-              priority: 1
-            }
-          ],
           contextualNotes: `Failed to parse AI response. Original input: ${input}`,
           suggestedResponse: "I'll help you with crypto market analysis. Let me fetch the latest data.",
           error: "AI_PARSE_ERROR",
@@ -91,34 +84,18 @@ const marketAnalysisAssistant = {
           dataTypes: jsonObject.requiredData?.dataTypes || ["price", "volume"],
           analysisType: jsonObject.requiredData?.analysisType || "technical"
         },
-        apiEndpoints: jsonObject.apiEndpoints || [
-          {
-            endpoint: "/api/crypto/price",
-            params: { symbols: ["BTC", "ETH"], interval: "24h" },
-            priority: 1
-          }
-        ],
         contextualNotes: jsonObject.contextualNotes || `User requested market analysis for: ${input}`,
         suggestedResponse: jsonObject.suggestedResponse || "I'll analyze the market data for you.",
         timestamp: new Date().toISOString(),
         sessionId: sessionId,
         userId: user.id
       };
-
-      return {
-        success: true,
-        data: validatedResponse,
-        meta: {
-          processingTime: Date.now(),
-          modelUsed: "gemini",
-          inputLength: input.length,
-          hasContext: !!data
-        }
-      };
+      console.log(validatedResponse.requiredData.symbols, validatedResponse.requiredData.timeframes, validatedResponse.requiredData.dataTypes)
+      return validatedResponse
 
     } catch (error) {
       console.error('Market Analysis Assistant Error:', error);
-      
+
       // Return graceful error response
       return {
         success: false,
