@@ -25,9 +25,9 @@ const marketAnalysisAssistant = {
           "intent": "price_analysis" | "trend_analysis" | "market_research" | "forecast_request" | "general_inquiry",
           "requiredData": {
             "symbols": ["BTC", "ETH"],
-            "timeframes": ["1min", "3min", "5min", "15min", "30min", "1h", "4h", "12h", "1day", "1week", "1M"],
-            "dataTypes": ["price", "volume", "market_cap", "technical_indicators"],
-            "analysisType": "technical" | "fundamental" | "sentiment"
+            "timeframes": "1min"|| "3min"|| "5min"|| "15min"|| "30min"|| "1h"|| "4h"|| "12h"|| "1day"|| "1week"|| "1M",
+            "dataTypes": ["price", "volume", "market_cap", "technical_indicators"]
+            
           }
           "contextualNotes": "Brief explanation of what the user is asking for",
           "suggestedResponse": "Template for how to structure the response to user"
@@ -63,8 +63,8 @@ const marketAnalysisAssistant = {
           requiredData: {
             symbols: ["BTC", "ETH"],
             timeframes: ["24h"],
-            dataTypes: ["price", "volume"],
-            analysisType: "technical"
+            dataTypes: ["price", "volume"]
+
           },
           contextualNotes: `Failed to parse AI response. Original input: ${input}`,
           suggestedResponse: "I'll help you with crypto market analysis. Let me fetch the latest data.",
@@ -81,8 +81,7 @@ const marketAnalysisAssistant = {
         requiredData: {
           symbols: jsonObject.requiredData?.symbols || ["BTC", "ETH"],
           timeframes: jsonObject.requiredData?.timeframes || ["24h"],
-          dataTypes: jsonObject.requiredData?.dataTypes || ["price", "volume"],
-          analysisType: jsonObject.requiredData?.analysisType || "technical"
+          dataTypes: jsonObject.requiredData?.dataTypes || ["price", "volume"]
         },
         contextualNotes: jsonObject.contextualNotes || `User requested market analysis for: ${input}`,
         suggestedResponse: jsonObject.suggestedResponse || "I'll analyze the market data for you.",

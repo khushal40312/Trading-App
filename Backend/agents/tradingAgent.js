@@ -13,6 +13,7 @@ const { unifiedTradeAssistant } = require("../tools/unifiedTradeAssistant");
 const { appendPendingTrade } = require("../services/ai.service");
 const { tradeCancellationResolverTool } = require("../tools/tradeCancellation");
 const { marketAnalysisAssistant } = require("../tools/marketAnalysisAssistant");
+const { marketAnalyserContext } = require("../tools/marketAnalyserContext");
 // 1. Node function: classify
 const classifyNode = async (state) => {
   try {
@@ -287,7 +288,27 @@ const marketAnalysisAssistantNode = async (state) => {
   }
 };
 
+const marketAnalysisContextNode = async (state) => {
+  try {
+    const marketClassificationContext = await marketAnalyserContext.func({
+      input: state.input,
+      sessionId: state.sessionId,
+      user: state.user,
+      marketClassification: state.marketClassification
+    });
 
+    return {
+      ...state,
+      marketClassificationContext
+    };
+  } catch (error) {
+    return {
+      ...state,
+      marketClassificationContext: { type: "ERROR" },
+      error: error.message
+    };
+  }
+};
 
 // Create StateGraph with proper type definitions
 const graphBuilder = new StateGraph({
@@ -306,7 +327,8 @@ const graphBuilder = new StateGraph({
     finalJson: "object",
     executedTrade: "object",
     tradeInfoClassification: "string",
-    marketClassification: 'object'
+    marketClassification: 'object',
+    marketClassificationContext: 'object'
   }
 });
 graphBuilder.addNode("classify", classifyNode);
@@ -320,6 +342,8 @@ graphBuilder.addNode("tradeExecutionTool", tradeExecutionToolNode);
 graphBuilder.addNode("unifiedTradeAssistant", unifiedTradeAssistantNode);
 graphBuilder.addNode("tradeCancellationResolver", tradeCancellationResolverNode);
 graphBuilder.addNode("marketAnalysisAssistant", marketAnalysisAssistantNode);
+graphBuilder.addNode("marketAnalyserContext", marketAnalysisContextNode);
+
 
 
 graphBuilder.addEdge(START, "classify")
@@ -340,6 +364,10 @@ graphBuilder.addConditionalEdges(
     return END;
   }
 );
+
+
+graphBuilder.addEdge("marketAnalysisAssistant", "marketAnalyserContext");
+graphBuilder.addEdge("marketAnalyserContext", END);
 
 graphBuilder.addConditionalEdges(
   "tradingInputClassifier",

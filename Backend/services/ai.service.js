@@ -562,8 +562,6 @@ const getLatest2TradesandInteractions = async (userId, sessionId) => {
         interactions: sessionData.interaction.slice(-3)
     };
 };
-
-
 async function getLast5Trades(userId) {
     try {
         const trades = await tradeModel.find({ user: userId })
@@ -599,7 +597,44 @@ const findPortfolio = async (userId) => {
         .select("-performanceHistory");
 };
 
-module.exports = { storeSessionStructureInRedis, findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
+
+
+const axios = require("axios");
+
+async function getCoinMarkets(options = {}) {
+    if (!options.vs_currency) {
+        throw new Error("vs_currency is required (e.g. 'usd')");
+    }
+
+    try {
+        const response = await axios.get("https://api.coingecko.com/api/v3/coins/markets", {
+            headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY },
+            params: {
+                vs_currency: options.vs_currency,
+                symbols: options.symbols,
+                category: options.category,
+                sparkline: options.sparkline || false,
+                price_change_percentage: options.price_change_percentage,
+                locale: options.locale || "en",
+                precision: options.precision || "full",
+            },
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching market data:", error.response?.data || error.message);
+        throw error;
+    }
+}
+
+
+
+
+
+
+
+
+module.exports = { getCoinMarkets,storeSessionStructureInRedis, findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
 
 
 
