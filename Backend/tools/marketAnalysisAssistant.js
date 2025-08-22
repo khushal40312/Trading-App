@@ -25,7 +25,7 @@ const marketAnalysisAssistant = {
           "intent": "price_analysis" | "trend_analysis" | "market_research" | "forecast_request" | "general_inquiry",
           "requiredData": {
             "symbols": ["BTC", "ETH"],
-            "timeframes": "1min"|| "3min"|| "5min"|| "15min"|| "30min"|| "1h"|| "4h"|| "12h"|| "1day"|| "1week"|| "1M",
+            "timeframes": "1min"|| "3min"|| "5min"|| "15min"|| "30min"|| "1h"|| "4h"|| "12h"|| "1day"|| "1week"|| "30"||"90"||"180"||"360",
             "dataTypes": ["price", "volume", "market_cap", "technical_indicators"]
             
           }

@@ -627,6 +627,48 @@ async function getCoinMarkets(options = {}) {
     }
 }
 
+/**
+ * Fetch OHLC data from CoinGecko with optional downsampling
+ * @param {string} coinId - CoinGecko coin ID (e.g., 'bitcoin', 'ethereum')
+ * @param {string} vsCurrency - Target currency (e.g., 'usd')
+ * @param {number|string} days - Number of days (1, 7, 30, 90, 180, 365, 'max')
+ * @param {number} step - Keep every nth data point (default 5 = skip 4, keep 1)
+ */
+async function fetchOHLC(coinId, vsCurrency = "usd", days = 30, step) {
+    try {
+      // Auto decide step if not given
+      if (!step) {
+        if (days >= 365) step = 14;
+        else if (days >= 180) step =7 ;
+        else if (days >= 90) step = 4;
+        else step = 2;
+      }
+  
+      const url = `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=${vsCurrency}&days=${days}`;
+      const { data } = await axios.get(url);
+  
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid OHLC response");
+      }
+  
+      // Downsample: keep every nth candle
+      const sampled = data.filter((_, index) => index % step === 0);
+  
+      // Format into objects for clarity
+      return sampled.map(([time, open, high, low, close]) => ({
+        time,
+        open,
+        high,
+        low,
+        close
+      }));
+  
+    } catch (err) {
+      console.error("Error fetching OHLC:", err.message);
+      return [];
+    }
+  }
+  
 
 
 
@@ -634,7 +676,7 @@ async function getCoinMarkets(options = {}) {
 
 
 
-module.exports = { getCoinMarkets,storeSessionStructureInRedis, findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
+module.exports = {fetchOHLC, getCoinMarkets,storeSessionStructureInRedis, findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
 
 
 
