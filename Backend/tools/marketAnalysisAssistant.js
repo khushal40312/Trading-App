@@ -26,7 +26,7 @@ const marketAnalysisAssistant = {
           "requiredData": {
             "symbols": ["BTC", "ETH"],
             "timeframes": "1min"|| "3min"|| "5min"|| "15min"|| "30min"|| "1h"|| "4h"|| "12h"|| "1day"|| "1week"|| "30"||"90"||"180"||"360",
-            "dataTypes": ["price", "volume", "market_cap", "technical_indicators"]
+            "dataTypes": ["price", "volume", "market_cap", "technical_indicators","top_coins"]
             
           }
           "contextualNotes": "Brief explanation of what the user is asking for",
@@ -110,8 +110,7 @@ const marketAnalysisAssistant = {
           requiredData: {
             symbols: ["BTC", "ETH"],
             timeframes: ["24h"],
-            dataTypes: ["price"],
-            analysisType: "technical"
+            dataTypes: ["price"]
           },
           apiEndpoints: [
             {

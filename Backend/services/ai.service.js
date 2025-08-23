@@ -636,47 +636,234 @@ async function getCoinMarkets(options = {}) {
  */
 async function fetchOHLC(coinId, vsCurrency = "usd", days = 30, step) {
     try {
-      // Auto decide step if not given
-      if (!step) {
-        if (days >= 365) step = 14;
-        else if (days >= 180) step =7 ;
-        else if (days >= 90) step = 4;
-        else step = 2;
-      }
-  
-      const url = `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=${vsCurrency}&days=${days}`;
-      const { data } = await axios.get(url);
-  
-      if (!Array.isArray(data)) {
-        throw new Error("Invalid OHLC response");
-      }
-  
-      // Downsample: keep every nth candle
-      const sampled = data.filter((_, index) => index % step === 0);
-  
-      // Format into objects for clarity
-      return sampled.map(([time, open, high, low, close]) => ({
-        time,
-        open,
-        high,
-        low,
-        close
-      }));
-  
+        // Auto decide step if not given
+        if (!step) {
+            if (days >= 365) step = 14;
+            else if (days >= 180) step = 7;
+            else if (days >= 90) step = 4;
+            else step = 2;
+        }
+
+        const url = `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=${vsCurrency}&days=${days}`;
+        const { data } = await axios.get(url);
+
+        if (!Array.isArray(data)) {
+            throw new Error("Invalid OHLC response");
+        }
+
+        // Downsample: keep every nth candle
+        const sampled = data.filter((_, index) => index % step === 0);
+
+        // Format into objects for clarity
+        return sampled.map(([time, open, high, low, close]) => ({
+            time,
+            open,
+            high,
+            low,
+            close
+        }));
+
     } catch (err) {
-      console.error("Error fetching OHLC:", err.message);
-      return [];
+        console.error("Error fetching OHLC:", err.message);
+        return [];
+    }
+}
+
+const COINGECKO_URL = "https://api.coingecko.com/api/v3/coins";
+
+
+
+function parseCryptoData(data) {
+    if (!data || !data.id) {
+        throw new Error("Invalid crypto data");
+    }
+
+    return {
+        id: data.id,
+        name: data.name,
+        symbol: data.symbol.toUpperCase(),
+        hashingAlgorithm: data.hashing_algorithm || "N/A",
+        genesisDate: data.genesis_date || "Unknown",
+        market: {
+            priceUSD: data.market_data?.current_price?.usd ?? null,
+            marketCapUSD: data.market_data?.market_cap?.usd ?? null,
+            volume24hUSD: data.market_data?.total_volume?.usd ?? null,
+            ath: data.market_data?.ath?.usd ?? null,
+            athChangePercent: data.market_data?.ath_change_percentage?.usd ?? null,
+            athDate: data.market_data?.ath_date?.usd ?? null,
+            atl: data.market_data?.atl?.usd ?? null,
+            atlChangePercent: data.market_data?.atl_change_percentage?.usd ?? null,
+            atlDate: data.market_data?.atl_date?.usd ?? null,
+            priceChange24h: data.market_data?.price_change_24h ?? null,
+            priceChange24hPercent: data.market_data?.price_change_percentage_24h ?? null,
+        },
+        performance: {
+            change7d: data.market_data?.price_change_percentage_7d ?? null,
+            change14d: data.market_data?.price_change_percentage_14d ?? null,
+            change30d: data.market_data?.price_change_percentage_30d ?? null,
+            change60d: data.market_data?.price_change_percentage_60d ?? null,
+            change200d: data.market_data?.price_change_percentage_200d ?? null,
+            change1y: data.market_data?.price_change_percentage_1y ?? null,
+        },
+        community: {
+            redditSubscribers: data.community_data?.reddit_subscribers ?? 0,
+            twitterFollowers: data.community_data?.twitter_followers ?? 0,
+            sentimentUp: data.sentiment_votes_up_percentage ?? 0,
+            sentimentDown: data.sentiment_votes_down_percentage ?? 0,
+        },
+        links: {
+            homepage: data.links?.homepage?.[0] ?? "",
+            whitepaper: data.links?.whitepaper ?? "",
+            blockchainExplorer: data.links?.blockchain_site?.[0] ?? "",
+            github: data.links?.repos_url?.github?.[0] ?? "",
+            subreddit: data.links?.subreddit_url ?? "",
+        }
+    };
+}
+/**
+ * Fetch crypto data from CoinGecko and return cleaned summary
+ * @param {string} coinId - Example: "bitcoin", "ethereum"
+ * @param {string} apiKey - Your CoinGecko API key
+ * @returns {Promise<Object>} Cleaned crypto data
+ */
+async function fetchCryptoData(coinId) {
+    try {
+        const response = await axios.get(`${COINGECKO_URL}/${coinId}`, {
+            params: {
+                localization: false,
+                tickers: false,
+                market_data: true,
+                community_data: false,
+                developer_data: false,
+                sparkline: false,
+                dex_pair_format: "symbol",
+            },
+            headers: {
+                accept: "application/json",
+                "x-cg-demo-api-key": process.env.COINGECKO_API_KEY,
+            },
+        });
+
+        return parseCryptoData(response.data);
+    } catch (error) {
+        console.error("Error fetching crypto data:", error.message);
+        throw error;
+    }
+}
+
+
+async function fetchTicker(coinId) {
+    try {
+        const url = `https://api.coingecko.com/api/v3/coins/${coinId}/tickers`;
+
+        const response = await axios.get(url, {
+            params: {
+                exchange_ids: 'bitget',
+                include_exchange_logo: false,
+                depth: false,
+            },
+            headers: {
+                accept: "application/json",
+                "x-cg-demo-api-key": process.env.COINGECKO_API_KEY,
+            },
+        });
+
+        const tickers = response.data?.tickers || [];
+        const ticker = tickers.find(
+            (t) => t.target === 'USDT'
+        );
+
+        return ticker || null;
+    } catch (error) {
+        console.error(`Error fetching ${base}/${target} ticker from ${exchange}:`, error.message);
+        throw error;
+    }
+}
+
+async function getTrendingCoins() {
+    try {
+      const response = await axios.get('https://api.coingecko.com/api/v3/search/trending', {
+        headers: {
+          'Accept': 'application/json',
+          'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
+        },
+        timeout: 30000
+      });
+  
+      // Extract coins array and simplify price_change_percentage_24h to only include USD
+      const coins = response.data.coins.map(coinData => {
+        const coin = { ...coinData };
+        
+        // Only keep USD from price_change_percentage_24h if it exists
+        if (coin.item.data && coin.item.data.price_change_percentage_24h) {
+          coin.item.data.price_change_percentage_24h = {
+            usd: coin.item.data.price_change_percentage_24h.usd
+          };
+        }
+        
+        return coin;
+      });
+  
+      return coins;
+  
+    } catch (error) {
+      if (error.response) {
+        throw new Error(`CoinGecko API Error: ${error.response.status} - ${error.response.data?.error || error.response.statusText}`);
+      } else if (error.request) {
+        throw new Error('Network error: Unable to reach CoinGecko API');
+      } else {
+        throw new Error(`Error: ${error.message}`);
+      }
+    }
+  }
+
+  async function getFilteredGlobalMarketData() {
+    try {
+      const response = await axios.get('https://api.coingecko.com/api/v3/global', {
+        headers: {
+          'Accept': 'application/json',
+          'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
+        },
+        timeout: 30000
+      });
+  
+      const data = response.data.data;
+  
+      // Add a filtered subset (btc + usdt)
+      const filteredData = {
+        total_market_cap: {
+          btc: data.total_market_cap.btc,
+          usd: data.total_market_cap.usd
+        },
+        total_volume: {
+          btc: data.total_volume.btc,
+          usd: data.total_volume.usd
+        },
+        market_cap_percentage: {
+          btc: data.market_cap_percentage.btc,
+          usdt: data.market_cap_percentage.usdt
+        }
+      };
+  
+      // Return everything + filtered
+      return {
+        ...data,
+        filtered: filteredData
+      };
+  
+    } catch (error) {
+      if (error.response) {
+        throw new Error(`CoinGecko API Error: ${error.response.status} - ${error.response.data?.error || error.response.statusText}`);
+      } else if (error.request) {
+        throw new Error('Network error: Unable to reach CoinGecko API');
+      } else {
+        throw new Error(`Error: ${error.message}`);
+      }
     }
   }
   
 
-
-
-
-
-
-
-module.exports = {fetchOHLC, getCoinMarkets,storeSessionStructureInRedis, findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
+module.exports = {getFilteredGlobalMarketData,fetchTicker,getTrendingCoins, fetchCryptoData, fetchOHLC, getCoinMarkets, storeSessionStructureInRedis, findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
 
 
 
