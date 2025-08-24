@@ -41,7 +41,7 @@ module.exports.aiChat = async (req, res) => {
       await redisClient.setEx(`session:${user.id}:${newSessionId}`, 900, 'active');
 
       const result = await tradingAgent.invoke({ input: message, user, sessionId: newSessionId });
-      console.log(result)
+      console.log(JSON.stringify(result.marketClassificationContext))
       return res.json({
         notification: "New session started.",
         sessionId: newSessionId,

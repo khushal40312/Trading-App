@@ -22,11 +22,11 @@ const marketAnalysisAssistant = {
         {
           "classification": "MARKET_ANALYSIS",
           "confidence": 0.95,
-          "intent": "price_analysis" | "trend_analysis" | "market_research" | "forecast_request" | "general_inquiry",
+          "intent": "price_analysis" | "trend_analysis" | "market_research" | "forecast_request" | "general_inquiry"|"",
           "requiredData": {
             "symbols": ["BTC", "ETH"],
             "timeframes": "1min"|| "3min"|| "5min"|| "15min"|| "30min"|| "1h"|| "4h"|| "12h"|| "1day"|| "1week"|| "30"||"90"||"180"||"360",
-            "dataTypes": ["price", "volume", "market_cap", "technical_indicators","top_coins"]
+            "dataTypes": ["price", "volume", "market_cap", "technical_indicators","top_coins"]||["only_current_price"]
             
           }
           "contextualNotes": "Brief explanation of what the user is asking for",
@@ -89,7 +89,7 @@ const marketAnalysisAssistant = {
         sessionId: sessionId,
         userId: user.id
       };
-      console.log(validatedResponse.requiredData.symbols, validatedResponse.requiredData.timeframes, validatedResponse.requiredData.dataTypes)
+      console.log(validatedResponse.requiredData.symbols, validatedResponse.requiredData.timeframes, validatedResponse.requiredData.dataTypes,validatedResponse.intent)
       return validatedResponse
 
     } catch (error) {

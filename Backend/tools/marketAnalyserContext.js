@@ -1,291 +1,236 @@
-const { getCoinMarkets, getTrendingCoins, getFilteredGlobalMarketData } = require("../services/ai.service");
-const { fetchOHLC } = require("../services/fetchOHLC"); // make sure you exported it
+const { getCoinMarkets, getTrendingCoins, getFilteredGlobalMarketData, fetchCryptoData, fetchTicker, fetchOHLC } = require("../services/ai.service");
+const tavilyService = require("../services/tailvy.service");
+
+const longTimeframes = ["30", "90", "180", "365"];
+const singleDayTimeframes = ["1min", "3min", "5min", "15min", "30min", "1h", "4h", "12h", "1day"];
+
+const isLong = (t) => longTimeframes.includes(t);
+const isShort = (t) => singleDayTimeframes.includes(t);
+const isMid = (tf) => !isShort(tf) && !isLong(tf);
+
+async function getOHLCData(coinIds, timeframe) {
+    const results = {};
+    for (const sym of coinIds) {
+        try {
+            results[sym] = await fetchOHLC(sym, "usd", Number(timeframe));
+        } catch (err) {
+            console.error(`Failed to fetch OHLC for ${sym}:`, err.message);
+            results[sym] = { error: err.message };
+        }
+    }
+    return results;
+}
+
+async function getAnalysisData(coinIds, withIndicators = false) {
+    const results = {};
+    const indicators = {};
+    for (const sym of coinIds) {
+        try {
+            results[sym] = await fetchCryptoData(sym);
+            if (withIndicators) {
+                indicators[sym] = await fetchTicker(coinIds);
+            }
+        } catch (err) {
+            results[sym] = { error: err.message };
+        }
+    }
+    return withIndicators ? { results, indicators } : { results };
+}
+
+/**
+ * Handle general inquiries using Tavily search
+ * @param {string} query - The user's general query
+ * @param {string} context - Additional context about the query
+ * @returns {Promise<Object>} Search results and formatted response
+ */
+async function handleGeneralInquiry(query, context = '') {
+    try {
+        // Determine if it's crypto-related
+        const cryptoKeywords = ['crypto', 'bitcoin', 'ethereum', 'blockchain', 'defi', 'nft', 'altcoin', 'trading', 'wallet', 'mining'];
+        const isCryptoRelated = cryptoKeywords.some(keyword =>
+            query.toLowerCase().includes(keyword) || context.toLowerCase().includes(keyword)
+        );
+
+        let searchResult;
+
+        if (isCryptoRelated) {
+            // Use crypto-specific search for better results
+            searchResult = await tavilyService.searchCryptoGeneral(query);
+        } else {
+            // Use general search
+            searchResult = await tavilyService.search(query, {
+                search_depth: 'basic',
+                max_results: 3,
+                include_answer: true
+            });
+        }
+
+        if (!searchResult.success) {
+            return {
+                type: "general_inquiry_error",
+                message: "Sorry, I couldn't search for that information right now.",
+                error: searchResult.error
+            };
+        }
+
+        const { data } = searchResult;
+
+        return {
+            type: "general_inquiry_response",
+            query: query,
+            answer: data.answer || "I found some relevant information for you.",
+            sources: data.results ? data.results.map(result => ({
+                title: result.title,
+                url: result.url,
+                content: result.content,
+                score: result.score
+            })) : [],
+            searchMetadata: {
+                search_time: data.response_time,
+                results_count: data.results ? data.results.length : 0
+            }
+        };
+
+    } catch (error) {
+        console.error('Error in handleGeneralInquiry:', error.message);
+        return {
+            type: "general_inquiry_error",
+            message: "Sorry, there was an error processing your request.",
+            error: error.message
+        };
+    }
+}
 
 const marketAnalyserContext = {
     name: "marketAnalyserContext",
     description: "Extract market context",
 
-    func: async ({ user, marketClassification }) => {
+    func: async ({ marketClassification, input }) => {
         try {
-            const symbolsArr = (marketClassification.requiredData.symbols || [])
-                .map(sym => sym.toLowerCase());
+            const symbolsArr = (marketClassification.requiredData?.symbols || []).map((s) => s.toLowerCase());
+            const timeframe = marketClassification.requiredData?.timeframes;
+            const includeIndicators = marketClassification.requiredData?.dataTypes?.includes("technical_indicators");
 
-            if (!symbolsArr.length) {
-                throw new Error("No symbols provided for market analysis");
-            }
+            switch (marketClassification.intent) {
+                case "price_analysis": {
+                    if (!symbolsArr.length) throw new Error("No symbols provided for price analysis");
 
-            // Join symbols for CoinGecko getCoinMarkets
-            const symbols = symbolsArr.join(",");
+                    const symbols = symbolsArr.join(",");
 
-            // CASE 1: under-1M timeframe → just getCoinMarkets
-            if (marketClassification.intent === "price_analysis" &&
-                marketClassification.requiredData.timeframes !== "30" || marketClassification.requiredData.timeframes !== "90" || marketClassification.requiredData.timeframes !== "180" || marketClassification.requiredData.timeframes !== "365") {
+                    if (marketClassification.requiredData?.dataTypes?.length === 1 && marketClassification.requiredData?.dataTypes.includes('only_current_price')) {
 
-                const data = await getCoinMarkets({
-                    vs_currency: "usd",
-                    symbols,
-                    price_change_percentage: "1h,24h,7d,30d",
-                    sparkline: true
-                });
+                        const marketData = await getCoinMarkets({
+                            vs_currency: "usd",
+                            symbols,
+                            price_change_percentage: "1h",
+                            sparkline: false,
+                        });
 
-                return { type: "market_data", data };
-            }
+                        return { type: "market_data", marketData };
+
+                    } else {
 
 
-            if (marketClassification.intent === "price_analysis" &&
-                marketClassification.requiredData.timeframes == "30" || marketClassification.requiredData.timeframes == "90" || marketClassification.requiredData.timeframes == "180" || marketClassification.requiredData.timeframes == "365") {
+                        const marketData = await getCoinMarkets({
+                            vs_currency: "usd",
+                            symbols,
+                            price_change_percentage: isLong(timeframe) ? "30d" : "1h,24h,7d,30d",
+                            sparkline: !isLong(timeframe),
+                        });
+                        // only_curent_price
 
-                const marketData = await getCoinMarkets({
-                    vs_currency: "usd",
-                    symbols,
-                    price_change_percentage: "30d",
-                    sparkline: false
-                });
-
-                let ohlcResults = {};
-                const coinIds = (marketData || [])
-                    .map(sym => sym.id.toLowerCase());
-                // If more than one symbol → loop and fetch OHLC one by one
-                for (const sym of coinIds) {
-                    try {
-                        const ohlc = await fetchOHLC(sym, "usd", Number(marketClassification.requiredData.timeframes));
-                        ohlcResults[sym] = ohlc;
-                    } catch (err) {
-                        console.error(`Failed to fetch OHLC for ${sym}:`, err.message);
-                        ohlcResults[sym] = { error: err.message };
+                        if (isLong(timeframe)) {
+                            const coinIds = marketData.map((c) => c.id.toLowerCase());
+                            const ohlcData = await getOHLCData(coinIds, timeframe);
+                            return { type: "market_with_ohlc", marketData, ohlcData };
+                        }
+                        return { type: "market_data", marketData };
                     }
                 }
 
-                return {
-                    type: "market_with_ohlc",
-                    marketData,
-                    ohlcData: ohlcResults
-                };
-            }
-            let includeTechIndicator = marketClassification.requiredData.dataTypes.includes('technical_indicators')
+                case "trend_analysis": {
+                    if (!symbolsArr.length) {
+                        const query = input+'bitget market' || "general crypto information";
+                        const context = marketClassification.contextualNotes || "";
+    
+                        return await handleGeneralInquiry(query, context);
 
-            if (!includeTechIndicator && marketClassification.intent === "trend_analysis" &&
-                marketClassification.requiredData.timeframes !== "30" || marketClassification.requiredData.timeframes !== "90" || marketClassification.requiredData.timeframes !== "180" || marketClassification.requiredData.timeframes !== "365") {
+                    };
 
-                const marketData = await getCoinMarkets({
-                    vs_currency: "usd",
-                    symbols,
-                    price_change_percentage: "1h,24h,7d,30d",
-                    sparkline: true
-                });
-                let dataResults = {};
+                    const symbols = symbolsArr.join(",");
+                    const marketData = await getCoinMarkets({
+                        vs_currency: "usd",
+                        symbols,
+                        price_change_percentage: isLong(timeframe) ? "1h,24h,7d,30d"
+                            : isShort(timeframe) ? "1h,24h"
+                                : "1h,24h,7d",
+                        sparkline: isShort(timeframe) ? false : !isLong(timeframe),
+                    });
 
-                const coinIds = (marketData || [])
-                    .map(sym => sym.id.toLowerCase());
+                    const coinIds = marketData.map((c) => c.id.toLowerCase());
 
-                for (const sym of coinIds) {
-                    try {
-                        const data = await fetchCryptoData(sym);
-
-                        dataResults[sym] = data;
-                    } catch (err) {
-                        console.error(`Failed to fetch OHLC for ${sym}:`, err.message);
-                        dataResults[sym] = { error: err.message };
+                    if (isShort(timeframe)) {
+                        if (includeIndicators) {
+                            const { results, indicators } = await getAnalysisData(coinIds, true);
+                            return { type: "market_with_indicator", marketData, analysisData: results, indicationResults: indicators };
+                        }
+                        return { type: "market_data", marketData };
                     }
 
-
-                }
-                return {
-                    type: "market_with_indicator",
-                    marketData,
-                    analysisData: dataResults
-                };
-            }
-            if (!includeTechIndicator && marketClassification.intent === "trend_analysis" &&
-                marketClassification.requiredData.timeframes == "30" || marketClassification.requiredData.timeframes == "90" || marketClassification.requiredData.timeframes == "180" || marketClassification.requiredData.timeframes == "365") {
-
-                const marketData = await getCoinMarkets({
-                    vs_currency: "usd",
-                    symbols,
-                    price_change_percentage: "1h,24h,7d,30d",
-                    sparkline: false
-                });
-
-                let ohlcResults = {};
-                const coinIds = (marketData || [])
-                    .map(sym => sym.id.toLowerCase());
-                // If more than one symbol → loop and fetch OHLC one by one
-                for (const sym of coinIds) {
-                    try {
-                        const ohlc = await fetchOHLC(sym, "usd", Number(marketClassification.requiredData.timeframes));
-                        ohlcResults[sym] = ohlc;
-                    } catch (err) {
-                        console.error(`Failed to fetch OHLC for ${sym}:`, err.message);
-                        ohlcResults[sym] = { error: err.message };
-                    }
-                }
-
-                return {
-                    type: "market_with_ohlc",
-                    marketData,
-                    ohlcData: ohlcResults
-                };
-            }
-            if (includeTechIndicator && marketClassification.intent === "trend_analysis" &&
-                marketClassification.requiredData.timeframes !== "30" || marketClassification.requiredData.timeframes !== "90" || marketClassification.requiredData.timeframes !== "180" || marketClassification.requiredData.timeframes !== "365") {
-
-                const marketData = await getCoinMarkets({
-                    vs_currency: "usd",
-                    symbols,
-                    price_change_percentage: "1h,24h,7d,30d",
-                    sparkline: true
-                });
-                let dataResults = {};
-                let indicationResults = {};
-
-
-                const coinIds = (marketData || [])
-                    .map(sym => sym.id.toLowerCase());
-
-                for (const sym of coinIds) {
-                    try {
-                        const data = await fetchCryptoData(sym);
-                        const dataForIndicator = await fetchTicker(coinIds);
-                        indicationResults[sym] = dataForIndicator;
-
-                        dataResults[sym] = data;
-                    } catch (err) {
-                        console.error(`Failed to fetch OHLC for ${sym}:`, err.message);
-                        dataResults[sym] = { error: err.message };
+                    if (isMid(timeframe)) {
+                        const { results, indicators } = await getAnalysisData(coinIds, includeIndicators);
+                        return { type: "market_with_indicator", marketData, analysisData: results, indicationResults: indicators };
                     }
 
-
-                }
-                return {
-                    type: "market_with_indicator",
-                    marketData,
-                    analysisData: dataResults,
-                    indicationResults: indicationResults
-                };
-            }
-            if (includeTechIndicator && marketClassification.intent === "trend_analysis" &&
-                marketClassification.requiredData.timeframes == "30" || marketClassification.requiredData.timeframes == "90" || marketClassification.requiredData.timeframes == "180" || marketClassification.requiredData.timeframes == "365") {
-
-                const marketData = await getCoinMarkets({
-                    vs_currency: "usd",
-                    symbols,
-                    price_change_percentage: "1h",
-                    sparkline: false
-                });
-
-                let ohlcResults = {};
-                let indicationResults = {};
-
-                const coinIds = (marketData || [])
-                    .map(sym => sym.id.toLowerCase());
-                // If more than one symbol → loop and fetch OHLC one by one
-                for (const sym of coinIds) {
-                    try {
-                        const dataForIndicator = await fetchTicker(coinIds);
-                        indicationResults[sym] = dataForIndicator;
-                        const ohlc = await fetchOHLC(sym, "usd", Number(marketClassification.requiredData.timeframes));
-                        ohlcResults[sym] = ohlc;
-                    } catch (err) {
-                        console.error(`Failed to fetch OHLC for ${sym}:`, err.message);
-                        ohlcResults[sym] = { error: err.message };
+                    // long timeframe
+                    const ohlcData = await getOHLCData(coinIds, timeframe);
+                    if (includeIndicators) {
+                        const { indicators } = await getAnalysisData(coinIds, true);
+                        return { type: "market_with_ohlc", marketData, ohlcData, indicationResults: indicators };
                     }
+                    return { type: "market_with_ohlc", marketData, ohlcData };
                 }
 
-                return {
-                    type: "market_with_ohlc",
-                    marketData,
-                    ohlcData: ohlcResults,
-                    indicationResults: indicationResults
 
-                };
-            }
-            if (marketClassification.intent === "market_research") {
+                case "forecast_request": {
+                    if (!symbolsArr.length) throw new Error("No symbols provided for forecast");
+                    if (!isLong(timeframe)) return { message: "Forecasts only supported for long timeframes" };
 
-                const coinData = await getTrendingCoins()
-                const globalData = await getFilteredGlobalMarketData()
+                    const symbols = symbolsArr.join(",");
+                    const marketData = await getCoinMarkets({
+                        vs_currency: "usd",
+                        symbols,
+                        price_change_percentage: "1h,24h,7d,30d",
+                        sparkline: false,
+                    });
 
-                return { type: "trending_coins_with_global", coinData: coinData, globalData: globalData };
-            }
-            if (!includeTechIndicator && marketClassification.intent === "trend_analysis" &&
-                marketClassification.requiredData.timeframes !== "30" || marketClassification.requiredData.timeframes !== "90" || marketClassification.requiredData.timeframes !== "180" || marketClassification.requiredData.timeframes !== "365") {
-
-                const marketData = await getCoinMarkets({
-                    vs_currency: "usd",
-                    symbols,
-                    price_change_percentage: "1h,24h,7d,30d",
-                    sparkline: true
-                });
-                let dataResults = {};
-
-                const coinIds = (marketData || [])
-                    .map(sym => sym.id.toLowerCase());
-
-                for (const sym of coinIds) {
-                    try {
-                        const data = await fetchCryptoData(sym);
-
-                        dataResults[sym] = data;
-                    } catch (err) {
-                        console.error(`Failed to fetch OHLC for ${sym}:`, err.message);
-                        dataResults[sym] = { error: err.message };
-                    }
-
-
-                }
-                return {
-                    type: "market_with_indicator",
-                    marketData,
-                    analysisData: dataResults
-                };
-            }
-            if (!includeTechIndicator && marketClassification.intent === "forecast_request" &&
-                marketClassification.requiredData.timeframes == "30" || marketClassification.requiredData.timeframes == "90" || marketClassification.requiredData.timeframes == "180" || marketClassification.requiredData.timeframes == "365") {
-
-                const marketData = await getCoinMarkets({
-                    vs_currency: "usd",
-                    symbols,
-                    price_change_percentage: "1h,24h,7d,30d",
-                    sparkline: false
-                });
-
-                let ohlcResults = {};
-                let dataResults = {};
-
-                const coinIds = (marketData || [])
-                    .map(sym => sym.id.toLowerCase());
-                // If more than one symbol → loop and fetch OHLC one by one
-                for (const sym of coinIds) {
-                    try {
-                        const data = await fetchCryptoData(sym);
-
-                        const ohlc = await fetchOHLC(sym, "usd", Number(marketClassification.requiredData.timeframes));
-                        ohlcResults[sym] = ohlc;
-                        dataResults[sym] = data;
-
-                    } catch (err) {
-                        console.error(`Failed to fetch OHLC for ${sym}:`, err.message);
-                        ohlcResults[sym] = { error: err.message };
-                    }
+                    const coinIds = marketData.map((c) => c.id.toLowerCase());
+                    const ohlcData = await getOHLCData(coinIds, timeframe);
+                    const { results } = await getAnalysisData(coinIds, false);
+                    return { type: "market_with_ohlc", marketData, ohlcData, analysisData: results };
                 }
 
-                return {
-                    type: "market_with_ohlc",
-                    marketData: dataResults,
-                    ohlcData: ohlcResults
-                };
+                case "market_research": {
+                    const coinData = await getTrendingCoins();
+                    const globalData = await getFilteredGlobalMarketData();
+                    return { type: "trending_coins_with_global", coinData, globalData };
+                }
+
+                case "general_inquiry": {
+                    // Extract the actual query from marketClassification
+                    const query = input || "general crypto information";
+                    const context = marketClassification.contextualNotes || "";
+
+                    return await handleGeneralInquiry(query, context);
+                }
+                default:
+                    return { message: "No market data requested for this context." };
             }
-
-            if (marketClassification.intent == "general_inquiry") return "general Question"
-            return { message: "No market data requested for this context." };
-
         } catch (error) {
-            console.log("ERROR DURING CONTEXT MAKING ", error.message);
-            return {
-                error: error.message
-            };
+            console.error("ERROR DURING CONTEXT MAKING", error.message);
+            return { error: error.message };
         }
-    }
+    },
 };
 
 module.exports = { marketAnalyserContext };
-// getTrendingCoins

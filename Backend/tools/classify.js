@@ -11,9 +11,7 @@ Classify the user's fresh input + old Conversation memory context into one of th
 
 -PORTFOLIO: Requests about the user’s own holdings, balances, performance, or account details.
 
--MARKET_ANALYSIS: Questions or discussions about crypto research, market trends, forecasts, or price movements.
-
--EDUCATION: Learning-oriented queries about trading concepts, strategies, tools, or financial terminology.
+-MARKET_ANALYSIS: Questions or discussions about crypto research, market trends, forecasts,  price movements or Educational.
 
 -GENERAL_CHAT: Any casual or off-topic conversation not related to trading, portfolio, or market analysis.
 
