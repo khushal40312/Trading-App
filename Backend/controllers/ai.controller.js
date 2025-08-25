@@ -11,13 +11,12 @@ module.exports.aiChat = async (req, res) => {
 
     if (sessionId) {
       const exists = await redisClient.get(`session:${user.id}:${sessionId}`);
-      console.log(exists)
+      
       if (exists) {
         // Refresh TTL
         await redisClient.expire(`session:${user.id}:${sessionId}`, 900);
 
         const result = await tradingAgent.invoke({ input: message, user, sessionId });
-        console.log(result)
 
         return res.json({ reply: result.reply || "No response generated." });
 
@@ -27,7 +26,6 @@ module.exports.aiChat = async (req, res) => {
         await redisClient.setEx(`session:${user.id}:${newSessionId}`, 900, "active");
 
         const result = await tradingAgent.invoke({ input: message, user, sessionId: newSessionId });
-        console.log(result)
         return res.json({
           notification: "Your previous session expired. Starting a new one.",
           sessionId: newSessionId,
@@ -41,7 +39,6 @@ module.exports.aiChat = async (req, res) => {
       await redisClient.setEx(`session:${user.id}:${newSessionId}`, 900, 'active');
 
       const result = await tradingAgent.invoke({ input: message, user, sessionId: newSessionId });
-      console.log(JSON.stringify(result.marketClassificationContext))
       return res.json({
         notification: "New session started.",
         sessionId: newSessionId,

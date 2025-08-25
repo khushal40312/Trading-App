@@ -30,7 +30,6 @@ const classifyTool = {
   description: "Classifies the user's message into categories.",
   func: async ({ input, user, sessionId }) => {
     const data = await getLatest3Interactions(user.id, sessionId)
-    console.log(data)
     let memoryContext = data ? JSON.stringify(data) : "";
 
     const chain = classifyPrompt

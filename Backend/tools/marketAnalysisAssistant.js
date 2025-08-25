@@ -26,7 +26,7 @@ const marketAnalysisAssistant = {
           "requiredData": {
             "symbols": ["BTC", "ETH"],
             "timeframes": "1min"|| "3min"|| "5min"|| "15min"|| "30min"|| "1h"|| "4h"|| "12h"|| "1day"|| "1week"|| "30"||"90"||"180"||"360",
-            "dataTypes": ["price", "volume", "market_cap", "technical_indicators","top_coins"]||["only_current_price"]
+            "dataTypes": ["price", "volume", "market_cap", "technical_indicators"]||["only_current_price"]||["only_trending_coins"]
             
           }
           "contextualNotes": "Brief explanation of what the user is asking for",
@@ -34,7 +34,6 @@ const marketAnalysisAssistant = {
         }
         
         Make sure to identify specific cryptocurrencies mentioned, time periods, and type of analysis requested.
-        If no specific crypto is mentioned, suggest popular ones like BTC, ETH.
         Ensure all JSON is properly formatted and valid.
       `;
 

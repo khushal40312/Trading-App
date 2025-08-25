@@ -14,6 +14,7 @@ const { appendPendingTrade } = require("../services/ai.service");
 const { tradeCancellationResolverTool } = require("../tools/tradeCancellation");
 const { marketAnalysisAssistant } = require("../tools/marketAnalysisAssistant");
 const { marketAnalyserContext } = require("../tools/marketAnalyserContext");
+const { marketAnalysisGenerator } = require("../tools/marketAnalysisGenerator");
 // 1. Node function: classify
 const classifyNode = async (state) => {
   try {
@@ -309,7 +310,50 @@ const marketAnalysisContextNode = async (state) => {
     };
   }
 };
+const marketAnalysisGeneratorNode = async (state) => {
+  try {
+    const reply = await marketAnalysisGenerator.func({
+      input: state.input,
+      sessionId: state.sessionId,
+      user: state.user,
+      marketClassificationContext: state.marketClassificationContext
+    });
 
+    const newInteractions = {
+      input: state.input,
+      reply,
+      timestamp: new Date().toISOString()
+    }
+    const structure = {
+      pendingTrades: [],
+      interaction: [
+        {
+          input: state.input,
+          reply,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    };
+    const isExists = await appendPendingTrade(state.user.id, state.sessionId, structure);
+    if (!isExists) {
+      await storeSessionStructureInRedis(structure, state.user.id, state.sessionId);
+    } else {
+
+      await appendInteraction(state.user.id, state.sessionId, newInteractions);
+    }
+
+    return {
+      ...state,
+      reply
+    };
+  } catch (error) {
+    return {
+      ...state,
+      reply: { type: "ERROR" },
+      error: error.message
+    };
+  }
+};
 // Create StateGraph with proper type definitions
 const graphBuilder = new StateGraph({
   channels: {
@@ -343,6 +387,9 @@ graphBuilder.addNode("unifiedTradeAssistant", unifiedTradeAssistantNode);
 graphBuilder.addNode("tradeCancellationResolver", tradeCancellationResolverNode);
 graphBuilder.addNode("marketAnalysisAssistant", marketAnalysisAssistantNode);
 graphBuilder.addNode("marketAnalyserContext", marketAnalysisContextNode);
+graphBuilder.addNode("marketAnalysisGenerator", marketAnalysisGeneratorNode);
+
+
 
 
 
@@ -356,19 +403,12 @@ graphBuilder.addConditionalEdges(
     if (state.category === "PORTFOLIO") return "unifiedTradeAssistant";
     if (state.category === "GENERAL_CHAT") return "unifiedTradeAssistant";
     if (state.category === "MARKET_ANALYSIS") return "marketAnalysisAssistant";
-
-
-
-
-
-
     return END;
   }
 );
-
-
 graphBuilder.addEdge("marketAnalysisAssistant", "marketAnalyserContext");
-graphBuilder.addEdge("marketAnalyserContext", END);
+graphBuilder.addEdge("marketAnalyserContext", "marketAnalysisGenerator");
+graphBuilder.addEdge("marketAnalysisGenerator", END);
 
 graphBuilder.addConditionalEdges(
   "tradingInputClassifier",
@@ -384,7 +424,6 @@ graphBuilder.addConditionalEdges(
     return END;
   }
 );
-
 graphBuilder.addEdge("extractTradingEntitiesToJson", "extractTradingContext");
 graphBuilder.addEdge("extractTradingContext", "initialResponse");
 graphBuilder.addEdge("initialResponse", END);

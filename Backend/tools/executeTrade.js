@@ -15,7 +15,6 @@ const tradeExecutionTool = {
                 if (monitoringStatus) {
 
                     const response = await executeTrade({ finalJson: finalJson.jsonObject, oldMemory: finalJson.oldMemory,sessionId })
-                    console.log(response)
                     return response;
 
                 } else if (!monitoringStatus) {

@@ -5,7 +5,7 @@ class TavilyService {
     constructor() {
         this.apiKey = process.env.TAVILY_API_KEY;
         this.baseURL = 'https://api.tavily.com';
-        
+
         if (!this.apiKey) {
             console.warn('TAVILY_API_KEY not found in environment variables');
         }
@@ -32,6 +32,7 @@ class TavilyService {
                 max_results: options.max_results || 5,
                 include_domains: options.include_domains || [],
                 exclude_domains: options.exclude_domains || [],
+                include_images: true,
                 ...options
             };
 

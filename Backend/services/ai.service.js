@@ -478,7 +478,6 @@ const storeSessionInRedis = async (state) => {
 
         // Store in Redis with 15 minutes (900 seconds) expiry
         let ab = await redisClient.setEx(`session:data:${userId}:${sessionId}`, 900, JSON.stringify(sessionData));
-        console.log(ab)
         console.log(`Session stored in Redis: session:${userId}:${sessionId}`);
     } catch (error) {
         console.error('Failed to store session in Redis:', error);
@@ -489,7 +488,6 @@ const storeSessionStructureInRedis = async (structure, userId, sessionId) => {
     try {
 
         let ab = await redisClient.setEx(`session:data:${userId}:${sessionId}`, 900, JSON.stringify(structure));
-        console.log(ab)
         console.log(`Session stored in Redis: session:${userId}:${sessionId}`);
 
     } catch (error) {
@@ -640,8 +638,7 @@ async function fetchOHLC(coinId, vsCurrency = "usd", days = 30, step) {
         if (!step) {
             if (days >= 365) step = 14;
             else if (days >= 180) step = 7;
-            else if (days >= 90) step = 4;
-            else step = 2;
+            else step = 4;
         }
 
         const url = `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=${vsCurrency}&days=${days}`;
@@ -782,88 +779,96 @@ async function fetchTicker(coinId) {
 
 async function getTrendingCoins() {
     try {
-      const response = await axios.get('https://api.coingecko.com/api/v3/search/trending', {
-        headers: {
-          'Accept': 'application/json',
-          'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
-        },
-        timeout: 30000
-      });
-  
-      // Extract coins array and simplify price_change_percentage_24h to only include USD
-      const coins = response.data.coins.map(coinData => {
-        const coin = { ...coinData };
-        
-        // Only keep USD from price_change_percentage_24h if it exists
-        if (coin.item.data && coin.item.data.price_change_percentage_24h) {
-          coin.item.data.price_change_percentage_24h = {
-            usd: coin.item.data.price_change_percentage_24h.usd
-          };
-        }
-        
-        return coin;
-      });
-  
-      return coins;
-  
-    } catch (error) {
-      if (error.response) {
-        throw new Error(`CoinGecko API Error: ${error.response.status} - ${error.response.data?.error || error.response.statusText}`);
-      } else if (error.request) {
-        throw new Error('Network error: Unable to reach CoinGecko API');
-      } else {
-        throw new Error(`Error: ${error.message}`);
-      }
-    }
-  }
+        const response = await axios.get('https://api.coingecko.com/api/v3/search/trending', {
+            headers: {
+                'Accept': 'application/json',
+                'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
+            },
+            timeout: 30000
+        });
 
-  async function getFilteredGlobalMarketData() {
+        // Extract coins array and simplify price_change_percentage_24h to only include USD
+        const coins = response.data.coins
+            .slice(0, 7) // ✅ only keep top 7 items
+            .map(coinData => {
+                const coin = { ...coinData };
+
+                // Only keep USD from price_change_percentage_24h if it exists
+                if (coin.item.data && coin.item.data.price_change_percentage_24h) {
+                    coin.item.data.price_change_percentage_24h = {
+                        usd: coin.item.data.price_change_percentage_24h.usd
+                    };
+                }
+
+                return coin;
+            });
+
+        return coins;
+
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`CoinGecko API Error: ${error.response.status} - ${error.response.data?.error || error.response.statusText}`);
+        } else if (error.request) {
+            throw new Error('Network error: Unable to reach CoinGecko API');
+        } else {
+            throw new Error(`Error: ${error.message}`);
+        }
+    }
+}
+
+
+async function getFilteredGlobalMarketData() {
     try {
-      const response = await axios.get('https://api.coingecko.com/api/v3/global', {
-        headers: {
-          'Accept': 'application/json',
-          'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
-        },
-        timeout: 30000
-      });
-  
-      const data = response.data.data;
-  
-      // Add a filtered subset (btc + usdt)
-      const filteredData = {
-        total_market_cap: {
-          btc: data.total_market_cap.btc,
-          usd: data.total_market_cap.usd
-        },
-        total_volume: {
-          btc: data.total_volume.btc,
-          usd: data.total_volume.usd
-        },
-        market_cap_percentage: {
-          btc: data.market_cap_percentage.btc,
-          usdt: data.market_cap_percentage.usdt
-        }
-      };
-  
-      // Return everything + filtered
-      return {
-        ...data,
-        filtered: filteredData
-      };
-  
-    } catch (error) {
-      if (error.response) {
-        throw new Error(`CoinGecko API Error: ${error.response.status} - ${error.response.data?.error || error.response.statusText}`);
-      } else if (error.request) {
-        throw new Error('Network error: Unable to reach CoinGecko API');
-      } else {
-        throw new Error(`Error: ${error.message}`);
-      }
-    }
-  }
-  
+        const response = await axios.get('https://api.coingecko.com/api/v3/global', {
+            headers: {
+                'Accept': 'application/json',
+                'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
+            },
+            timeout: 30000
+        });
 
-module.exports = {getFilteredGlobalMarketData,fetchTicker,getTrendingCoins, fetchCryptoData, fetchOHLC, getCoinMarkets, storeSessionStructureInRedis, findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
+        const data = response.data.data;
+
+        // Filtered subset: include usd, inr, btc for market cap
+        const filteredData = {
+
+
+            active_cryptocurrencies: data.active_cryptocurrencies,
+            upcoming_icos: data.upcoming_icos, ongoing_icos: data.ongoing_icos, ended_icos: data.ended_icos, markets: data.markets,
+            total_market_cap: {
+                usd: data.total_market_cap.usd,
+                inr: data.total_market_cap.inr,   // 👈 added INR here
+                btc: data.total_market_cap.btc,
+            },
+            total_volume: {
+                usd: data.total_volume.usd,
+                inr: data.total_volume.inr,       // 👈 also include INR here for consistency
+                btc: data.total_volume.btc,
+            },
+            market_cap_percentage: {
+                btc: data.market_cap_percentage.btc,
+                usdt: data.market_cap_percentage.usdt,
+            },
+            market_cap_change_percentage_24h_usd: data.market_cap_change_percentage_24h_usd, updated_at: data.updated_at
+        };
+
+        return filteredData
+
+
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`CoinGecko API Error: ${error.response.status} - ${error.response.data?.error || error.response.statusText}`);
+        } else if (error.request) {
+            throw new Error('Network error: Unable to reach CoinGecko API');
+        } else {
+            throw new Error(`Error: ${error.message}`);
+        }
+    }
+}
+
+
+
+module.exports = { getFilteredGlobalMarketData, fetchTicker, getTrendingCoins, fetchCryptoData, fetchOHLC, getCoinMarkets, storeSessionStructureInRedis, findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
 
 
 

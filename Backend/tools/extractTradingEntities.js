@@ -13,7 +13,6 @@ const extractTradingEntities = {
     const oldChats = await getLatest3Interactions(user.id, sessionId)
     const oldTrades = await getLatest3Trades(user.id, sessionId)
     let tradeId = uuidv4()
-    console.log(oldTrades)
     const extractionPrompt = `
     You are a trading command parser. Extract the following entities from user input :
     - action: buy or sell
@@ -56,7 +55,6 @@ const extractTradingEntities = {
     const cleaned = result.content.replace(/```json|```/g, '').trim();
     const jsonObject = JSON.parse(cleaned);
 
-    console.log(jsonObject)
     return jsonObject;
 
 

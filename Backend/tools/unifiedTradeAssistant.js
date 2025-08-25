@@ -136,7 +136,7 @@ const unifiedTradeAssistant = {
 
 
       const result = await model.invoke(Prompt);
-      console.log(result.content)
+      
       return result.content;
 
     } catch (error) {
