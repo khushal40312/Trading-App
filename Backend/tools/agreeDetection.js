@@ -1,18 +1,18 @@
-const { model } = require("../aiModel/gemini");
+const { model, analyzeModel } = require("../aiModel/gemini");
 const redisClient = require("../config/redisClient");
 
 
 
 
 const AgreementDetector = {
-    name: "AgreementDetector",
-    description: "detect user response tone level",
-    func: async ({ input, user ,sessionId}) => {
+  name: "AgreementDetector",
+  description: "detect user response tone level",
+  func: async ({ input, user, sessionId }) => {
 
-        const data = await redisClient.get(`session:data:${user.id}:${sessionId}`)
-        let memoryContext = data ? JSON.stringify(data) : "";
-       
-        const agreementPrompt = `
+    const data = await redisClient.get(`session:data:${user.id}:${sessionId}`)
+    let memoryContext = data ? JSON.stringify(data) : "";
+
+    const agreementPrompt = `
         User Fresh Input: "${input}"
         Old Memory and User's Pending Trades : ${memoryContext}
         
@@ -31,12 +31,12 @@ const AgreementDetector = {
           "needs_clarification": boolean
         }
       `;
-      const result = await model.invoke(agreementPrompt);
-      const cleaned = result.content.replace(/```json|```/g, '').trim();
-      const jsonObject = JSON.parse(cleaned);
-      return jsonObject
+    const result = await analyzeModel(agreementPrompt);
+    let parsed = JSON.parse(result)
+   
+    return parsed;
 
-}
+  }
 }
 
 module.exports = { AgreementDetector }

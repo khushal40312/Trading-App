@@ -1,46 +1,367 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import { Send, TrendingUp, Bot, User, Loader2 } from "lucide-react";
 
-const TradePreview = () => {
-  const mockResponse = {
-    markdown: `***Trending Cryptocurrencies Today 📊***\n\nHere are the coins currently trending, Khushal, along with their key performance metrics for the last 24 hours:\n\n***1. PinLink (PIN)***\n![PinLink Logo](https://coin-images.coingecko.com/coins/images/51611/standard/pin200.png?1736609796) **PinLink (PIN)**\n• **Market Cap Rank**: #768\n• **Current Price**: **$0.68 USDT**\n• **24h Change**: -$0.03 (-5.01%) 📉\n• **Market Cap**: **$54,073,793 USDT**\n• **Total Volume (24h)**: **$1,530,277 USDT**\n📈 **Price Trend:** ![PinLink Sparkline](https://www.coingecko.com/coins/51611/sparkline.svg)\n*PinLink is experiencing a slight pullback today, showing a moderate decrease in price.*\n\n***2. FLOCK (FLOCK)***\n![FLOCK Logo](https://coin-images.coingecko.com/coins/images/53178/standard/FLock_Token_Logo.png?1735561398) **FLOCK (FLOCK)**\n• **Market Cap Rank**: #832\n• **Current Price**: **$0.42 USDT**\n• **24h Change**: +$0.15 (+35.19%) 🚀\n• **Market Cap**: **$46,263,139 USDT**\n• **Total Volume (24h)**: **$116,076,915 USDT**\n📈 **Price Trend:** ![FLOCK Sparkline](https://www.coingecko.com/coins/53178/sparkline.svg)\n*About FLOCK*: FLOCK.io is a decentralized AI model training and validation network focused on making compute, data contribution, and training composable.\n*FLOCK is showing impressive bullish momentum, surging over 35% in the last 24 hours with significant trading volume.*\n\n***3. Hyperliquid (HYPE)***\n![Hyperliquid Logo](https://coin-images.coingecko.com/coins/images/50882/standard/hyperliquid.jpg?1729431300) **Hyperliquid (HYPE)**\n• **Market Cap Rank**: #15\n• **Current Price**: **$45.31 USDT**\n• **24h Change**: +$1.45 (+3.19%) 📈\n• **Market Cap**: **$15,122,528,100 USDT**\n• **Total Volume (24h)**: **$461,299,199 USDT**\n📈 **Price Trend:** ![Hyperliquid Sparkline](https://www.coingecko.com/coins/50882/sparkline.svg)\n*About Hyperliquid*: Hyperliquid is a performant L1 blockchain optimized for a fully on-chain open financial system.\n*Hyperliquid is seeing positive growth, recording a 3.19% increase today, indicating continued interest and development within its ecosystem.*\n\n***4. Bitcoin (BTC)***\n![Bitcoin Logo](https://coin-images.coingecko.com/coins/images/1/standard/bitcoin.png?1696501400) **Bitcoin (BTC)**\n• **Market Cap Rank**: #1\n• **Current Price**: **$111,189.33 USDT**\n• **24h Change**: -$3,288.60 (-2.96%) 📉\n• **Market Cap**: **$2,213,656,480,966 USDT**\n• **Total Volume (24h)**: **$51,921,413,410 USDT**\n📈 **Price Trend:** ![Bitcoin Sparkline](https://www.coingecko.com/coins/1/sparkline.svg)\n*About Bitcoin (BTC)*: Bitcoin is the first decentralized digital currency based on cryptography, operating on a peer-to-peer network without a central authority.\n*The leading cryptocurrency, Bitcoin, is experiencing a slight downturn today along with the broader market, despite its strong overall market capitalization.*\n\n***5. Ethereum (ETH)***\n![Ethereum Logo](https://coin-images.coingecko.com/coins/images/279/standard/ethereum.png?1696501628) **Ethereum (ETH)**\n• **Market Cap Rank**: #2\n• **Current Price**: **$4,631.46 USDT**\n• **24h Change**: -$133.28 (-2.88%) 📉\n• **Market Cap**: **$559,572,702,710 USDT**\n• **Total Volume (24h)**: **$51,049,851,462 USDT**\n📈 **Price Trend:** ![Ethereum Sparkline](https://www.coingecko.com/coins/279/sparkline.svg)\n*What is Ethereum?*: Ethereum is a Proof-of-Stake blockchain powering decentralized applications through smart contracts, with the largest dApp ecosystem.\n*Ethereum, the second-largest cryptocurrency, is also facing a downward trend similar to Bitcoin today.*\n\n***6. Solana (SOL)***\n![Solana Logo](https://coin-images.coingecko.com/coins/images/4128/standard/solana.png?1718769756) **Solana (SOL)**\n• **Market Cap Rank**: #6\n• **Current Price**: **$197.24 USDT**\n• **24h Change**: -$7.45 (-3.78%) 📉\n• **Market Cap**: **$106,354,413,946 USDT**\n• **Total Volume (24h)**: **$13,536,802,272 USDT**\n📈 **Price Trend:** ![Solana Sparkline](https://www.coingecko.com/coins/4128/sparkline.svg)\n*About Solana (SOL)*: Solana is a Layer 1 blockchain known for its fast speeds and low costs, supporting smart contracts and a diverse range of dApps and NFT marketplaces.\n*Solana shows a moderate decline today, reflecting the general market sentiment affecting major altcoins.*\n\n***7. Bio Protocol (BIO)***\n![Bio Protocol Logo](https://coin-images.coingecko.com/coins/images/53022/standard/bio.jpg?1735011002) **Bio Protocol (BIO)**\n• **Market Cap Rank**: #187\n• **Current Price**: **$0.23 USDT**\n• **24h Change**: -$0.05 (-20.60%) ⚠️📉\n• **Market Cap**: **$465,263,020 USDT**\n• **Total Volume (24h)**: **$860,100,363 USDT**\n📈 **Price Trend:** ![Bio Protocol Sparkline](https://www.coingecko.com/coins/53022/sparkline.svg)\n*Bio Protocol is experiencing a significant drop today, with its price decreasing over 20%. Investors should monitor this closely.*\n\n***Market Overview***\nWhile some specific altcoins like FLOCK and Hyperliquid are showing positive momentum and strong gains, the broader market, including major assets like Bitcoin, Ethereum, and Solana, is experiencing a slight correction today. This indicates a mixed sentiment across the trending list.\n\n*Would you like to delve deeper into any of these trending coins or explore other market classifications?*`,
+const TradeX = () => {
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      type: 'ai',
+      content: 'Welcome to TradeX! 🚀 I\'m your AI trading assistant. Ask me about market analysis, crypto prices, trading strategies, or any financial questions you have.',
+      timestamp: new Date(),
+      isGenerating: false
+    }
+  ]);
+  const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentTypingMessage, setCurrentTypingMessage] = useState(null);
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Auto-scroll to bottom when new messages are added
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, currentTypingMessage]);
+
+  // Simulate API call to your backend
+  const callTradeXAPI = async (userMessage) => {
+    try {
+      // Replace this with your actual API endpoint
+      // const response = await fetch('/api/tradex/chat', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ message: userMessage })
+      // });
+      // const data = await response.json();
+      // return data.response;
+
+      // Mock response for demonstration
+      const mockResponses = {
+        default: `***TradeX Market Analysis 📊***
+
+Based on your query about "${userMessage}", here's my analysis:
+
+***Current Market Insights***
+• **Market Sentiment**: Bullish trend detected across major cryptocurrencies
+• **Volume Analysis**: Increased trading activity in the last 24 hours
+• **Technical Indicators**: RSI showing potential buying opportunities
+
+***Key Recommendations***
+1. **Bitcoin (BTC)**: Strong support at $108,000 level
+2. **Ethereum (ETH)**: Bullish momentum above $4,200
+3. **Risk Management**: Consider 2-3% position sizing for new entries
+
+***Trading Strategy***
+Based on current market conditions:
+- **Entry Points**: Look for pullbacks to key support levels
+- **Stop Loss**: Set at 5-8% below entry for risk management
+- **Take Profit**: Target 15-20% gains with trailing stops
+
+***Market Alerts***
+⚠️ **Important**: Monitor Federal Reserve announcements this week
+📈 **Opportunity**: DeFi tokens showing strong momentum
+
+***Next Steps***
+Would you like me to:
+1. Analyze specific cryptocurrencies
+2. Provide detailed technical analysis
+3. Create a custom trading plan
+4. Set up price alerts
+
+*Analysis generated in 2.3s using TradeX AI Engine v2.1*`,
+
+        price: `***Price Analysis for ${userMessage.includes('BTC') ? 'Bitcoin' : userMessage.includes('ETH') ? 'Ethereum' : 'Requested Asset'} 💰***
+
+***Real-time Data***
+• **Current Price**: $${Math.floor(Math.random() * 50000 + 50000).toLocaleString()}
+• **24h Change**: ${(Math.random() * 10 - 5).toFixed(2)}%
+• **Volume**: $${(Math.random() * 10 + 5).toFixed(1)}B
+• **Market Cap**: $${Math.floor(Math.random() * 500 + 1000)}B
+
+***Technical Analysis***
+- **Support Level**: Strong support around $${Math.floor(Math.random() * 5000 + 45000).toLocaleString()}
+- **Resistance Level**: Key resistance at $${Math.floor(Math.random() * 10000 + 55000).toLocaleString()}
+- **RSI**: ${Math.floor(Math.random() * 40 + 30)} (${Math.random() > 0.5 ? 'Neutral' : 'Oversold'})
+
+***Recommendation***
+${Math.random() > 0.5 ? '🟢 **BUY Signal**' : '🔴 **HOLD Signal**'} - Based on current market conditions and technical indicators.`,
+
+        strategy: `***Trading Strategy Analysis 🎯***
+
+***Strategy Overview***
+Your query about trading strategies is excellent timing! Here's a comprehensive approach:
+
+***Short-term Strategy (1-7 days)***
+1. **Scalping**: Quick 1-3% gains on high-volume pairs
+2. **Swing Trading**: 5-15% targets on technical breakouts
+3. **Risk Management**: Never risk more than 1% per trade
+
+***Medium-term Strategy (1-4 weeks)***
+1. **Trend Following**: Ride momentum with proper stop-losses
+2. **Support/Resistance**: Buy dips, sell rallies
+3. **Portfolio Allocation**: 60% major coins, 40% altcoins
+
+***Long-term Strategy (3-12 months)***
+1. **DCA Strategy**: Dollar-cost averaging into blue chips
+2. **Hodl Approach**: Hold through volatility with conviction
+3. **Rebalancing**: Monthly portfolio adjustments
+
+***Risk Management Rules***
+⚠️ **Critical Guidelines**:
+- Maximum 5% portfolio risk per trade
+- Use stop-losses on every position
+- Take profits incrementally (25%, 50%, 75%)
+- Keep 20% cash for opportunities
+
+Would you like me to elaborate on any specific strategy?`
+      };
+
+      // Simple keyword matching for demo
+      const response = userMessage.toLowerCase().includes('price') ? mockResponses.price :
+                      userMessage.toLowerCase().includes('strategy') ? mockResponses.strategy :
+                      mockResponses.default;
+
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      return 'Sorry, I encountered an error processing your request. Please try again or contact support if the issue persists.';
+    }
   };
 
-  const { markdown } = mockResponse;
-
-  const [displayed, setDisplayed] = useState("");
-
-  useEffect(() => {
+  // Typewriter effect for AI responses
+  const typeMessage = (content, messageId) => {
     let index = 0;
     const interval = setInterval(() => {
-      setDisplayed(markdown.slice(0, index));
+      setCurrentTypingMessage({
+        id: messageId,
+        content: content.slice(0, index),
+        isGenerating: true
+      });
       index++;
-      if (index > markdown.length) clearInterval(interval);
-    }, 7); // adjust speed here (ms per character)
+      if (index > content.length) {
+        clearInterval(interval);
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, content, isGenerating: false }
+            : msg
+        ));
+        setCurrentTypingMessage(null);
+        setIsLoading(false);
+      }
+    }, 8);
+  };
 
-    return () => clearInterval(interval);
-  }, [markdown]);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!inputValue.trim() || isLoading) return;
+
+    const userMessage = inputValue.trim();
+    const userMsgId = Date.now();
+    const aiMsgId = userMsgId + 1;
+
+    // Add user message
+    setMessages(prev => [...prev, {
+      id: userMsgId,
+      type: 'user',
+      content: userMessage,
+      timestamp: new Date(),
+      isGenerating: false
+    }]);
+
+    // Add placeholder AI message
+    setMessages(prev => [...prev, {
+      id: aiMsgId,
+      type: 'ai',
+      content: '',
+      timestamp: new Date(),
+      isGenerating: true
+    }]);
+
+    setInputValue("");
+    setIsLoading(true);
+
+    // Get AI response
+    const aiResponse = await callTradeXAPI(userMessage);
+    typeMessage(aiResponse, aiMsgId);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h2>Markdown Preview</h2>
-      <div
-        className="text-md font-[Open Sans]"
-        style={{
-          background: "#262323",
-          padding: "10px",
-          borderRadius: "8px",
-          color: "white",
-          whiteSpace: "pre-wrap",
-        }}
-      >
-        <ReactMarkdown>{displayed.replace(/\n/g, "\n")}</ReactMarkdown>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+      {/* Header */}
+      <div className="sticky top-0 bg-slate-800/95 backdrop-blur-sm border-b border-slate-700/50 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">TradeX AI Assistant</h1>
+              <p className="text-sm text-slate-400">Your intelligent trading companion</p>
+            </div>
+            <div className="ml-auto flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-xs text-slate-400">Online</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Messages Container */}
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`flex max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3`}
+              >
+                {/* Avatar */}
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                  message.type === 'user' 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 ml-3' 
+                    : 'bg-gradient-to-r from-blue-500 to-purple-600 mr-3'
+                }`}>
+                  {message.type === 'user' ? 
+                    <User className="w-4 h-4 text-white" /> : 
+                    <Bot className="w-4 h-4 text-white" />
+                  }
+                </div>
+
+                {/* Message Content */}
+                <div className={`rounded-2xl px-4 py-3 ${
+                  message.type === 'user'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
+                    : 'bg-slate-800/50 border border-slate-700/50 text-slate-200'
+                }`}>
+                  {message.type === 'user' ? (
+                    <p className="text-sm leading-relaxed">{message.content}</p>
+                  ) : (
+                    <div className="prose prose-sm prose-invert max-w-none">
+                      <ReactMarkdown
+                        components={{
+                          h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-3 text-white" {...props} />,
+                          h2: ({node, ...props}) => <h2 className="text-base font-semibold mb-2 text-white" {...props} />,
+                          h3: ({node, ...props}) => <h3 className="text-sm font-medium mb-2 text-slate-300" {...props} />,
+                          p: ({node, ...props}) => <p className="mb-3 text-sm text-slate-300 leading-relaxed" {...props} />,
+                          ul: ({node, ...props}) => <ul className="mb-3 space-y-1" {...props} />,
+                          li: ({node, ...props}) => <li className="text-sm text-slate-300" {...props} />,
+                          strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
+                          em: ({node, ...props}) => <em className="italic text-slate-400" {...props} />,
+                          a: ({node, ...props}) => <a className="text-blue-400 hover:text-blue-300 hover:underline" {...props} />
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                      {message.isGenerating && (
+                        <span className="inline-block w-2 h-4 bg-blue-400 animate-pulse ml-1"></span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Timestamp */}
+                  <div className={`text-xs mt-2 ${
+                    message.type === 'user' ? 'text-green-100' : 'text-slate-500'
+                  }`}>
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Typing indicator for current message */}
+          {currentTypingMessage && (
+            <div className="flex justify-start">
+              <div className="flex max-w-[85%] items-start space-x-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-white" />
+                </div>
+                <div className="bg-slate-800/50 border border-slate-700/50 text-slate-200 rounded-2xl px-4 py-3">
+                  <div className="prose prose-sm prose-invert max-w-none">
+                    <ReactMarkdown
+                      components={{
+                        h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-3 text-white" {...props} />,
+                        h2: ({node, ...props}) => <h2 className="text-base font-semibold mb-2 text-white" {...props} />,
+                        h3: ({node, ...props}) => <h3 className="text-sm font-medium mb-2 text-slate-300" {...props} />,
+                        p: ({node, ...props}) => <p className="mb-3 text-sm text-slate-300 leading-relaxed" {...props} />,
+                        ul: ({node, ...props}) => <ul className="mb-3 space-y-1" {...props} />,
+                        li: ({node, ...props}) => <li className="text-sm text-slate-300" {...props} />,
+                        strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
+                        em: ({node, ...props}) => <em className="italic text-slate-400" {...props} />
+                      }}
+                    >
+                      {currentTypingMessage.content}
+                    </ReactMarkdown>
+                    <span className="inline-block w-2 h-4 bg-blue-400 animate-pulse ml-1"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Input Area */}
+      <div className="border-t border-slate-700/50 bg-slate-800/50 backdrop-blur-sm">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="relative">
+            <div className="flex items-end space-x-3">
+              <div className="flex-1 relative">
+                <textarea
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask about market analysis, prices, trading strategies..."
+                  className="w-full bg-slate-700/50 border border-slate-600/50 rounded-xl px-4 py-3 pr-12 text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none max-h-32"
+                  rows={1}
+                  disabled={isLoading}
+                />
+              </div>
+              <button
+                onClick={handleSubmit}
+                disabled={!inputValue.trim() || isLoading}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 rounded-xl transition-all duration-200 flex items-center justify-center"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+          </div>
+          
+          {/* Quick Actions */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {['Market Overview', 'BTC Price', 'Trading Strategy', 'Risk Analysis'].map((action) => (
+              <button
+                key={action}
+                onClick={() => setInputValue(action)}
+                disabled={isLoading}
+                className="px-3 py-1 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg text-xs text-slate-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {action}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default TradePreview;
-
-
-               
+export default TradeX;

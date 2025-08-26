@@ -33,7 +33,7 @@ const marketAnalysisGenerator = {
 
             // Sanitize input to prevent injection
             const sanitizedInput = input.trim().replace(/[<>]/g, '');
-
+            console.log(sanitizedInput)
             // Enhanced prompt with image handling instructions
             const enhancedPrompt = `
 You are a **Professional Market Analysis Assistant** providing comprehensive cryptocurrency and trading insights.
@@ -120,7 +120,8 @@ ${oldChats && oldChats.length > 0 ? `\`\`\`json\n${JSON.stringify(oldChats, null
 - **No HTML Tags**: Pure markdown only
 - **Consistent Formatting**: Maintain structure throughout
 - **Engagement Ending**: End with relevant question or offer for more help
-- **never include template literals `` in output.
+- **never include template literals  in output.
+- ** generate output like it would work on npm react-markdown.
 
 ---
 
@@ -166,11 +167,11 @@ Generate your response following these guidelines. Focus on delivering valuable 
             const result = await model.invoke(enhancedPrompt);
 
             // Validate response
-            if (!result?.content) {
+            if (!result) {
                 throw new Error("Empty response from AI model");
             }
 
-            return result.content;
+            return result;
 
         } catch (error) {
             console.error('Error in marketAnalysisGenerator:', error);
@@ -219,7 +220,7 @@ Provide a response following this format.`;
 
             try {
                 const fallbackResult = await model.invoke(fallbackPrompt);
-                return fallbackResult?.content || "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.";
+                return fallbackResult || "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.";
             } catch (fallbackError) {
                 console.error('Error in fallback response:', fallbackError);
                 return `***Technical Difficulty ⚠️***

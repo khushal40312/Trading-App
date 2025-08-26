@@ -1,4 +1,4 @@
-const { model } = require("../aiModel/gemini");
+const { model, analyzeModel } = require("../aiModel/gemini");
 const { getLatest2TradesandInteractions } = require("../services/ai.service");
 const { retrieveMemoryTool } = require("./retriveMemoryTool");
 
@@ -10,7 +10,7 @@ const tradingInputClassifierTool = {
     const data = await getLatest2TradesandInteractions(user.id, sessionId)
     let memoryContext = data ? JSON.stringify(data) : "";
     const vectorMemory = await retrieveMemoryTool.func({ input, userId: user.id, dataType: 'TRADING' })
-   
+
 
     const classificationPrompt = `
       Cached Memory Context: ${JSON.stringify(memoryContext)}
@@ -29,10 +29,10 @@ const tradingInputClassifierTool = {
       Return: {"category": "...", "confidence": 0.9, "reasoning": "..."}
     `;
 
-    const result = await model.invoke(classificationPrompt);
-    const cleaned = result.content.replace(/```json|```/g, '').trim();
-    const jsonObject = JSON.parse(cleaned);
-    return jsonObject
+    const result = await analyzeModel(classificationPrompt);
+    let parsed = JSON.parse(result)
+   console.log(parsed)
+    return parsed;
 
   }
 

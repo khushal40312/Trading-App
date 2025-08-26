@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 
-const { model } = require("../aiModel/gemini");
+const { model, analyzeModel } = require("../aiModel/gemini");
 const { getLatest3Interactions, getLatest3Trades } = require("../services/ai.service");
 
 
@@ -51,11 +51,10 @@ const extractTradingEntities = {
     User and Model recent Memory:${JSON.stringify(oldChats, null, 2)}
     Cached Trades(need Confirmation):${JSON.stringify(oldTrades, null, 2)}
     `;
-    const result = await model.invoke(extractionPrompt);
-    const cleaned = result.content.replace(/```json|```/g, '').trim();
-    const jsonObject = JSON.parse(cleaned);
-
-    return jsonObject;
+    const result = await analyzeModel(extractionPrompt);
+    let parsed = JSON.parse(result)
+   console.log(parsed)
+    return parsed;
 
 
   }

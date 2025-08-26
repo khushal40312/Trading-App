@@ -1,4 +1,4 @@
-const { model } = require("../aiModel/gemini");
+const { model, analyzeModel } = require("../aiModel/gemini");
 const redisClient = require("../config/redisClient");
 
 const finalTradeExtractorTool = {
@@ -78,11 +78,12 @@ const finalTradeExtractorTool = {
       Here Is JSON: ${json}
     `;
 
-    const result = await model.invoke(Prompt);
-    const cleaned = result.content.replace(/```json|```/g, "").trim();
-    const jsonObject = JSON.parse(cleaned);
+    const result = await analyzeModel(Prompt);
+    let parsedResult = JSON.parse(result)
+   
+    
     const oldMemory = parsed.interaction;
-    return { jsonObject, oldMemory };
+    return { jsonObject:parsedResult, oldMemory };
   }
 };
 

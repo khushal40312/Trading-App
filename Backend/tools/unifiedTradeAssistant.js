@@ -1,4 +1,5 @@
-const { model } = require("../aiModel/gemini");
+const { ModelIndexEmbedFromJSON } = require("@pinecone-database/pinecone/dist/pinecone-generated-ts-fetch/db_control");
+const { model, analyzeModel } = require("../aiModel/gemini");
 const {
   getLast5PendingTrades,
   getLatest3Trades,
@@ -82,7 +83,7 @@ const unifiedTradeAssistant = {
       
       2. **Relevant Context Only:**  
          - Include supporting data only if directly useful.  
-         - Do not include unrelated sections unless user explicitly asks for “everything.”  
+         - try to give some detailed suggetions by analysing user data.
       
       3. **Clarity & Structure:**  
          - Use concise, well-structured sentences.  
@@ -110,6 +111,14 @@ const unifiedTradeAssistant = {
          - Always end with a gentle prompt: *“Is there anything else you’d like to know?”*  
          -Dont use # ## ## for Heading use ***content***.
       
+     7. **Visual Content Handling** 
+      **CRITICAL:** If you find any of these in the provided data, include them in your response:
+    - **Image URLs** (ending in .jpg, .jpeg, .png, .gif, .webp, .svg)
+    - **Chart/Graph Links** 
+    - **Sparkline SVG URLs**
+    - **Trading Chart Images**
+    - **Cryptocurrency logos/icons**
+
       ---
       
       ## EXAMPLE RESPONSE
@@ -119,7 +128,9 @@ const unifiedTradeAssistant = {
       Here’s an overview of your current portfolio, Khushal:  
       
       ***Portfolio Summary***  
-      
+
+      ![BTC Logo](https://logo-url.com/btc.png)
+
       **Chainbase (C)**  
       • **Quantity**: 10 tokens  
       • **Average Buy Price**: $0.3677  
@@ -136,7 +147,7 @@ const unifiedTradeAssistant = {
 
 
       const result = await model.invoke(Prompt);
-      
+
       return result.content;
 
     } catch (error) {

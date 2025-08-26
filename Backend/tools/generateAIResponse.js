@@ -78,8 +78,16 @@ This will make sure I set up the right trade plan for you.
     11. Use **headers (##)**, **bold/italic**, bullet points, or definition style.  
     12. Avoid '<br>' or HTML tags.  
     13. You can use JSON snippets or template literals inside Markdown if useful.  
-    14. Do not use #, ##, ### for headings — instead use ***content*** style.  
-    15. End your message with something like:  
+    14. Do not use #, ##, ### for headings — instead use ***content*** style. 
+    15. **Visual Content Handling** 
+      **CRITICAL:** If you find any of these in the provided data, include them in your response:
+    - **Image URLs** (ending in .jpg, .jpeg, .png, .gif, .webp, .svg)
+    - **Chart/Graph Links** 
+    - **Sparkline SVG URLs**
+    - **Trading Chart Images**
+    - **Cryptocurrency logos/icons**
+    Exapmple: ![BTC Logo](https://logo-url.com/btc.png)
+    16. End your message with something like:  
        ➤ *"Would you like me to go ahead and place this order, or would you prefer to adjust the amount or explore other assets?"*  
     
     ---
