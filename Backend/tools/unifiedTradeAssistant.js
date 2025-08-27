@@ -7,14 +7,17 @@ const {
   findPortfolio,
   getLatest3Interactions
 } = require("../services/ai.service");
-const tradeServices = require('../services/trade.service')
+const tradeServices = require('../services/trade.service');
+const { safeSend } = require("../utils/webSocketfunc");
+
 
 const unifiedTradeAssistant = {
   name: "unifiedTradeAssistant",
   description: "Comprehensive trade assistant that handles all trading queries using complete user data",
-  func: async ({ input, user, sessionId }) => {
+  func: async ({ input, user, sessionId,ws }) => {
     try {
-      // Fetch all relevant data
+      safeSend(ws, { event: "typing", status: true });
+
 
       const [
         pendingTrades,
@@ -34,7 +37,7 @@ const unifiedTradeAssistant = {
       ]);
 
       const Prompt = `
-      You are a **professional trading assistant** with full access to the user's trading data.  
+      You are a **professional trading assistant** in TradeX app and your Name is TradeXavier Have with full access to the user's trading data.  
       Your job is to deliver **precise, contextual, and relevant answers** to the user’s query.  
       Never add information the user did not ask for. Always prioritize their input first.  
       
@@ -80,6 +83,7 @@ const unifiedTradeAssistant = {
            • If asking about pending trades → show pending/waiting trades only.  
            • If asking about performance → use stats + recent trades.  
            • If asking about personal info (non-trading) → use user info only.  
+           • If user asking General Chatting then response like a friend but as TradeX app assistant. 
       
       2. **Relevant Context Only:**  
          - Include supporting data only if directly useful.  
@@ -108,7 +112,6 @@ const unifiedTradeAssistant = {
          - Use **headers (##)**, **bold/italic**, bullet points, or definition style.  
          - Avoid '<br>' or HTML tags.  
          - Can use JSON snippets or template literals inside Markdown if useful.  
-         - Always end with a gentle prompt: *“Is there anything else you’d like to know?”*  
          -Dont use # ## ## for Heading use ***content***.
       
      7. **Visual Content Handling** 
@@ -147,6 +150,8 @@ const unifiedTradeAssistant = {
 
 
       const result = await model.invoke(Prompt);
+      safeSend(ws, { event: "typing", status: false });
+
 
       return result.content;
 
@@ -166,6 +171,9 @@ Be apologetic but professional, and offer to help with any general trading quest
             `;
 
       const result = await model.invoke(fallbackPrompt);
+      safeSend(ws, { event: "typing", status: false });
+
+
       return result.content;
     }
   }

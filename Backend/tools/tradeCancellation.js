@@ -1,12 +1,16 @@
 const { model } = require("../aiModel/gemini");
 const redisClient = require("../config/redisClient");
 const { getLatest3Interactions, getLatest3Trades } = require("../services/ai.service");
+const { safeSend } = require("../webServer");
 
 const tradeCancellationResolverTool = {
     name: "tradeCancellationResolver",
     description: "Identifies if a trade exists that the user wants to cancel.",
 
-    func: async ({ input, user, sessionId }) => {
+    func: async ({ input, user, sessionId, ws }) => {
+        safeSend(ws, { event: "typing", status: true });
+
+
         // Fetch latest interactions + trades
         const oldChats = await getLatest3Interactions(user.id, sessionId);
         const oldTrades = await getLatest3Trades(user.id, sessionId);
@@ -72,6 +76,8 @@ const tradeCancellationResolverTool = {
             });
 
             await redisClient.setEx(sessionKey, 900, JSON.stringify(sessionData));
+            safeSend(ws, { event: "typing", status: false });
+
 
             return parsed.message;
         }
@@ -84,9 +90,13 @@ It looks like I couldn’t find any trade matching your cancellation request.
 - Only trades with status **WAITING_FOR_CONFIRMATION** can be cancelled.  
 
 *Is there anything else you’d like to know?*`;
+            safeSend(ws, { event: "typing", status: true });
+
 
             return notFoundMessage;
         }
+        safeSend(ws, { event: "typing", status: false });
+
 
         return "Unexpected response format.";
     }

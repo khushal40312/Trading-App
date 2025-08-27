@@ -1,5 +1,7 @@
 const { getCoinMarkets, getTrendingCoins, getFilteredGlobalMarketData, fetchCryptoData, fetchTicker, fetchOHLC } = require("../services/ai.service");
 const tavilyService = require("../services/tailvy.service");
+const { safeSend } = require("../utils/webSocketfunc");
+
 
 // Constants
 const TIMEFRAME_CONFIGS = {
@@ -22,13 +24,14 @@ const isMidTimeframe = (timeframe) => !isShortTimeframe(timeframe) && !isLongTim
 /**
  * Fetch OHLC data for multiple symbols with proper error handling
  */
-async function getOHLCData(coinIds, timeframe) {
+async function getOHLCData(coinIds, timeframe, ws) {
     if (!coinIds?.length || !timeframe) {
         throw new Error('Missing required parameters for OHLC data');
     }
 
     const results = {};
     const errors = [];
+    safeSend(ws, { event: "Analysing", status: true });
 
     await Promise.allSettled(
         coinIds.map(async (coinId) => {
@@ -41,6 +44,8 @@ async function getOHLCData(coinIds, timeframe) {
             }
         })
     );
+    safeSend(ws, { event: "Analysing", status: false });
+
 
     return { data: results, errors };
 }
@@ -61,7 +66,7 @@ async function getAnalysisData(coinIds, withIndicators = false) {
         coinIds.map(async (coinId) => {
             try {
                 results[coinId] = await fetchCryptoData(coinId);
-                
+
                 if (withIndicators) {
                     // Fixed: use coinId instead of coinIds array
                     indicators[coinId] = await fetchTicker(coinId);
@@ -74,17 +79,17 @@ async function getAnalysisData(coinIds, withIndicators = false) {
         })
     );
 
-    return { 
-        results, 
-        ...(withIndicators && { indicators }), 
-        errors 
+    return {
+        results,
+        ...(withIndicators && { indicators }),
+        errors
     };
 }
 
 /**
  * Handle general inquiries using Tavily search
  */
-async function handleGeneralInquiry(query) {
+async function handleGeneralInquiry(query, ws) {
     if (!query?.trim()) {
         return {
             type: "general_inquiry_error",
@@ -94,6 +99,8 @@ async function handleGeneralInquiry(query) {
     }
 
     try {
+        safeSend(ws, { event: "Web searching", status: true });
+
         const searchResult = await tavilyService.search(query, {
             search_depth: 'basic',
             max_results: 3,
@@ -109,6 +116,7 @@ async function handleGeneralInquiry(query) {
         }
 
         const { data } = searchResult;
+        safeSend(ws, { event: "Web searching", status: false });
 
         return {
             type: "general_inquiry_response",
@@ -128,6 +136,8 @@ async function handleGeneralInquiry(query) {
 
     } catch (error) {
         console.error('Error in handleGeneralInquiry:', error);
+        safeSend(ws, { event: "Web searching", status: false });
+
         return {
             type: "general_inquiry_error",
             message: "Sorry, there was an error processing your request.",
@@ -168,7 +178,7 @@ function getMarketDataConfig(timeframe, dataTypes = []) {
 /**
  * Process price analysis intent
  */
-async function processPriceAnalysis(marketClassification) {
+async function processPriceAnalysis(marketClassification, ws) {
     const { requiredData } = marketClassification;
     const symbolsArr = requiredData?.symbols?.map(s => s.toLowerCase()) || [];
     const timeframe = requiredData?.timeframes;
@@ -176,7 +186,13 @@ async function processPriceAnalysis(marketClassification) {
 
     // Handle trending coins request
     if (!symbolsArr.length && dataTypes.includes('only_trending_coins')) {
+        safeSend(ws, { event: "Web searching", status: true });
+
+
         const coinData = await getTrendingCoins();
+        safeSend(ws, { event: "Web searching", status: false });
+
+
         return { type: "trending_coins", coinData };
     }
 
@@ -197,11 +213,13 @@ async function processPriceAnalysis(marketClassification) {
 
     // Handle long timeframe with OHLC data
     if (isLongTimeframe(timeframe)) {
+
         const coinIds = marketData.map(c => c.id.toLowerCase());
-        const ohlcResult = await getOHLCData(coinIds, timeframe);
-        return { 
-            type: "market_with_ohlc", 
-            marketData, 
+        const ohlcResult = await getOHLCData(coinIds, timeframe, ws);
+
+        return {
+            type: "market_with_ohlc",
+            marketData,
             ohlcData: ohlcResult.data,
             errors: ohlcResult.errors
         };
@@ -213,7 +231,8 @@ async function processPriceAnalysis(marketClassification) {
 /**
  * Process trend analysis intent
  */
-async function processTrendAnalysis(marketClassification, input) {
+async function processTrendAnalysis(marketClassification, input, ws) {
+
     const { requiredData } = marketClassification;
     const symbolsArr = requiredData?.symbols?.map(s => s.toLowerCase()) || [];
     const timeframe = requiredData?.timeframes;
@@ -222,14 +241,20 @@ async function processTrendAnalysis(marketClassification, input) {
 
     // Handle trending coins request
     if (!symbolsArr.length && dataTypes.includes('only_trending_coins')) {
+        safeSend(ws, { event: "Web searching", status: true });
+
         const coinData = await getTrendingCoins();
+        safeSend(ws, { event: "Web searching", status: false });
+
+
         return { type: "trending_coins", coinData };
+
     }
 
     // Handle general inquiry if no symbols and not trending coins
     if (!symbolsArr.length && !dataTypes.includes('only_trending_coins')) {
         const query = `${input} bitget market` || "general crypto information";
-        return await handleGeneralInquiry(query);
+        return await handleGeneralInquiry(query, ws);
     }
 
     const symbols = symbolsArr.join(",");
@@ -243,10 +268,10 @@ async function processTrendAnalysis(marketClassification, input) {
     if (isShortTimeframe(timeframe)) {
         if (includeIndicators) {
             const analysisResult = await getAnalysisData(coinIds, true);
-            return { 
-                type: "market_with_indicator", 
-                marketData, 
-                analysisData: analysisResult.results, 
+            return {
+                type: "market_with_indicator",
+                marketData,
+                analysisData: analysisResult.results,
                 indicationResults: analysisResult.indicators,
                 errors: analysisResult.errors
             };
@@ -256,9 +281,9 @@ async function processTrendAnalysis(marketClassification, input) {
 
     if (isMidTimeframe(timeframe)) {
         const analysisResult = await getAnalysisData(coinIds, includeIndicators);
-        return { 
-            type: "market_with_indicator", 
-            marketData, 
+        return {
+            type: "market_with_indicator",
+            marketData,
             analysisData: analysisResult.results,
             ...(includeIndicators && { indicationResults: analysisResult.indicators }),
             errors: analysisResult.errors
@@ -266,10 +291,10 @@ async function processTrendAnalysis(marketClassification, input) {
     }
 
     // Long timeframe
-    const ohlcResult = await getOHLCData(coinIds, timeframe);
-    const response = { 
-        type: "market_with_ohlc", 
-        marketData, 
+    const ohlcResult = await getOHLCData(coinIds, timeframe, ws);
+    const response = {
+        type: "market_with_ohlc",
+        marketData,
         ohlcData: ohlcResult.data,
         errors: [...(ohlcResult.errors || [])]
     };
@@ -290,7 +315,8 @@ const marketAnalyserContext = {
     name: "marketAnalyserContext",
     description: "Extract market context with improved error handling and structure",
 
-    func: async ({ marketClassification, input }) => {
+    func: async ({ marketClassification, input, ws }) => {
+
         try {
             // Validate input
             if (!marketClassification?.intent) {
@@ -301,10 +327,11 @@ const marketAnalyserContext = {
 
             switch (intent) {
                 case "price_analysis":
-                    return await processPriceAnalysis(marketClassification);
+
+                    return await processPriceAnalysis(marketClassification, ws);
 
                 case "trend_analysis":
-                    return await processTrendAnalysis(marketClassification, input);
+                    return await processTrendAnalysis(marketClassification, input, ws);
 
                 case "forecast_request": {
                     const symbolsArr = requiredData?.symbols?.map(s => s.toLowerCase()) || [];
@@ -313,11 +340,11 @@ const marketAnalyserContext = {
                     if (!symbolsArr.length) {
                         throw new Error("No symbols provided for forecast");
                     }
-                    
+
                     if (!isLongTimeframe(timeframe)) {
-                        return { 
+                        return {
                             type: "error",
-                            message: "Forecasts only supported for long timeframes (30, 90, 180, 365 days)" 
+                            message: "Forecasts only supported for long timeframes (30, 90, 180, 365 days)"
                         };
                     }
 
@@ -331,14 +358,14 @@ const marketAnalyserContext = {
 
                     const coinIds = marketData.map(c => c.id.toLowerCase());
                     const [ohlcResult, analysisResult] = await Promise.all([
-                        getOHLCData(coinIds, timeframe),
+                        getOHLCData(coinIds, timeframe, ws),
                         getAnalysisData(coinIds, false)
                     ]);
 
-                    return { 
-                        type: "market_with_ohlc", 
-                        marketData, 
-                        ohlcData: ohlcResult.data, 
+                    return {
+                        type: "market_with_ohlc",
+                        marketData,
+                        ohlcData: ohlcResult.data,
                         analysisData: analysisResult.results,
                         errors: [...(ohlcResult.errors || []), ...(analysisResult.errors || [])]
                     };
@@ -354,18 +381,18 @@ const marketAnalyserContext = {
 
                 case "general_inquiry": {
                     const query = input?.trim() || "general crypto information";
-                    return await handleGeneralInquiry(query);
+                    return await handleGeneralInquiry(query, ws);
                 }
 
                 default:
-                    return { 
+                    return {
                         type: "error",
                         message: `Unsupported intent: ${intent}. Available intents: price_analysis, trend_analysis, forecast_request, market_research, general_inquiry.`
                     };
             }
         } catch (error) {
             console.error("ERROR DURING CONTEXT MAKING:", error);
-            return { 
+            return {
                 type: "error",
                 message: "Failed to process market analysis request",
                 error: error.message,

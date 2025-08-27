@@ -88,7 +88,6 @@ const marketAnalysisAssistant = {
         sessionId: sessionId,
         userId: user.id
       };
-      console.log(validatedResponse.requiredData.symbols, validatedResponse.requiredData.timeframes, validatedResponse.requiredData.dataTypes,validatedResponse.intent)
       return validatedResponse
 
     } catch (error) {

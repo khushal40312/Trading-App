@@ -33,6 +33,7 @@ class TavilyService {
                 include_domains: options.include_domains || [],
                 exclude_domains: options.exclude_domains || [],
                 include_images: true,
+                includeFavicon: true,
                 ...options
             };
 
@@ -43,11 +44,11 @@ class TavilyService {
                 timeout: 10000 // 10 seconds timeout
             });
 
+            
             return {
                 success: true,
                 data: response.data
             };
-
         } catch (error) {
             console.error('Tavily search error:', error.message);
             return {

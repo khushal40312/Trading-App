@@ -1,165 +1,315 @@
 import React, { useEffect, useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { Send, TrendingUp, Bot, User, Loader2 } from "lucide-react";
+import { Send, Bot, User, Loader2, Bell, X, Brain, Wifi, WifiOff, Globe, Ellipsis, CircleSmall, Pen, Circle, WandSparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const TradeX = () => {
-  const [messages, setMessages] = useState([
-    {
+  const [messages, setMessages] = useState([]);
+  const [user, setUser] = useState({});
+  const navigate= useNavigate()
+  
+  const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentTypingMessage, setCurrentTypingMessage] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected'); // disconnected, connecting, connected
+  const [currentActivity, setCurrentActivity] = useState(null); // { event: "Web searching", status: true }
+  const [activityMessage, setActivityMessage] = useState(null); // For showing activity in chat area
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+  const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const typingIntervalRef = useRef(null);
+  const token = localStorage.getItem('token')
+  useEffect(() => {
+    if (token) {
+        const fetchUserProfile = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/users/profile`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+                setUser(response.data.user)
+                
+
+            } catch (error) {
+                console.error(error)
+                if (error.response?.data?.message?.toLowerCase().includes('session expired')) {
+                    localStorage.removeItem('token');
+                    navigate('/session-expired');
+                }
+            }
+        }
+
+  
+        fetchUserProfile()
+    }
+}, [navigate, token])
+ 
+  useEffect(() => {
+    connectWebSocket();
+
+    // Load saved session ID
+    const savedSessionId = localStorage.getItem('tradex_session_id');
+    if (savedSessionId) {
+      setSessionId(savedSessionId);
+    }
+
+    // Add initial welcome message
+    setMessages([{
       id: 1,
       type: 'ai',
       content: 'Welcome to TradeX! 🚀 I\'m your AI trading assistant. Ask me about market analysis, crypto prices, trading strategies, or any financial questions you have.',
       timestamp: new Date(),
       isGenerating: false
+    }]);
+
+    // Cleanup on unmount
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const connectWebSocket = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No token found');
+      return;
     }
-  ]);
-  const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentTypingMessage, setCurrentTypingMessage] = useState(null);
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
 
-  // Auto-scroll to bottom when new messages are added
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, currentTypingMessage]);
+    setConnectionStatus('connecting');
 
-  // Simulate API call to your backend
-  const callTradeXAPI = async (userMessage) => {
-    try {
-      // Replace this with your actual API endpoint
-      // const response = await fetch('/api/tradex/chat', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ message: userMessage })
-      // });
-      // const data = await response.json();
-      // return data.response;
+    // Replace with your actual WebSocket URL
+    const wsUrl = `${import.meta.env.VITE_WS_URL}`;
+    wsRef.current = new WebSocket(wsUrl);
 
-      // Mock response for demonstration
-      const mockResponses = {
-        default: `***TradeX Market Analysis 📊***
+    wsRef.current.onopen = () => {
+      console.log('WebSocket connected');
+      setConnectionStatus('connected');
 
-Based on your query about "${userMessage}", here's my analysis:
+      // Clear any reconnection attempts
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+    };
 
-***Current Market Insights***
-• **Market Sentiment**: Bullish trend detected across major cryptocurrencies
-• **Volume Analysis**: Increased trading activity in the last 24 hours
-• **Technical Indicators**: RSI showing potential buying opportunities
+    wsRef.current.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        handleWebSocketMessage(data);
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    };
 
-***Key Recommendations***
-1. **Bitcoin (BTC)**: Strong support at $108,000 level
-2. **Ethereum (ETH)**: Bullish momentum above $4,200
-3. **Risk Management**: Consider 2-3% position sizing for new entries
+    wsRef.current.onclose = () => {
+      console.log('WebSocket disconnected');
+      setConnectionStatus('disconnected');
+      setCurrentActivity(null);
+      setActivityMessage(null);
 
-***Trading Strategy***
-Based on current market conditions:
-- **Entry Points**: Look for pullbacks to key support levels
-- **Stop Loss**: Set at 5-8% below entry for risk management
-- **Take Profit**: Target 15-20% gains with trailing stops
+      // Attempt to reconnect after 3 seconds
+      reconnectTimeoutRef.current = setTimeout(() => {
+        console.log('Attempting to reconnect...');
+        connectWebSocket();
+      }, 3000);
+    };
 
-***Market Alerts***
-⚠️ **Important**: Monitor Federal Reserve announcements this week
-📈 **Opportunity**: DeFi tokens showing strong momentum
+    wsRef.current.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setConnectionStatus('disconnected');
+    };
+  };
 
-***Next Steps***
-Would you like me to:
-1. Analyze specific cryptocurrencies
-2. Provide detailed technical analysis
-3. Create a custom trading plan
-4. Set up price alerts
+  const handleWebSocketMessage = (data) => {
+    const { event, status, sessionId: newSessionId, notification, reply, message } = data;
 
-*Analysis generated in 2.3s using TradeX AI Engine v2.1*`,
+    switch (event) {
+      case 'session:new':
+        if (newSessionId) {
+          localStorage.setItem('tradex_session_id', newSessionId);
+          setSessionId(newSessionId);
+        }
+        if (notification) {
+          setNotification(notification);
+        }
+        break;
 
-        price: `***Price Analysis for ${userMessage.includes('BTC') ? 'Bitcoin' : userMessage.includes('ETH') ? 'Ethereum' : 'Requested Asset'} 💰***
+      case 'Web searching':
+        if (status) {
+          const activityId = Date.now();
+          setActivityMessage({
+            id: activityId,
+            event: 'Web searching',
+            icon: Globe,
+            message: 'Searching the web for latest information...',
+            timestamp: new Date()
+          });
+        } else {
+          setActivityMessage(null);
+        }
+        setCurrentActivity(status ? { event: 'Web searching', icon: Bot } : null);
+        break;
 
-***Real-time Data***
-• **Current Price**: $${Math.floor(Math.random() * 50000 + 50000).toLocaleString()}
-• **24h Change**: ${(Math.random() * 10 - 5).toFixed(2)}%
-• **Volume**: $${(Math.random() * 10 + 5).toFixed(1)}B
-• **Market Cap**: $${Math.floor(Math.random() * 500 + 1000)}B
+      case 'Analysing':
+        if (status) {
+          const activityId = Date.now();
+          setActivityMessage({
+            id: activityId,
+            event: 'Analyzing',
+            icon: Brain,
+            message: 'Analyzing market data and trends...',
+            timestamp: new Date()
+          });
+        } else {
+          setActivityMessage(null);
+        }
+        setCurrentActivity(status ? { event: 'Analyzing market data', icon: Bot } : null);
+        break;
 
-***Technical Analysis***
-- **Support Level**: Strong support around $${Math.floor(Math.random() * 5000 + 45000).toLocaleString()}
-- **Resistance Level**: Key resistance at $${Math.floor(Math.random() * 10000 + 55000).toLocaleString()}
-- **RSI**: ${Math.floor(Math.random() * 40 + 30)} (${Math.random() > 0.5 ? 'Neutral' : 'Oversold'})
+      case 'typing':
+        if (status) {
+          // AI started typing
+          const typingId = Date.now();
+          setCurrentActivity({ event: 'Typing', icon: Bot });
+          setActivityMessage({
+            id: typingId,
+            event: 'Typing',
+            icon: Ellipsis,
+            message: 'AI is typing a response...',
+            timestamp: new Date()
+          });
+        } else {
+          // AI stopped typing
+          setCurrentActivity(null);
+          setActivityMessage(null);
+          setIsLoading(false);
+        }
+        break;
 
-***Recommendation***
-${Math.random() > 0.5 ? '🟢 **BUY Signal**' : '🔴 **HOLD Signal**'} - Based on current market conditions and technical indicators.`,
 
-        strategy: `***Trading Strategy Analysis 🎯***
+      case 'reply':
+        if (reply) {
+          setActivityMessage({
+            id: "12dfhnmnbvdrt565",
+            event: "",
+            icon: WandSparkles,
+            message: '',
+            timestamp: new Date()
+          });
+          setCurrentActivity({ event: "generating", icon: Bot });
 
-***Strategy Overview***
-Your query about trading strategies is excellent timing! Here's a comprehensive approach:
+          const aiMsgId = Date.now();
+          setMessages(prev => [...prev, {
+            id: aiMsgId,
+            type: 'ai',
+            content: '',
+            timestamp: new Date(),
+            isGenerating: true
+          }]);
+          typeMessage(reply, aiMsgId);
+        }
+        break;
 
-***Short-term Strategy (1-7 days)***
-1. **Scalping**: Quick 1-3% gains on high-volume pairs
-2. **Swing Trading**: 5-15% targets on technical breakouts
-3. **Risk Management**: Never risk more than 1% per trade
+      case 'error':
+        setIsLoading(false);
+        setCurrentActivity(null);
+        setActivityMessage(null);
+        if (message) {
+          setNotification(`Error: ${message}`);
+        }
+        break;
 
-***Medium-term Strategy (1-4 weeks)***
-1. **Trend Following**: Ride momentum with proper stop-losses
-2. **Support/Resistance**: Buy dips, sell rallies
-3. **Portfolio Allocation**: 60% major coins, 40% altcoins
-
-***Long-term Strategy (3-12 months)***
-1. **DCA Strategy**: Dollar-cost averaging into blue chips
-2. **Hodl Approach**: Hold through volatility with conviction
-3. **Rebalancing**: Monthly portfolio adjustments
-
-***Risk Management Rules***
-⚠️ **Critical Guidelines**:
-- Maximum 5% portfolio risk per trade
-- Use stop-losses on every position
-- Take profits incrementally (25%, 50%, 75%)
-- Keep 20% cash for opportunities
-
-Would you like me to elaborate on any specific strategy?`
-      };
-
-      // Simple keyword matching for demo
-      const response = userMessage.toLowerCase().includes('price') ? mockResponses.price :
-                      userMessage.toLowerCase().includes('strategy') ? mockResponses.strategy :
-                      mockResponses.default;
-
-      return response;
-    } catch (error) {
-      console.error('API Error:', error);
-      return 'Sorry, I encountered an error processing your request. Please try again or contact support if the issue persists.';
+      default:
+        console.log('Unhandled WebSocket event:', event, data);
     }
   };
 
-  // Typewriter effect for AI responses
+  // Auto-scroll to bottom when new messages are added
+  useEffect(() => {
+    // find the latest message
+    const lastMessage = messages[messages.length - 1];
+  
+    // only scroll when a message finishes generating
+    if (lastMessage && !lastMessage.isGenerating) {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [messages]);
+  
+
   const typeMessage = (content, messageId) => {
     let index = 0;
-    const interval = setInterval(() => {
+    const words = content.split(" "); // split into words
+  
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+    }
+  
+    typingIntervalRef.current = setInterval(() => {
+      // join up to current index
       setCurrentTypingMessage({
         id: messageId,
-        content: content.slice(0, index),
+        content: words.slice(0, index + 1).join(" "),
         isGenerating: true
       });
+  
       index++;
-      if (index > content.length) {
-        clearInterval(interval);
-        setMessages(prev => prev.map(msg => 
-          msg.id === messageId 
+  
+      if (index >= words.length) {
+        clearInterval(typingIntervalRef.current);
+        typingIntervalRef.current = null;
+  
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId
             ? { ...msg, content, isGenerating: false }
             : msg
         ));
+  
         setCurrentTypingMessage(null);
+        setCurrentActivity(null);
         setIsLoading(false);
+        setActivityMessage(null);
       }
-    }, 8);
+    }, 90); // <-- tweak speed here (faster/slower)
+  };
+  
+
+  const sendMessage = (userMessage) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      const token = localStorage.getItem('token');
+      // You might need to decode the token to get user info or send it differently
+      const user = { id: 'user_id' }; // Replace with actual user data
+
+      wsRef.current.send(JSON.stringify({
+        message: userMessage,
+        sessionId: sessionId,
+        token: `Bearer ${token}`
+      }));
+      return true;
+    }
+    return false;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading || connectionStatus !== 'connected') return;
 
     const userMessage = inputValue.trim();
     const userMsgId = Date.now();
-    const aiMsgId = userMsgId + 1;
 
     // Add user message
     setMessages(prev => [...prev, {
@@ -170,21 +320,16 @@ Would you like me to elaborate on any specific strategy?`
       isGenerating: false
     }]);
 
-    // Add placeholder AI message
-    setMessages(prev => [...prev, {
-      id: aiMsgId,
-      type: 'ai',
-      content: '',
-      timestamp: new Date(),
-      isGenerating: true
-    }]);
-
     setInputValue("");
     setIsLoading(true);
 
-    // Get AI response
-    const aiResponse = await callTradeXAPI(userMessage);
-    typeMessage(aiResponse, aiMsgId);
+    // Send message via WebSocket
+    const sent = sendMessage(userMessage);
+    if (!sent) {
+      setIsLoading(false);
+      setNotification('Connection lost. Trying to reconnect...');
+      connectWebSocket();
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -194,29 +339,84 @@ Would you like me to elaborate on any specific strategy?`
     }
   };
 
+  const handleQuickAction = (action) => {
+    if (!isLoading && connectionStatus === 'connected') {
+      setInputValue(action);
+      inputRef.current?.focus();
+    }
+  };
+
+  const dismissNotification = () => {
+    setNotification(null);
+  };
+
+  const getConnectionStatusColor = () => {
+    switch (connectionStatus) {
+      case 'connected': return 'bg-green-400';
+      case 'connecting': return 'bg-yellow-400';
+      default: return 'bg-red-400';
+    }
+  };
+
+  const getConnectionStatusText = () => {
+    switch (connectionStatus) {
+      case 'connected': return 'Connected';
+      case 'connecting': return 'Connecting...';
+      default: return 'Disconnected';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+      {/* Notification */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 bg-blue-600/90 backdrop-blur-sm text-white px-4 py-3 rounded-lg shadow-lg border border-blue-500/50 flex items-center space-x-3 max-w-sm">
+          <Bell className="w-5 h-5 text-blue-200" />
+          <span className="text-sm flex-1">{notification}</span>
+          <button
+            onClick={dismissNotification}
+            className="text-blue-200 hover:text-white transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="sticky top-0 bg-slate-800/95 backdrop-blur-sm border-b border-slate-700/50 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
+            <div className=" rounded-lg flex items-center justify-center">
+              <img src="/logo.png" className="w-17   rounded-2xl text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">TradeX AI Assistant</h1>
-              <p className="text-sm text-slate-400">Your intelligent trading companion</p>
+              <h1 className="text-md  font-bold text-white">TradeXavier</h1>
+ <div className="flex items-center space-x-2">
+                <p className="text-sm text-slate-400">Your intelligent trading companion</p>
+                {/* {sessionId && (
+                  <span className="text-xs text-slate-500 bg-slate-700/50 px-2 py-1 rounded">
+                    Session: {sessionId.slice(-6)}
+                  </span>
+                )} */}
+              </div> 
             </div>
-            <div className="ml-auto flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-xs text-slate-400">Online</span>
+            <div className="ml-auto flex items-center space-x-4">
+              {/* Connection Status */}
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${getConnectionStatusColor()} ${connectionStatus === 'connecting' ? 'animate-pulse' : ''}`}></div>
+                <span className="text-xs text-slate-400">{getConnectionStatusText()}</span>
+                {connectionStatus === 'connected' ?
+                  <Wifi className="w-4 h-4 text-green-400" /> :
+                  <WifiOff className="w-4 h-4 text-red-400" />
+                }
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 pb-40">
         <div className="max-w-4xl mx-auto space-y-6">
           {messages.map((message) => (
             <div
@@ -224,55 +424,51 @@ Would you like me to elaborate on any specific strategy?`
               className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`flex max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3`}
+                className={`flex max-w-[97%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3`}
               >
                 {/* Avatar */}
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  message.type === 'user' 
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 ml-3' 
-                    : 'bg-gradient-to-r from-blue-500 to-purple-600 mr-3'
-                }`}>
-                  {message.type === 'user' ? 
-                    <User className="w-4 h-4 text-white" /> : 
-                    <Bot className="w-4 h-4 text-white" />
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center `}>
+                  {message.type === 'user' ?
+                    <img src={user?.profilePicture} className="w-[30px] h-[27px] rounded-2xl ml-4  text-white" /> :
+                    <img src="/logo.png" className="w-6 rounded-2xl h-6 text-white" />
                   }
                 </div>
 
                 {/* Message Content */}
-                <div className={`rounded-2xl px-4 py-3 ${
-                  message.type === 'user'
-                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
-                    : 'bg-slate-800/50 border border-slate-700/50 text-slate-200'
-                }`}>
+                <div className={`rounded-2xl px-4 py-3 ${message.type === 'user'
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
+                  : 'bg-slate-800/50 border border-slate-700/50 text-slate-200'
+                  }`}>
                   {message.type === 'user' ? (
                     <p className="text-sm leading-relaxed">{message.content}</p>
                   ) : (
                     <div className="prose prose-sm prose-invert max-w-none">
                       <ReactMarkdown
                         components={{
-                          h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-3 text-white" {...props} />,
-                          h2: ({node, ...props}) => <h2 className="text-base font-semibold mb-2 text-white" {...props} />,
-                          h3: ({node, ...props}) => <h3 className="text-sm font-medium mb-2 text-slate-300" {...props} />,
-                          p: ({node, ...props}) => <p className="mb-3 text-sm text-slate-300 leading-relaxed" {...props} />,
-                          ul: ({node, ...props}) => <ul className="mb-3 space-y-1" {...props} />,
-                          li: ({node, ...props}) => <li className="text-sm text-slate-300" {...props} />,
-                          strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
-                          em: ({node, ...props}) => <em className="italic text-slate-400" {...props} />,
-                          a: ({node, ...props}) => <a className="text-blue-400 hover:text-blue-300 hover:underline" {...props} />
+                          h1: ({ node, ...props }) => <h1 className="text-lg font-bold mb-3 text-white" {...props} />,
+                          h2: ({ node, ...props }) => <h2 className="text-base font-semibold mb-2 text-white" {...props} />,
+                          h3: ({ node, ...props }) => <h3 className="text-sm font-medium mb-2 text-slate-300" {...props} />,
+                          p: ({ node, ...props }) => <p className="mb-3 text-sm text-slate-300 leading-relaxed" {...props} />,
+                          ul: ({ node, ...props }) => <ul className="mb-3 space-y-1" {...props} />,
+                          li: ({ node, ...props }) => <li className="text-sm text-slate-300" {...props} />,
+                          strong: ({ node, ...props }) => <strong className="font-semibold text-white" {...props} />,
+                          em: ({ node, ...props }) => <em className="italic text-slate-400" {...props} />,
+                          a: ({ node, ...props }) => <a className="text-blue-400 hover:text-blue-300 hover:underline" {...props} />,
+                          hr: ({ node, ...props }) => <hr className="border-slate-600 my-4" {...props} />
                         }}
                       >
                         {message.content}
                       </ReactMarkdown>
                       {message.isGenerating && (
-                        <span className="inline-block w-2 h-4 bg-blue-400 animate-pulse ml-1"></span>
+                        <WandSparkles className="inline-block w-4 h-4  animate-pulse ml-1 " />
+
                       )}
                     </div>
                   )}
-                  
+
                   {/* Timestamp */}
-                  <div className={`text-xs mt-2 ${
-                    message.type === 'user' ? 'text-green-100' : 'text-slate-500'
-                  }`}>
+                  <div className={`text-xs mt-2 ${message.type === 'user' ? 'text-green-100' : 'text-slate-500'
+                    }`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
@@ -280,42 +476,67 @@ Would you like me to elaborate on any specific strategy?`
             </div>
           ))}
 
-          {/* Typing indicator for current message */}
-          {currentTypingMessage && (
+          {/* Activity Message in Chat Area */}
+          {activityMessage && (
             <div className="flex justify-start">
-              <div className="flex max-w-[85%] items-start space-x-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
+              <div className="flex max-w-[97%] items-start space-x-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-yellow-500 to-orange-600 flex items-center justify-center">
+                  <currentActivity.icon className="w-4 h-4 text-white animate-pulse" />
                 </div>
-                <div className="bg-slate-800/50 border border-slate-700/50 text-slate-200 rounded-2xl px-4 py-3">
-                  <div className="prose prose-sm prose-invert max-w-none">
-                    <ReactMarkdown
-                      components={{
-                        h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-3 text-white" {...props} />,
-                        h2: ({node, ...props}) => <h2 className="text-base font-semibold mb-2 text-white" {...props} />,
-                        h3: ({node, ...props}) => <h3 className="text-sm font-medium mb-2 text-slate-300" {...props} />,
-                        p: ({node, ...props}) => <p className="mb-3 text-sm text-slate-300 leading-relaxed" {...props} />,
-                        ul: ({node, ...props}) => <ul className="mb-3 space-y-1" {...props} />,
-                        li: ({node, ...props}) => <li className="text-sm text-slate-300" {...props} />,
-                        strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
-                        em: ({node, ...props}) => <em className="italic text-slate-400" {...props} />
-                      }}
-                    >
-                      {currentTypingMessage.content}
-                    </ReactMarkdown>
-                    <span className="inline-block w-2 h-4 bg-blue-400 animate-pulse ml-1"></span>
+                <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 text-yellow-200 rounded-2xl px-4 py-3">
+                  <div className="flex items-center space-x-2">
+                    <activityMessage.icon className={`w-4 h-4 ${currentActivity.event === 'Web searching' ? "animate-spin" : "animate-pulse"}`} />
+                    <span className="text-sm font-medium">{activityMessage.event}</span>
+                  </div>
+                  <p className="text-xs text-yellow-300 mt-1">{activityMessage.message}</p>
+                  <div className="text-xs mt-2 text-yellow-400">
+                    {activityMessage.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
               </div>
             </div>
           )}
 
+          {/* Typing indicator for current message */}
+          {currentTypingMessage && (
+            <div className="flex justify-start">
+              <div className="flex max-w-[97%] items-start space-x-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                <img src="/logo.png" className="w-6 rounded-2xl h-6 text-white" />
+
+                </div>
+                <div className="bg-slate-800/50 border border-slate-700/50 text-slate-200 rounded-2xl px-4 py-3">
+                  <div className="prose prose-sm prose-invert max-w-none ">
+                    <ReactMarkdown
+                      components={{
+                        h1: ({ node, ...props }) => <h1 className="text-lg font-bold mb-3 text-white" {...props} />,
+                        h2: ({ node, ...props }) => <h2 className="text-base font-semibold mb-2 text-white" {...props} />,
+                        h3: ({ node, ...props }) => <h3 className="text-sm font-medium mb-2 text-slate-300" {...props} />,
+                        p: ({ node, ...props }) => <p className="mb-3 text-sm text-slate-300 leading-relaxed" {...props} />,
+                        ul: ({ node, ...props }) => <ul className="mb-3 space-y-1" {...props} />,
+                        li: ({ node, ...props }) => <li className="text-sm text-slate-300" {...props} />,
+                        strong: ({ node, ...props }) => <strong className="font-semibold text-white" {...props} />,
+                        em: ({ node, ...props }) => <em className="italic text-slate-400" {...props} />,
+                        hr: ({ node, ...props }) => <hr className="border-slate-600 my-4" {...props} />
+                      }}
+                    >
+                      {currentTypingMessage.content}
+                    </ReactMarkdown>
+
+                    <WandSparkles className="inline-block w-4 h-4  animate-pulse ml-1 " />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+
           <div ref={messagesEndRef} />
         </div>
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-slate-700/50 bg-slate-800/50 backdrop-blur-sm">
+      <div className="border-t border-slate-700/50 bg-slate-800/50 backdrop-blur-sm fixed bottom-0 w-full">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="relative">
             <div className="flex items-end space-x-3">
@@ -324,17 +545,20 @@ Would you like me to elaborate on any specific strategy?`
                   ref={inputRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask about market analysis, prices, trading strategies..."
+                  onClick={handleKeyPress}
+                  placeholder={connectionStatus === 'connected' ?
+                    "Ask anything" :
+                    "Connecting to TradeX AI..."
+                  }
                   className="w-full bg-slate-700/50 border border-slate-600/50 rounded-xl px-4 py-3 pr-12 text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none max-h-32"
                   rows={1}
-                  disabled={isLoading}
+                  disabled={isLoading || connectionStatus !== 'connected'}
                 />
               </div>
               <button
                 onClick={handleSubmit}
-                disabled={!inputValue.trim() || isLoading}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 rounded-xl transition-all duration-200 flex items-center justify-center"
+                disabled={!inputValue.trim() || isLoading || connectionStatus !== 'connected'}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 mb-2 rounded-xl transition-all duration-200 flex items-center justify-center"
               >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -344,15 +568,15 @@ Would you like me to elaborate on any specific strategy?`
               </button>
             </div>
           </div>
-          
+
           {/* Quick Actions */}
           <div className="flex flex-wrap gap-2 mt-3">
-            {['Market Overview', 'BTC Price', 'Trading Strategy', 'Risk Analysis'].map((action) => (
+            {[ 'tell me current BTC Price'].map((action) => (
               <button
                 key={action}
-                onClick={() => setInputValue(action)}
-                disabled={isLoading}
-                className="px-3 py-1 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg text-xs text-slate-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => handleQuickAction(action)}
+                disabled={isLoading || connectionStatus !== 'connected'}
+                className="px-3 py-1 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50  rounded-lg text-xs text-slate-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {action}
               </button>

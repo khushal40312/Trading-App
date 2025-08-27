@@ -31,7 +31,6 @@ const tradingInputClassifierTool = {
 
     const result = await analyzeModel(classificationPrompt);
     let parsed = JSON.parse(result)
-   console.log(parsed)
     return parsed;
 
   }

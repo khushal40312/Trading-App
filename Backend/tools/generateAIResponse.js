@@ -1,11 +1,13 @@
 const { model } = require("../aiModel/gemini");
 const { getLatest3Interactions } = require("../services/ai.service");
+const { safeSend } = require("../utils/webSocketfunc");
 
 const generateAIResponse = {
   name: "initialResponse",
   description: "Generate Trade Plan",
 
-  func: async ({ context, entities, input, tradeClassification, user, sessionId }) => {
+  func: async ({ context, entities, input, tradeClassification, user, sessionId, ws }) => {
+    safeSend(ws, { event: "typing", status: true });
 
     // Check if required entities are present
     if (!entities.action || !entities.symbol || !entities.amount || !entities.condition) {
@@ -24,7 +26,7 @@ This will make sure I set up the right trade plan for you.
     const oldChats = getLatest3Interactions(user.id, sessionId)
 
     const prompt = `
-    You're a helpful and friendly trading assistant.
+    You're a helpful and friendly trading assistant in TradeX app and your Name is TradeXavier.
     
     The user context and request are provided below in structured data:
     
@@ -93,9 +95,11 @@ This will make sure I set up the right trade plan for you.
     ---
     ✨ Format your reply like a conversation — not code or JSON. Be personal and respectful.
     `;
-    
+
 
     const result = await model.invoke(prompt);
+    safeSend(ws, { event: "typing", status: false });
+
     return result.content;
   }
 

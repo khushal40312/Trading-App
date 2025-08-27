@@ -2,12 +2,17 @@ const { model } = require("../aiModel/gemini");
 const {
     getLatest3Interactions
 } = require("../services/ai.service");
+const { safeSend } = require("../utils/webSocketfunc");
+
 
 const marketAnalysisGenerator = {
     name: "marketAnalysisGenerator",
     description: "Generate response to user according to input and old conversation and provided data from browser or APIs",
 
-    func: async ({ input, user, sessionId, marketClassificationContext }) => {
+    func: async ({ input, user, sessionId, marketClassificationContext, ws }) => {
+        safeSend(ws, { event: "typing", status: true });
+
+
         try {
             // Input validation
             if (!input?.trim()) {
@@ -33,10 +38,11 @@ const marketAnalysisGenerator = {
 
             // Sanitize input to prevent injection
             const sanitizedInput = input.trim().replace(/[<>]/g, '');
-            console.log(sanitizedInput)
+
             // Enhanced prompt with image handling instructions
             const enhancedPrompt = `
-You are a **Professional Market Analysis Assistant** providing comprehensive cryptocurrency and trading insights.
+  
+You are a **Professional Market Analysis Assistant** providing comprehensive cryptocurrency and trading insights and  you are Assistant in TradeX app and your Name is TradeXavier .
 
 ---
 
@@ -122,6 +128,12 @@ ${oldChats && oldChats.length > 0 ? `\`\`\`json\n${JSON.stringify(oldChats, null
 - **Engagement Ending**: End with relevant question or offer for more help
 - **never include template literals  in output.
 - ** generate output like it would work on npm react-markdown.
+-** If provided data doesn't contain img URL dont include it in response.
+
+
+### 8. **Sources Formatting**: When including sources, always render with favicon + site name. Use this format:
+  [![Favicon](https://www.google.com/s2/favicons?sz=16&domain=domain.com)](source_url) [Site Name]
+
 
 ---
 
@@ -153,7 +165,7 @@ The recent surge appears to be driven by institutional adoption news and positiv
 
 
 **Sources**
-*Web Search took 1.42s* [(Gemini)](https://www.gemini.com/cryptopedia/bitcoin-for-dummies-how-does-bitcoin-work-blockchain-btc) [(Investopedia)](https://www.investopedia.com/terms/b/bitcoin.asp)
+*Web Search took 1.42s*  [![Favicon](https://www.google.com/s2/favicons?sz=16&domain=domain.com)](source_url) [Site Name]
 
 *Would you like me to analyze any specific aspects of Bitcoin or other cryptocurrencies?*
 \`\`\`
@@ -170,8 +182,10 @@ Generate your response following these guidelines. Focus on delivering valuable 
             if (!result) {
                 throw new Error("Empty response from AI model");
             }
+            safeSend(ws, { event: "typing", status: false });
 
-            return result;
+
+            return result.content;
 
         } catch (error) {
             console.error('Error in marketAnalysisGenerator:', error);
@@ -220,9 +234,15 @@ Provide a response following this format.`;
 
             try {
                 const fallbackResult = await model.invoke(fallbackPrompt);
+                safeSend(ws, { event: "typing", status: true });
+
+
                 return fallbackResult || "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.";
             } catch (fallbackError) {
                 console.error('Error in fallback response:', fallbackError);
+
+                safeSend(ws, { event: "typing", status: false });
+
                 return `***Technical Difficulty ⚠️***
 
 I apologize, but I'm currently experiencing technical issues that prevent me from providing a complete market analysis.

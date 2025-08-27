@@ -17,11 +17,13 @@ const { marketAnalyserContext } = require("../tools/marketAnalyserContext");
 const { marketAnalysisGenerator } = require("../tools/marketAnalysisGenerator");
 // 1. Node function: classify
 const classifyNode = async (state) => {
+ 
   try {
     const category = await classifyTool.func({
       input: state.input,
       user: state.user,
-      sessionId: state.sessionId
+      sessionId: state.sessionId,
+      ws: state.ws
     });
 
     return {
@@ -107,7 +109,8 @@ const generateAIResponseNode = async (state) => {
       sessionId: state.sessionId,
       context: state.context,
       entities: state.entities,
-      tradeClassification: state.tradeClassification
+      tradeClassification: state.tradeClassification,
+      ws: state.ws
     });
 
     const finalState = {
@@ -212,7 +215,9 @@ const unifiedTradeAssistantNode = async (state) => {
     const reply = await unifiedTradeAssistant.func({
       input: state.input,
       user: state.user,
-      sessionId: state.sessionId
+      sessionId: state.sessionId,
+      ws: state.ws
+
     });
     const newInteractions = {
       input: state.input,
@@ -253,7 +258,9 @@ const tradeCancellationResolverNode = async (state) => {
     const reply = await tradeCancellationResolverTool.func({
       input: state.input,
       sessionId: state.sessionId,
-      user: state.user
+      user: state.user,
+      ws: state.ws
+
     });
 
     return {
@@ -273,7 +280,8 @@ const marketAnalysisAssistantNode = async (state) => {
     const marketClassification = await marketAnalysisAssistant.func({
       input: state.input,
       sessionId: state.sessionId,
-      user: state.user
+      user: state.user,
+      ws: state.ws
     });
 
     return {
@@ -295,7 +303,9 @@ const marketAnalysisContextNode = async (state) => {
       input: state.input,
       sessionId: state.sessionId,
       user: state.user,
-      marketClassification: state.marketClassification
+      marketClassification: state.marketClassification,
+      ws: state.ws
+
     });
 
     return {
@@ -316,7 +326,9 @@ const marketAnalysisGeneratorNode = async (state) => {
       input: state.input,
       sessionId: state.sessionId,
       user: state.user,
-      marketClassificationContext: state.marketClassificationContext
+      marketClassificationContext: state.marketClassificationContext,
+      ws: state.ws
+
     });
 
     const newInteractions = {
@@ -372,7 +384,8 @@ const graphBuilder = new StateGraph({
     executedTrade: "object",
     tradeInfoClassification: "string",
     marketClassification: 'object',
-    marketClassificationContext: 'object'
+    marketClassificationContext: 'object',
+    ws: "any" 
   }
 });
 graphBuilder.addNode("classify", classifyNode);

@@ -5,8 +5,9 @@ const { getLatest3Interactions } = require("../services/ai.service");
 const classifyTool = {
   name: "classifyInput",
   description: "Classifies the user's message into categories.",
-  func: async ({ input, user, sessionId }) => {
-    console.log(input)
+  func: async ({ input, user, sessionId,ws }) => {
+    
+ 
     const data = await getLatest3Interactions(user.id, sessionId)
     let memoryContext = data ? JSON.stringify(data) : "";
     const classifyPrompt = `
@@ -32,7 +33,6 @@ Just output the category name (or "out of context").
 `
 const category= await runOpsTask(classifyPrompt)
 
-    console.log(typeof(category))
     return category.trim();
   }
 };

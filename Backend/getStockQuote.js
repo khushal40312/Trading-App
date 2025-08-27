@@ -25,7 +25,7 @@ cron.schedule('*/5 * * * *', async () => {
     await portfolio.updatePrices(getStockQuote);
     await portfolio.save();
   }
-  console.log('Portfolio prices updated every 15 minutes.');
+  // console.log('Portfolio prices updated every 15 minutes.');
 });
 
 module.exports = getStockQuote;
