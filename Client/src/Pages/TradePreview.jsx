@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { Send, Bot, User, Loader2, Bell, X, Brain, Wifi, WifiOff, Globe, Ellipsis, CircleSmall, Pen, Circle, WandSparkles } from "lucide-react";
+import { Send, Bot, User, Loader2, Bell, X, Brain, Wifi, WifiOff, Globe, Ellipsis, CircleSmall, Pen, Circle, WandSparkles, StopCircle, BadgeAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -17,6 +17,7 @@ const TradeX = () => {
   const [connectionStatus, setConnectionStatus] = useState('disconnected'); // disconnected, connecting, connected
   const [currentActivity, setCurrentActivity] = useState(null); // { event: "Web searching", status: true }
   const [activityMessage, setActivityMessage] = useState(null); // For showing activity in chat area
+  const [isRateLimited, setIsRateLimited] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const wsRef = useRef(null);
@@ -80,7 +81,12 @@ const TradeX = () => {
       }
     };
   }, []);
-
+  const showNotification = (message) => {
+    setNotification(message);
+    setTimeout(() => {
+      setNotification(null);
+    }, 7000);
+  };
   const connectWebSocket = () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -134,7 +140,7 @@ const TradeX = () => {
   };
 
   const handleWebSocketMessage = (data) => {
-    const { event, status, sessionId: newSessionId, notification, reply, message } = data;
+    const { event, status, sessionId: newSessionId, notification, reply, message, reason, retryAfter } = data
 
     switch (event) {
       case 'session:new':
@@ -143,7 +149,7 @@ const TradeX = () => {
           setSessionId(newSessionId);
         }
         if (notification) {
-          setNotification(notification);
+          showNotification(notification);
         }
         break;
 
@@ -222,13 +228,49 @@ const TradeX = () => {
           typeMessage(reply, aiMsgId);
         }
         break;
+        case 'rate_limit_exceeded':
+          setIsLoading(false);
+          setCurrentActivity(null);
+          setActivityMessage(null);
+          
+          // Show rate limit notification
+          const rateLimitMessage = reason === 'burst_limit_exceeded' 
+            ? `Too many messages too quickly! Please wait ${retryAfter} seconds.`
+            : `Rate limit reached. Please wait ${retryAfter} seconds.`;
+          
+            showNotification(rateLimitMessage);
+          setActivityMessage({
+            id: "12dfhnmnbvdrt565",
+            event: "",
+            icon: BadgeAlert,
+            message: 'Let me Breath Bro...',
+            timestamp: new Date()
+          });
+          setCurrentActivity({ event: "Rate Limit", icon: Bot });
 
+          // Temporarily disable input
+          setIsRateLimited(true);
+          setTimeout(() => {
+            setIsRateLimited(false);
+          }, retryAfter * 1000);
+    
+          // Add system message to chat
+          const rateLimitMsgId = Date.now();
+          setMessages(prev => [...prev, {
+            id: rateLimitMsgId,
+            type: 'ai',
+            content: `⚠️ ${rateLimitMessage}`,
+            timestamp: new Date(),
+            isRateLimit: true
+          }]);
+          break;
+    
       case 'error':
         setIsLoading(false);
         setCurrentActivity(null);
         setActivityMessage(null);
         if (message) {
-          setNotification(`Error: ${message}`);
+          showNotification(`Error: ${message}`);
         }
         break;
 
@@ -327,7 +369,7 @@ const TradeX = () => {
     const sent = sendMessage(userMessage);
     if (!sent) {
       setIsLoading(false);
-      setNotification('Connection lost. Trying to reconnect...');
+      showNotification('Connection lost. Trying to reconnect...');
       connectWebSocket();
     }
   };
@@ -480,8 +522,11 @@ const TradeX = () => {
           {activityMessage && (
             <div className="flex justify-start">
               <div className="flex max-w-[97%] items-start space-x-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-yellow-500 to-orange-600 flex items-center justify-center">
-                  <currentActivity.icon className="w-4 h-4 text-white animate-pulse" />
+              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center `}>
+
+              <img src="/logo.png" className="w-6 rounded-2xl h-6 text-white" />
+
+
                 </div>
                 <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 text-yellow-200 rounded-2xl px-4 py-3">
                   <div className="flex items-center space-x-2">
@@ -501,8 +546,10 @@ const TradeX = () => {
           {currentTypingMessage && (
             <div className="flex justify-start">
               <div className="flex max-w-[97%] items-start space-x-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                <img src="/logo.png" className="w-6 rounded-2xl h-6 text-white" />
+              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center `}>
+
+              <img src="/logo.png" className="w-6 rounded-2xl h-6 text-white" />
+
 
                 </div>
                 <div className="bg-slate-800/50 border border-slate-700/50 text-slate-200 rounded-2xl px-4 py-3">
@@ -557,7 +604,7 @@ const TradeX = () => {
               </div>
               <button
                 onClick={handleSubmit}
-                disabled={!inputValue.trim() || isLoading || connectionStatus !== 'connected'}
+                disabled={!inputValue.trim() || isLoading || connectionStatus !== 'connected'||isRateLimited}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 mb-2 rounded-xl transition-all duration-200 flex items-center justify-center"
               >
                 {isLoading ? (
