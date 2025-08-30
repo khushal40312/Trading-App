@@ -1,6 +1,5 @@
 
 const tradeServices = require('../services/trade.service');
-const { v4: uuidv4 } = require('uuid');
 const pendingTradesModel = require('../models/pendingTrades.model')
 const getStockQuote = require("../getStockQuote");
 const redisClient = require("../config/redisClient");
@@ -122,12 +121,44 @@ module.exports.assessRisk = ({ entities, context }) => {
         warnings
     };
 };
-
-
-
+// user: userId,
 let executedTrades = []; // In-memory store
 let monitoringIntervalId = null; // Store interval ID globally
+async function getPendingTradesFromDB() {
+    try {
+        const trades = await pendingTradesModel.find({ status: 'PENDING' })
+            .sort({ createdAt: -1 });
+        return trades;
+    } catch (err) {
+        console.error("Error fetching trades for monitoring:", err);
+        throw err;
+    }
+}
 
+async function initializeMonitoring(getStockQuote, intervalSeconds = 10) {
+    try {
+        const pendingTrades = await getPendingTradesFromDB();
+
+        if (pendingTrades.length === 0) {
+            console.log("No pending trades found. Monitoring will not start.");
+            return;
+        }
+
+        // Map DB "price" field → memory "currentPrice"
+        executedTrades = pendingTrades.map(trade => ({
+            ...trade.toObject(),         // convert mongoose doc to plain object
+            currentPrice: trade.price,   // overwrite with currentPrice field
+        }));
+
+        console.log(`Loaded ${executedTrades.length} pending trades into memory.`);
+
+        // Start monitoring since we have trades
+        startTradeMonitoring(getStockQuote, intervalSeconds);
+
+    } catch (err) {
+        console.error("Error initializing trade monitoring:", err);
+    }
+}
 
 const executeTrade = async ({ finalJson, oldMemory, sessionId }) => {
     const { action, symbol, amount, condition, assetName, userId, orderType, riskProfile } = finalJson;
@@ -868,7 +899,7 @@ async function getFilteredGlobalMarketData() {
 
 
 
-module.exports = { getFilteredGlobalMarketData, fetchTicker, getTrendingCoins, fetchCryptoData, fetchOHLC, getCoinMarkets, storeSessionStructureInRedis, findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
+module.exports = {initializeMonitoring, getFilteredGlobalMarketData, fetchTicker, getTrendingCoins, fetchCryptoData, fetchOHLC, getCoinMarkets, storeSessionStructureInRedis, findPortfolio, getRiskProfile, appendPendingTrade, appendInteraction, getMarketSentiment, storeSessionInRedis, executeTrade, isMonitoringActive, startTradeMonitoring, getLatest3Interactions, getLatest3Trades, getLatest2TradesandInteractions, getLast5Trades, getLast5PendingTrades }
 
 
 

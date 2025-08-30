@@ -3,15 +3,15 @@ import UserInfo from "./userProfileSlice";
 import trendingSearches from "./trendingSearchSlice"
 import selectedToken from "./seletedTokenSlice"
 import selectedTheme from "./themeSlice"
-
-
+import pendingSlice from "./pendingTrade"
 
 
 const appReducer = combineReducers({
     user: UserInfo,
     search:trendingSearches,
     selectedToken:selectedToken,
-    selectedTheme:selectedTheme
+    selectedTheme:selectedTheme,
+    pendingTrades:pendingSlice
    
 })
 const rootReducer = (state, action) => {

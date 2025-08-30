@@ -4,6 +4,7 @@ const tradeModel = require('../models/Trade.model.js');
 const userModel = require('../models/user.model.js');
 const getStockQuote = require("../getStockQuote.js");
 const tradeService = require("../services/trade.service.js")
+const pendingTradesModel = require("../models/pendingTrades.model.js")
 
 
 
@@ -19,10 +20,10 @@ module.exports.buyAssets = async (req, res) => {
     const userId = req.user.id;
     const tradeType = 'buy';
     const fees = 0.005 * (quantity * price);
-    
+
     try {
-        const imageURL= await tradeService.getImages(assetName);
-        
+        const imageURL = await tradeService.getImages(assetName);
+
         let portfolio = await portfolioModel.findOne({ user: userId });
         const user = await userModel.findById(userId);
 
@@ -55,9 +56,9 @@ module.exports.buyAssets = async (req, res) => {
         user.balance -= trade.netAmount;
         user.trades.push(trade._id);
         await user.save();
-        
 
-        portfolio.upsertAsset(symbol, assetName, quantity, price,imageURL);
+
+        portfolio.upsertAsset(symbol, assetName, quantity, price, imageURL);
 
         await portfolio.updatePrices(getStockQuote); // or update manually if no price API
         portfolio.calculateValue(); // recalculates P&L
@@ -96,7 +97,7 @@ module.exports.sellAssets = async (req, res) => {
     const fees = 0.005 * (quantity * price);
 
     try {
-        const imageURL= await tradeService.getImages(assetName);
+        const imageURL = await tradeService.getImages(assetName);
 
         const user = await userModel.findById(userId);
         let portfolio = await portfolioModel.findOne({ user: userId });
@@ -393,7 +394,7 @@ module.exports.getCandlesfromGeko = async (req, res) => {
 
 
     try {
-        const candles = await tradeService.getCandlesfromCoingeko({coingeckoId, days});
+        const candles = await tradeService.getCandlesfromCoingeko({ coingeckoId, days });
         res.status(201).json(candles);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch candle data', details: error.message });
@@ -410,7 +411,7 @@ module.exports.getCandlesfromBitget = async (req, res) => {
 
 
     try {
-        const candles = await tradeService.getCandlesfromBitget({symbol, interval, startTime, endTime});
+        const candles = await tradeService.getCandlesfromBitget({ symbol, interval, startTime, endTime });
         res.status(201).json(candles);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch candle data', details: error.message });
@@ -420,3 +421,44 @@ module.exports.getCandlesfromBitget = async (req, res) => {
 
 
 }
+module.exports.getAllPendingTrades = async (req, res) => {
+
+    const userId = req.user.id;
+
+    try {
+        const trades = await pendingTradesModel.find({ userId: userId, status: 'PENDING' })
+            .sort({ createdAt: -1 });
+
+        res.status(201).json(trades)
+
+    } catch (error) {
+        console.error('Error in getAllPendingTrades:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+
+
+
+}
+module.exports.cancelPendingTrades = async (req, res) => {
+    const id = req.params.id;
+
+    try {
+        const trade = await pendingTradesModel.findOneAndDelete({
+            _id: id,
+            status: "PENDING"
+        });
+
+        if (!trade) {
+            return res.status(404).json({
+                success: false,
+                message: "No pending trade found with this id"
+            });
+        }
+
+        res.status(200).json(trade);
+
+    } catch (error) {
+        console.error("Error in cancelPendingTrades:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};

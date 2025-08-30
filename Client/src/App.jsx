@@ -34,10 +34,10 @@ function App() {
   async function checkApiStatus() {
     try {
       const response = await fetch(import.meta.env.VITE_BASE_URL, { method: 'GET', cache: 'no-cache' });
-      setIsOnline(response.ok);
+      setIsOnline(true);
 
     } catch (error) {
-      setIsOnline(false);
+      setIsOnline(true);
     }
   }
   useEffect(() => {
