@@ -4,10 +4,9 @@ const tradeModel = require('../models/Trade.model.js');
 const userModel = require('../models/user.model.js');
 const getStockQuote = require("../getStockQuote.js");
 const tradeService = require("../services/trade.service.js")
-const pendingTradesModel = require("../models/pendingTrades.model.js")
-
-
-
+const pendingTradesModel = require("../models/pendingTrades.model.js");
+const { removeFromMonitoring } = require("../services/ai.service.js");
+const { getImages } = require("../utils/tradeServicesFunc.js");
 
 
 module.exports.buyAssets = async (req, res) => {
@@ -22,7 +21,7 @@ module.exports.buyAssets = async (req, res) => {
     const fees = 0.005 * (quantity * price);
 
     try {
-        const imageURL = await tradeService.getImages(assetName);
+        const imageURL = await getImages(assetName);
 
         let portfolio = await portfolioModel.findOne({ user: userId });
         const user = await userModel.findById(userId);
@@ -97,7 +96,7 @@ module.exports.sellAssets = async (req, res) => {
     const fees = 0.005 * (quantity * price);
 
     try {
-        const imageURL = await tradeService.getImages(assetName);
+        const imageURL = await getImages(assetName);
 
         const user = await userModel.findById(userId);
         let portfolio = await portfolioModel.findOne({ user: userId });
@@ -154,7 +153,6 @@ module.exports.sellAssets = async (req, res) => {
         res.status(500).json({ error: 'Something went wrong while executing the trade.' });
     }
 };
-
 module.exports.getMyTrades = async (req, res) => {
     const error = validationResult(req);
     if (!error.isEmpty()) {
@@ -227,9 +225,6 @@ module.exports.getMyTradesById = async (req, res) => {
         console.error('Error in getMyTrades:', error);
         return res.status(500).json({ error: 'Server error' });
     }
-
-
-
 
 }
 module.exports.getMyTradesBySymbol = async (req, res) => {
@@ -352,7 +347,6 @@ module.exports.getMyTradingStats = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
-
 module.exports.getAllTrades = async (req, res) => {
 
     const userId = req.user._id;
@@ -386,7 +380,6 @@ module.exports.getSuggetions = async (req, res) => {
 
 
 }
-
 module.exports.getCandlesfromGeko = async (req, res) => {
 
     const { coingeckoId } = req.params;
@@ -447,7 +440,9 @@ module.exports.cancelPendingTrades = async (req, res) => {
             _id: id,
             status: "PENDING"
         });
-
+        if (trade) {
+            removeFromMonitoring(trade._id)
+        }
         if (!trade) {
             return res.status(404).json({
                 success: false,

@@ -10,14 +10,24 @@ import { formatPrice } from '../Functions/FormatPrice';
 import { handleSessionError } from '../Functions/HandleSessionError';
 import AddFunds from './AddFunds';
 import TradeHistory from './TradeHistory';
-const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance }) => {
+
+const ChartSkeleton = () => (
+  <div className="rounded-xl border-2 border-gray-600 p-4 mt-2 mb-4 w-full bg-black animate-pulse">
+    <div className="h-4 bg-gray-700 rounded w-32 mb-4"></div>
+    <div className="h-45 bg-gray-700 rounded"></div>
+  </div>
+)
+const BalanceSkeleton = () => (
+  <div className="h-7 my-1 bg-gray-700 rounded w-2/3 animate-pulse"></div>
+
+)
+const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance, setLoadingStates, loadingStates }) => {
   const [showBalance, setshowBalance] = useState(true);
   const [showAddFundsModal, setShowAddFundsModal] = useState(false);
   const token = localStorage.getItem('token')
   const [portfolioInfo, setportfolioInfo] = useState({});
   const [summary, setSummary] = useState({});
   const [refreshBalance, setrefreshBalance] = useState(false);
-
   const [showTradeHistory, setshowTradeHistory] = useState(false);
 
 
@@ -28,6 +38,8 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
 
     if (token) {
       const fetchUserBalance = async () => {
+        setLoadingStates(prev => ({ ...prev, balance: true }))
+
         try {
           const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/users/balance`, {
             headers: {
@@ -36,12 +48,15 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
           })
 
           setBalance(response.data.balance)
+
         } catch (error) {
 
 
           console.error(error)
-                        handleSessionError(error, navigate);
-        
+          handleSessionError(error, navigate);
+
+        } finally {
+          setLoadingStates(prev => ({ ...prev, balance: false }))
         }
       }
 
@@ -60,11 +75,12 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
         setportfolioInfo(response.data)
       } catch (error) {
         console.error(error)
-                       handleSessionError(error, navigate);
-       
+        handleSessionError(error, navigate);
+
+      }finally {
+        setLoadingStates(prev => ({ ...prev, portfolio: false }))
       }
     }
-    fetchUserProtfolio()
     const fetchUserSummary = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/me/summary`, {
@@ -76,10 +92,13 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
         setSummary(response.data)
       } catch (error) {
         console.error(error)
-                       handleSessionError(error, navigate);
-       
+        handleSessionError(error, navigate);
+
+      }finally {
+        setLoadingStates(prev => ({ ...prev, summary: false }))
       }
     }
+    fetchUserProtfolio()
     fetchUserSummary()
   }, [navigate, token, refreshBalance])
 
@@ -118,7 +137,7 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
     }
   ];
 
- 
+
 
   return (
 
@@ -135,12 +154,14 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
         </span>
       </div>
 
-      <div className='flex px-2 gap-1 items-center my-1 '>
+      {loadingStates.balance ? (
+        <BalanceSkeleton />
+      ) : (<div className='flex px-2 gap-1 items-center my-1 '>
         {showBalance ? (
           <h1 className='font-bold text-2xl text-white'>
-          
-              { formatPrice(totalBalance)} 
-             
+
+            {formatPrice(totalBalance)}
+
           </h1>
         ) : (
           <h1 className='font-bold text-2xl text-white'>*****</h1>
@@ -157,9 +178,11 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
             INR
           </option>
         </select>
-      </div>
+      </div>)}
 
-      <div className='flex items-center'>
+      {loadingStates.summary ? (
+        <BalanceSkeleton />
+      ) : (<div className='flex items-center'>
         <p className='text-white px-2'>Total P&amp;L</p>
         <p
           className={`text-left rounded text-md px-2 ${summary?.totalProfitLossPercentage?.toString().startsWith('-')
@@ -173,9 +196,11 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
               : `+${summary.totalProfitLossPercentage.toFixed(2)}`
             : '-------'}
         </p>
-      </div>
+      </div>)}
 
-      <div className='w-full py-3'>
+      {loadingStates.portfolio ? (
+        <ChartSkeleton />
+      ) : (<> <div className='w-full py-3'>
         <div className='bg-[#0e0e0e] rounded-xl p-3 w-full'>
           <h2 className='text-sm text-white font-bold mb-2'>Portfolio Performance</h2>
           {chartSeries?.[0]?.data?.length === 0 ? (
@@ -247,7 +272,7 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
             />
           )}
         </div>
-      </div>
+      </div></>)}
 
       <div className='flex px-3 gap-1 items-center my-1 w-full justify-center'>
         <div onClick={() => setShowAddFundsModal(true)} className='flex items-center gap-1'>
@@ -257,6 +282,7 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
           <h1 className='text-white font-bold'>Add Funds</h1>
         </div>
       </div>
+
       {showAddFundsModal && (
         <AddFunds
           onClose={() => setShowAddFundsModal(false)}
@@ -268,11 +294,11 @@ const AnalysisSection = ({ inrPrice, currency, setCurrency, balance, setBalance 
         />
       )}
 
-{showTradeHistory && (
+      {showTradeHistory && (
         <TradeHistory
-        currency={currency}
-        inrPrice={inrPrice}
-        setshowTradeHistory={setshowTradeHistory}
+          currency={currency}
+          inrPrice={inrPrice}
+          setshowTradeHistory={setshowTradeHistory}
         />
       )}
     </div>

@@ -110,8 +110,7 @@ class RateLimiter {
   }
 }
 
-function initWSServer(server) {
-  const wss = new WebSocket.Server({ server, path: "/ai" });
+function initWSServer(wss) {
   const rateLimiter = new RateLimiter();
 
   wss.on("connection", (ws) => {

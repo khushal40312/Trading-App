@@ -3,22 +3,28 @@ const tradeModel = require('../models/Trade.model')
 const portfolioModel = require('../models/portfolio.model')
 const userModel = require('../models/user.model');
 const getStockQuote = require("../getStockQuote");
+const { getImages } = require("../utils/tradeServicesFunc");
 
 
 
 
 module.exports.getSuggestion = async (input) => {
     try {
-        const bitgetRes = await axios.get("https://api.bitget.com/api/v2/spot/public/coins");
+        const bitgetRes = await axios.get("https://api.bitget.com/api/v2/spot/public/coins"); 
         const bitgetCoins = bitgetRes.data.data;
+        // const filtered = bitgetRes.data.data.map(item => ({
+        //     coin: item.coin,
+        //     chains: item.chains.map(c => ({
+        //         contractAddress: c.contractAddress
+        //     })),
 
+        // }));
         const upper = input.toUpperCase();
         const lower = input.toLowerCase();
 
         const match = bitgetCoins.find(
             (coin) => coin.coin.toLowerCase() === lower
         );
-
         if (!match) {
             return { error: `Coin "${input}" not found in Bitget.` };
         }
@@ -42,7 +48,7 @@ module.exports.getSuggestion = async (input) => {
 
 
                 const info = tokenInfoRes.data.data?.attributes;
-               
+
                 return {
                     name: info.name,
                     symbol: info.symbol,
@@ -147,43 +153,43 @@ module.exports.getCandlesfromBitget = async (payload) => {
         console.log(error, "error during fetching BG candles ")
     }
 }
-module.exports.getImages = async (symbol) => {
-    // console.log(symbol)
+// module.exports.getImages = async (symbol) => {
+//     // console.log(symbol)
 
-    if (!symbol) return
-    try {
-        const response = await axios.get(
-            `https://api.coingecko.com/api/v3/coins/${symbol}`,
-            {
-                headers: {
-                    accept: 'application/json',
-                    'x-cg-demo-api-key': process.env.COINGEKO_API // Replace with your actual CoinGecko key
-                },
-                params: {
+//     if (!symbol) return
+//     try {
+//         const response = await axios.get(
+//             `https://api.coingecko.com/api/v3/coins/${symbol}`,
+//             {
+//                 headers: {
+//                     accept: 'application/json',
+//                     'x-cg-demo-api-key': process.env.COINGEKO_API // Replace with your actual CoinGecko key
+//                 },
+//                 params: {
 
-                    localization: false,
-                    tickers: false,
-                    market_data: false,
-                    community_data: false,
-                    developer_data: false,
-                    sparkline: false
-                },
-            }
-        );
-
-
-        return response.data.image;
+//                     localization: false,
+//                     tickers: false,
+//                     market_data: false,
+//                     community_data: false,
+//                     developer_data: false,
+//                     sparkline: false
+//                 },
+//             }
+//         );
 
 
-    } catch (error) {
-        console.log(error, "error during fetching images ")
-    }
+//         return response.data.image;
 
 
+//     } catch (error) {
+//         console.log(error, "error during fetching images ")
+//     }
 
 
 
-}
+
+
+// }
 module.exports.getCoinData = async (symbol) => {
     // console.log(symbol)
 
@@ -221,7 +227,6 @@ module.exports.getCoinData = async (symbol) => {
 
 
 }
-
 module.exports.getTradingHistory = async (id, symbol) => {
 
     try {
@@ -238,9 +243,7 @@ module.exports.getTradingHistory = async (id, symbol) => {
 
 
 }
-
-
-module.exports.getMyTradingStats= async(userId)=>{
+module.exports.getMyTradingStats = async (userId) => {
 
     try {
         const trades = await tradeModel.find({ user: userId }).populate('portfolio');
@@ -296,17 +299,17 @@ module.exports.getMyTradingStats= async(userId)=>{
             .sort((a, b) => b.trades - a.trades)
             .slice(0, 5);
 
-        return  {
-                totalTrades,
-                totalInvested: Number(totalInvested.toFixed(2)),
-                totalProfitLoss: Number(totalProfitLoss.toFixed(2)),
-                profitLossPercentage,
-                averageTradeSize,
-                largestGain: Number(largestGain.toFixed(2)),
-                largestLoss: Number(largestLoss.toFixed(2)),
-                mostTradedAssets,
-            }
-        
+        return {
+            totalTrades,
+            totalInvested: Number(totalInvested.toFixed(2)),
+            totalProfitLoss: Number(totalProfitLoss.toFixed(2)),
+            profitLossPercentage,
+            averageTradeSize,
+            largestGain: Number(largestGain.toFixed(2)),
+            largestLoss: Number(largestLoss.toFixed(2)),
+            mostTradedAssets,
+        }
+
 
     } catch (error) {
         console.error('Error in getMyTradingStats:', error);
@@ -316,16 +319,15 @@ module.exports.getMyTradingStats= async(userId)=>{
 
 
 }
+module.exports.buyAssets = async (payload) => {
+    const { symbol, assetName, quantity, price, notes, userId } = payload
 
- module.exports.buyAssets= async (payload) => {
-    const { symbol, assetName, quantity, price, notes ,userId} = payload
-    
     const tradeType = 'buy';
     const fees = 0.005 * (quantity * price);
-    
+
     try {
-        const imageURL= await getImages(assetName);
-        
+        const imageURL = await getImages(assetName);
+
         let portfolio = await portfolioModel.findOne({ user: userId });
         const user = await userModel.findById(userId);
 
@@ -358,16 +360,16 @@ module.exports.getMyTradingStats= async(userId)=>{
         user.balance -= trade.netAmount;
         user.trades.push(trade._id);
         await user.save();
-        
 
-        portfolio.upsertAsset(symbol, assetName, quantity, price,imageURL);
+
+        portfolio.upsertAsset(symbol, assetName, quantity, price, imageURL);
 
         await portfolio.updatePrices(getStockQuote); // or update manually if no price API
         portfolio.calculateValue(); // recalculates P&L
         await portfolio.save();
 
 
-       return {
+        return {
             message: 'Trade executed successfully',
             trade,
             balance: user.balance,
@@ -384,17 +386,17 @@ module.exports.getMyTradingStats= async(userId)=>{
 
     } catch (error) {
         console.error('Buy asset error:', error);
-        
+
     }
- }
- module.exports.sellAssets= async (payload) => {
-    const { symbol, assetName, quantity, price, notes ,userId} = payload
-    
+}
+module.exports.sellAssets = async (payload) => {
+    const { symbol, assetName, quantity, price, notes, userId } = payload
+
     const tradeType = 'sell';
     const fees = 0.005 * (quantity * price);
-    
+
     try {
-        const imageURL= await getImages(assetName);
+        const imageURL = await getImages(assetName);
 
         const user = await userModel.findById(userId);
         let portfolio = await portfolioModel.findOne({ user: userId });
@@ -449,41 +451,5 @@ module.exports.getMyTradingStats= async(userId)=>{
     } catch (error) {
         console.error('Sell asset error:', error);
     }
- }
- const getImages = async (symbol) => {
-    // console.log(symbol)
-
-    if (!symbol) return
-    try {
-        const response = await axios.get(
-            `https://api.coingecko.com/api/v3/coins/${symbol}`,
-            {
-                headers: {
-                    accept: 'application/json',
-                    'x-cg-demo-api-key': process.env.COINGEKO_API // Replace with your actual CoinGecko key
-                },
-                params: {
-
-                    localization: false,
-                    tickers: false,
-                    market_data: false,
-                    community_data: false,
-                    developer_data: false,
-                    sparkline: false
-                },
-            }
-        );
-
-
-        return response.data.image;
-
-
-    } catch (error) {
-        console.log(error, "error during fetching images ")
-    }
-
-
-
-
-
 }
+

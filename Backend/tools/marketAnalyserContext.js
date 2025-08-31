@@ -1,4 +1,4 @@
-const { getCoinMarkets, getTrendingCoins, getFilteredGlobalMarketData, fetchCryptoData, fetchTicker, fetchOHLC } = require("../services/ai.service");
+const { getCoinMarkets, getTrendingCoins, getFilteredGlobalMarketData, fetchCryptoData, fetchTicker, fetchOHLC } = require("../utils/aiServicesFunc");
 const tavilyService = require("../services/tailvy.service");
 const { safeSend } = require("../utils/webSocketfunc");
 

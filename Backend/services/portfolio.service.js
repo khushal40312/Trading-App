@@ -1,37 +1,64 @@
 const portfolioModel = require('../models/portfolio.model');
-const blacklistTokenModel = require('../models/blacklistToken.model');
 const axios = require('axios');
-const API_KEY = process.env.FINNHUB_API;
-const COINMARKETCAP_API_KEY = 'a9bd5d89-f8cd-4a2c-af0b-9de77d9c5a55';
+
 
 
 module.exports.findPortfolio = async (userId) => {
-
   return await portfolioModel.findOne({ user: userId })
-
 }
-
-
-
 
 module.exports.getCryptoTrendingPortfolio = async () => {
   try {
-    const { data } = await axios.get('https://api.coingecko.com/api/v3/search/trending')
+    // 1. Get trending coins from Coingecko
+    const { data } = await axios.get(
+      "https://api.coingecko.com/api/v3/search/trending"
+    );
 
+    // 2. Get all coins from Bitget
+    const bitgetRes = await axios.get(
+      "https://api.bitget.com/api/v2/spot/public/coins"
+    );
 
-    return data;
+    // Extract only coin symbols from Bitget response
+    const bitgetCoins = new Set(bitgetRes.data.data.map(item => item.coin.toUpperCase()));
+    console.log(bitgetCoins)
+    console.log(data.coins)
+    // 3. Filter trending coins that also exist in Bitget
+    const filteredTrending = data.coins
+      .filter(item => bitgetCoins.has(item.item.symbol.toUpperCase()))
+      .map(item => ({
+        item: {
+          id: item.item.id,
+          coin_id: item.item.coin_id,
+          name: item.item.name,
+          symbol: item.item.symbol,
+          market_cap_rank: item.item.market_cap_rank,
+          thumb: item.item.thumb,
+          small: item.item.small,
+          large: item.item.large,
+          slug: item.item.slug,
+          price_btc: item.item.price_btc,
+          data: {
+            price_change_percentage_24h: {
+              usd: item.item.data.price_change_percentage_24h.usd,
+
+            },
+            price: item.item.data.price,
+            sparkline: item.item.data.sparkline,
+          },
+        }
+      }));
+
+    return filteredTrending;
   } catch (error) {
-    console.error('Error fetching trending cryptocurrencies:', error.message);
+    console.error("Error fetching trending cryptocurrencies:", error.message);
     return { error: true, message: error.message };
   }
 };
 
-
-
-
 module.exports.getCurrency = async (name) => {
 
-  try {  
+  try {
     const { data } = await axios.get(` https://v6.exchangerate-api.com/v6/${process.env.EXCHANGERATE_API_KEY}/pair/USD/${name}`)
 
     return data.conversion_rate;
@@ -40,6 +67,5 @@ module.exports.getCurrency = async (name) => {
 
   }
 }
-
 
 

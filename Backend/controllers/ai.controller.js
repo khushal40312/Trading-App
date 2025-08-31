@@ -3,7 +3,7 @@
 const redisClient = require('../config/redisClient.js');
 const { v4: uuidv4 } = require('uuid');
 const { tradingAgent } = require("../agents/tradingAgent");
-
+//This API section is only for testing the ai flow 
 module.exports.aiChat = async (req, res) => {
   try {
     const { message, sessionId } = req.body;
@@ -51,5 +51,7 @@ module.exports.aiChat = async (req, res) => {
     res.status(500).json({ error: "Something went wrong." });
   }
 };
+
+
 
 

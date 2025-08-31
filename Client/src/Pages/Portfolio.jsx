@@ -14,16 +14,18 @@ const Portfolio = () => {
   const [inrPrice, setinrPrice] = useState(0);
   const [currency, setCurrency] = useState(Cookies.get('currency'));
   const [balance, setBalance] = useState(0);
-  const theme = useSelector(store=>store.selectedTheme)
+  const [loadingStates, setLoadingStates] = useState({
 
 
+    balance: true,
+    portfolio: true,
+    assets: true,
+    summary: true
+  })
+
+  const theme = useSelector(store => store.selectedTheme)
   const navigate = useNavigate()
-
-
-
   useEffect(() => {
-
-
     if (!token) return;
 
     const fetchUserBalance = async () => {
@@ -33,58 +35,47 @@ const Portfolio = () => {
             Authorization: `Bearer ${token}`
           }
         })
-
         setBalance(response.data.balance)
       } catch (error) {
-
-
         console.error(error)
-                       handleSessionError(error, navigate);
-       
+        handleSessionError(error, navigate);
+      } finally {
+
+        setLoadingStates(prev => ({ ...prev, balance: false }))
+
       }
     }
-
     fetchUserBalance()
 
 
     const getCurrencyRates = async (name) => {
       if (name !== 'INR') return
-
       try {
         const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/get-currency/${name}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         })
-
         setinrPrice(response.data.price)
       } catch (error) {
         console.error(error)
-                        handleSessionError(error, navigate);
-        
+        handleSessionError(error, navigate);
       }
     }
-    
-
     getCurrencyRates('INR')
-
-  
-
-   
-
-}, [navigate, token])
+  }, [navigate, token])
 
 
-return (
-  <>
-    <div className={`h-[108vh] overflow-y-auto w-full  ${theme === 'light' ? 'bg-gradient-to-r from-green-400 via-green-400 to-green-800 ' : 'bg-gradient-to-r from-zinc-900 via-gray-800 to-stone-900'} `}>
+  return (
+    <>
+      <div className={`h-[108vh] overflow-y-auto w-full  ${theme === 'light' ? 'bg-gradient-to-r from-green-400 via-green-400 to-green-800 ' : 'bg-gradient-to-r from-zinc-900 via-gray-800 to-stone-900'} `}>
 
-      <AnalysisSection setBalance={setBalance} balance={balance} inrPrice={inrPrice} currency={currency} setCurrency={setCurrency} />
-      <AssetSection inrPrice={inrPrice} currency={currency} balance={balance} />
-    </div>
-    <Navbar />
-  </>
-)
+        <AnalysisSection setLoadingStates={setLoadingStates} loadingStates={loadingStates} setBalance={setBalance} balance={balance} inrPrice={inrPrice} currency={currency} setCurrency={setCurrency} />
+        <AssetSection setLoadingStates={setLoadingStates} loadingStates={loadingStates} inrPrice={inrPrice} currency={currency} balance={balance} />
+      </div>
+      <Navbar />
+    </>
+  )
 }
 
 export default Portfolio

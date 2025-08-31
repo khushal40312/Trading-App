@@ -6,20 +6,20 @@ const blacklistTokenModel = require("./models/blacklistToken.model");
 // 🔑 Store active connections mapped by userId
 const clients = new Map();
 
-function initWSServerForNotification(server) {
-  const wss = new WebSocket.Server({ server, path: "/notification" });
+function initWSServerForNotification(wss) {
 
   wss.on("connection", (ws, req) => {
     ws.connectedAt = Date.now();
 
     // 🔐 Authenticate immediately on connection
     const token = req.url.split("token=")[1]; // if token is passed as query param
+    
     if (!token) {
       ws.send(JSON.stringify({ event: "error", message: "Unauthorized: Token missing" }));
       return ws.close();
     }
 
-    const pureToken = token.startsWith("Bearer ") ? token.split(" ")[1] : token;
+    const pureToken = token.startsWith("Bearer") ? token.split("Bearer%20")[1] : token;
 
     (async () => {
       try {

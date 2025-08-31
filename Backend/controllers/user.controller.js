@@ -97,7 +97,6 @@ module.exports.getUserProfile = async (req, res) => {
         res.status(500).json({ error: 'Something went wrong' });
     }
 };
-
 module.exports.logoutUser = async (req, res, next) => {
 
     const token = req.params.token; // normalize to uppercase
@@ -191,8 +190,6 @@ module.exports.getUserBalance = async (req, res) => {
 
 
 }
-
-
 module.exports.updateProfileIMG = async (req, res) => {
     try {
         if (!req.file) {
@@ -215,7 +212,6 @@ module.exports.updateProfileIMG = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
 module.exports.sendOTP = async (req, res) => {
 
     const { email } = req.body;

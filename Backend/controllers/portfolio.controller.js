@@ -1,4 +1,3 @@
-const { validationResult } = require('express-validator');
 const portfolioService = require('../services/portfolio.service.js');
 const portfolioModel = require('../models/portfolio.model.js');
 const getStockQuote = require('../getStockQuote.js');
@@ -45,7 +44,6 @@ module.exports.getUserParticularAssets = async (req, res) => {
 
       res.status(200).json({
         asset: {
-
           quantity: 0
         }
       })
@@ -152,7 +150,6 @@ module.exports.getDashboardStocks = async (req, res) => {
     res.status(500).json({ message: 'Error fetching stock data', error: err.message });
   }
 };
-
 module.exports.getCurrencyRates = async (req, res) => {
   const name = req.params.name.toUpperCase();
  

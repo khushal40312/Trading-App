@@ -1,5 +1,4 @@
 const userModel = require('../models/user.model')
-const { default: axios } = require("axios");
 const nodemailer = require('nodemailer');
 const redisClient = require('../config/redisClient');
 function generateOTP() {

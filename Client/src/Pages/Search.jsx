@@ -9,7 +9,27 @@ import Navbar from '../Components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import { selectedTokenAction } from '../store/seletedTokenSlice';
 
+const AssetListSkeleton = () => (
+    <div className="flex items-center mt-3 p-4 border border-gray-600 bg-black/20 backdrop-blur-xs rounded-lg animate-pulse overflow-y-auto ">
+      <div className="space-y-3 w-full  ">
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
 
+
+
+      </div>
+    </div>
+  )
 const Search = () => {
     const [input, setInput] = useState('');
     const [suggestions, setSuggestions] = useState({});
@@ -110,9 +130,10 @@ const Search = () => {
             {input.length === 0 && <div className="p-2  w-full h-screen overflow-y-auto space-y-4">
                 <h2 className='text-white font-bold text-sm'>Top Searches</h2>
                 {loading2 ? (
-                    <Skeleton count={10} height={40} containerClassName="space-y-3" />
+                                        <AssetListSkeleton />
+
                 ) : (
-                    trendingSearch?.coins?.map((item) => (
+                    trendingSearch?.map((item) => (
                         <div onClick={() => findToken(item.item.symbol, {coingeckoId:item.item.id,
                             image:item.item.thumb,name:item.item.name,symbol:item.item.symbol,
                             source:item.item.slug
@@ -135,7 +156,7 @@ const Search = () => {
             </div>}
             {loading ? (
                 <div className="p-2  w-full h-screen">
-                    <Skeleton count={10} height={40} containerClassName="space-y-3" />
+                    <AssetListSkeleton />
                 </div>
 
             ) : (input.length !=0 && <div className="p-2  w-full h-screen">

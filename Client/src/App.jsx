@@ -1,10 +1,10 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react'
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { Route, Routes, useNavigate } from 'react-router-dom'
 import Start from './Pages/Start'
 import Loading from './Components/Loading'
 import Login from './Pages/Login'
 import Register from './Pages/Register'
-import { ToastContainer } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import { useDispatch, useSelector } from 'react-redux'
 import Home from './Pages/Home'
 import NotFound from './Pages/NotFound'
@@ -22,22 +22,71 @@ import useNetworkStatus from './Hooks/useNetworkStatus'
 import { RiSignalWifiOffLine } from "react-icons/ri";
 import PrivateRoute from './Components/PrivateRoute';
 import PublicRoute from './Components/PublicRoute';
-import TradeX from './Pages/TradePreview'
+import TradeX from './Pages/TradeXavier'
+import { pendingAction } from './store/pendingTrade'
+import { playNotificationSound } from './Functions/PlaySound'
 function App() {
   const [isOnline, setIsOnline] = useState(true);
   const token = localStorage.getItem("token");
+  const wsRef = useRef(null);
 
- 
   const navigate = useNavigate();
   const dispatch = useDispatch()
   const isOnlineHook = useNetworkStatus();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      console.error("No token found. User must log in.");
+      return;
+    }
+
+    // 🔗 Connect to WebSocket server
+    const ws = new WebSocket(
+      `${import.meta.env.VITE_WS_URL}/notification?token=Bearer ${token}`
+    );
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.info("✅ WebSocket connected");
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.info("📩 WS Message:", data);
+
+        if (data.event === "notification") {
+          dispatch(pendingAction.removePendingTrade(data._id));
+          toast.info(data.message)
+          playNotificationSound()
+
+        } else if (data.event === "error") {
+          console.error("❌ WS Error:", data.message);
+        }
+      } catch (err) {
+        console.error("Failed to parse WS message:", err);
+      }
+    };
+
+    ws.onclose = () => {
+      console.info("🔌 WebSocket disconnected");
+    };
+
+    // 🔄 Cleanup on unmount
+    return () => {
+      ws.close();
+    };
+  }, []);
+
   async function checkApiStatus() {
     try {
       const response = await fetch(import.meta.env.VITE_BASE_URL, { method: 'GET', cache: 'no-cache' });
-      setIsOnline(true);
+      setIsOnline(response.ok);
 
     } catch (error) {
-      setIsOnline(true);
+      setIsOnline(false);
     }
   }
   useEffect(() => {
@@ -128,7 +177,7 @@ function App() {
             </Route>
 
             <Route element={<PrivateRoute />}>
-            <Route path="/gg" element={<TradeX />} />
+              <Route path="/tradexavier" element={<TradeX />} />
 
               <Route path="/home" element={<Home />} />
               <Route path="/portfolio" element={<Portfolio />} />

@@ -97,7 +97,7 @@ const TradeX = () => {
     setConnectionStatus('connecting');
 
     // Replace with your actual WebSocket URL
-    const wsUrl = `${import.meta.env.VITE_WS_URL}`;
+    const wsUrl = `${import.meta.env.VITE_WS_URL}/ai`;
     wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {

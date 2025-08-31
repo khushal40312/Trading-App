@@ -16,7 +16,6 @@ import PendingTradeHistory from '../Components/PendingTradesHistory';
 const Trade = () => {
   const [selectedSide, setSelectedSide] = useState('buy');
   const [lastTrade, setLastTrade] = useState('buy');
-
   const [tempTokenInfo, setTempTokenInfo] = useState({});
   const [recentTrades, setRecentTrades] = useState([]);
   const [showTradeHistory, setshowTradeHistory] = useState(false);
@@ -92,8 +91,7 @@ const Trade = () => {
 
 
   useEffect(() => {
-    // if (!tradecoin)
-    return 'test';
+    if (!tradecoin) return 
 
     const socket = new WebSocket('wss://ws.bitget.com/v2/ws/public');
 

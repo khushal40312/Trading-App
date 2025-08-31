@@ -4,8 +4,19 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { handleSessionError } from '../Functions/HandleSessionError'
 import { formatPrice } from '../Functions/FormatPrice';
+const AssetListSkeleton = () => (
+    <div className="flex items-center mt-3 p-4 border border-gray-600 bg-black/20 backdrop-blur-xs rounded-lg animate-pulse overflow-y-auto ">
+      <div className="space-y-3 w-full  ">
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
+        <div className="h-8 bg-gray-700 rounded w-full"></div>
 
-const AssetSection = ({ inrPrice, currency, balance }) => {
+      </div>
+    </div>
+  )
+const AssetSection = ({ inrPrice, currency, balance,setLoadingStates,loadingStates }) => {
     const [Assets, setAssets] = useState([]);
     const navigate = useNavigate()
     const token = localStorage.getItem('token')
@@ -34,7 +45,9 @@ const AssetSection = ({ inrPrice, currency, balance }) => {
                     localStorage.removeItem('token');
                     navigate('/session-expired');
                 }
-            }
+            }finally {
+                setLoadingStates(prev => ({ ...prev, assets: false }))
+              }
           
 
 
@@ -68,7 +81,9 @@ const AssetSection = ({ inrPrice, currency, balance }) => {
 
 
             <h2 className='text-white font-bold text-sm px-2'>Assets</h2>
-            <div className="  w-full h-[40vh]  overflow-y-auto space-y-4  bg-black/40 px-1 rounded ">
+            {loadingStates.assets ? (
+        <AssetListSkeleton />
+      ) : (  <div className="  w-full h-[40vh]  overflow-y-auto space-y-4  bg-black/40 px-1 rounded ">
 
 
                 {Assets?.map((item) => (<div key={item._id} className="flex items-center my-3 py-2 bg-black  border border-black/30 rounded-xl cursor-pointer active:border-green-500 transition justify-between px-2">
@@ -99,7 +114,7 @@ const AssetSection = ({ inrPrice, currency, balance }) => {
                 </div>))}
 
 
-            </div>
+            </div>)}
 
 
 
