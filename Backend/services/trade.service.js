@@ -4,229 +4,98 @@ const portfolioModel = require('../models/portfolio.model')
 const userModel = require('../models/user.model');
 const getStockQuote = require("../getStockQuote");
 const { getImages } = require("../utils/tradeServicesFunc");
+const { getCoinMarkets } = require("../utils/aiServicesFunc");
+
+async function getCoinMarketsByName(options = {}) {
+    if (!options.vs_currency) {
+        throw new Error("vs_currency is required (e.g. 'usd')");
+    }
+
+    try {
+        const response = await axios.get("https://api.coingecko.com/api/v3/coins/markets", {
+            headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY },
+            params: {
+                vs_currency: options.vs_currency,
+                names: options.name,
+                category: options.category,
+                sparkline: options.sparkline || false,
+                price_change_percentage: options.price_change_percentage,
+                locale: options.locale || "en",
+                precision: options.precision || "full",
+            },
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching market data:", error.response?.data || error.message);
+        throw error;
+    }
+}
 
 
 
 
 module.exports.getSuggestion = async (input) => {
-    try {
-        const bitgetRes = await axios.get("https://api.bitget.com/api/v2/spot/public/coins"); 
-        const bitgetCoins = bitgetRes.data.data;
-        // const filtered = bitgetRes.data.data.map(item => ({
-        //     coin: item.coin,
-        //     chains: item.chains.map(c => ({
-        //         contractAddress: c.contractAddress
-        //     })),
+    console.log(input)
+  try {
+    const bitgetRes = await axios.get(
+      "https://api.bitget.com/api/v2/spot/public/coins"
+    );
 
-        // }));
-        const upper = input.toUpperCase();
-        const lower = input.toLowerCase();
+    const upper = input.toUpperCase();
+    const bitgetCoins = new Set(
+      bitgetRes.data.data.map((item) => item.coin.toUpperCase())
+    );
 
-        const match = bitgetCoins.find(
-            (coin) => coin.coin.toLowerCase() === lower
-        );
-        if (!match) {
-            return { error: `Coin "${input}" not found in Bitget.` };
-        }
+    // Helper to transform market data into a unified response
+    const buildResponse = (info) => {
+      const symbolUpper = info.symbol.toUpperCase();
+      if (!bitgetCoins.has(symbolUpper)) return null;
 
-        const chain = match.chains?.find((c) => !!c.contractAddress); // get any chain with contract
-        // Try contract-based lookup first if available
-        if (chain?.contractAddress) {
-            const network = chain.chain.toLowerCase(); // e.g. ETH, BSC, BASE, etc.
-            const contract = chain.contractAddress;
+      return {
+        name: info.name,
+        symbol: info.symbol,
+        bitgetSymbol: symbolUpper,
+        coingeckoId: info.id,
+        image: info.image,
+        current_price: info.current_price,
+        price_change_percentage_24h: info.price_change_percentage_24h,
+      };
+    };
 
-            try {
-                const tokenInfoRes = await axios.get(
-                    `https://api.coingecko.com/api/v3/onchain/networks/${network}/tokens/${contract}/info`,
-                    {
-                        headers: {
-                            accept: 'application/json',
-                            'x-cg-demo-api-key': process.env.COINGECKO_API_KEY,
-                        },
-                    }
-                );
+    // First, try by symbol
+    const marketData = await getCoinMarkets({
+      vs_currency: "usd",
+      sparkline: false,
+      price_change_percentage: "1h",
+      symbols: input,
+    });
 
-
-                const info = tokenInfoRes.data.data?.attributes;
-
-                return {
-                    name: info.name,
-                    symbol: info.symbol,
-                    bitgetSymbol: match.symbol,
-                    coingeckoId: info.coingecko_coin_id,
-                    image: info.image?.large || info.image_url,
-                    description: info.description,
-                    source: "coingecko_onchain",
-
-                };
-            } catch (contractErr) {
-                console.warn(`Fallback to search: ${contractErr.message}`);
-            }
-        }
-
-        // Fallback to search by symbol if contract-based lookup failed
-        const geckoRes = await axios.get("https://api.coingecko.com/api/v3/search", {
-            params: { query: match.coin },
-            headers: {
-                accept: 'application/json',
-                'x-cg-demo-api-key': process.env.COINGECKO_API_KEY,
-            },
-        });
-
-        const matchedGecko = geckoRes.data.coins.find(
-            (c) => c.symbol.toLowerCase() === match.coin.toLowerCase()
-        );
-
-        if (!matchedGecko) {
-            return {
-                name: match.name,
-                symbol: match.coin,
-                bitgetSymbol: match.symbol,
-                coingecko: null,
-                image: null,
-                source: "bitget_only",
-            };
-        }
-
-        return {
-            name: matchedGecko.name,
-            symbol: matchedGecko.symbol.toUpperCase(),
-            bitgetSymbol: match.symbol,
-            coingeckoId: matchedGecko.id,
-            image: matchedGecko.large,
-            source: "coingecko_search",
-        };
-    } catch (err) {
-        console.error("Error in getSuggestion:", err.message);
-        return { error: true, message: err.message };
+    if (marketData?.length > 0) {
+      const result = buildResponse(marketData[0]);
+      if (result) return result;
     }
+
+    // Fallback: try by name
+    const marketDataByName = await getCoinMarketsByName({
+      vs_currency: "usd",
+      sparkline: false,
+      price_change_percentage: "1h",
+      names: input,
+    });
+
+    if (marketDataByName?.length > 0) {
+      const result = buildResponse(marketDataByName[0]);
+      if (result) return result;
+    }
+
+    return []; // nothing matched
+  } catch (error) {
+    console.error("Error fetching suggestion:", error.message);
+    return [];
+  }
 };
 
-module.exports.getCandlesfromCoingeko = async (payload) => {
-    const { coingeckoId, days } = payload;
-    try {
-        const response = await axios.get(
-            `https://api.coingecko.com/api/v3/coins/${coingeckoId}/ohlc?vs_currency=usd&days=${days}`,
-            {
-                headers: {
-                    accept: 'application/json',
-                    'x-cg-demo-api-key': process.env.COINGEKO_API // Replace with your actual CoinGecko key
-                }
-            }
-        );
-
-        return response.data
-
-
-    } catch (error) {
-        console.log(error, "error during fetching CK candles ")
-    }
-
-
-
-
-
-}
-module.exports.getCandlesfromBitget = async (payload) => {
-
-    const { symbol, interval, startTime, endTime } = payload;
-    try {
-        const response = await axios.get(
-            `https://api.bitget.com/api/v2/spot/market/candles`,
-            {
-
-                params: {
-                    symbol: `${symbol}USDT`,
-                    granularity: interval,
-                    startTime,
-                    endTime,
-                    limit: 100,
-                },
-            }
-        );
-
-
-        return response.data.data;
-
-
-    } catch (error) {
-        console.log(error, "error during fetching BG candles ")
-    }
-}
-// module.exports.getImages = async (symbol) => {
-//     // console.log(symbol)
-
-//     if (!symbol) return
-//     try {
-//         const response = await axios.get(
-//             `https://api.coingecko.com/api/v3/coins/${symbol}`,
-//             {
-//                 headers: {
-//                     accept: 'application/json',
-//                     'x-cg-demo-api-key': process.env.COINGEKO_API // Replace with your actual CoinGecko key
-//                 },
-//                 params: {
-
-//                     localization: false,
-//                     tickers: false,
-//                     market_data: false,
-//                     community_data: false,
-//                     developer_data: false,
-//                     sparkline: false
-//                 },
-//             }
-//         );
-
-
-//         return response.data.image;
-
-
-//     } catch (error) {
-//         console.log(error, "error during fetching images ")
-//     }
-
-
-
-
-
-// }
-module.exports.getCoinData = async (symbol) => {
-    // console.log(symbol)
-
-    if (!symbol) return
-    try {
-        const response = await axios.get(
-            `https://api.coingecko.com/api/v3/coins/${symbol}`,
-            {
-                headers: {
-                    accept: 'application/json',
-                    'x-cg-demo-api-key': process.env.COINGEKO_API // Replace with your actual CoinGecko key
-                },
-                params: {
-
-                    localization: false,
-                    tickers: false,
-                    market_data: false,
-                    community_data: false,
-                    developer_data: false,
-                    sparkline: false
-                },
-            }
-        );
-
-
-        return response.data;
-
-
-    } catch (error) {
-        console.log(error, "error during fetching data ")
-    }
-
-
-
-
-
-}
 module.exports.getTradingHistory = async (id, symbol) => {
 
     try {

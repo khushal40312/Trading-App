@@ -11,7 +11,13 @@ module.exports.getCryptoTrendingPortfolio = async () => {
   try {
     // 1. Get trending coins from Coingecko
     const { data } = await axios.get(
-      "https://api.coingecko.com/api/v3/search/trending"
+      "https://api.coingecko.com/api/v3/search/trending", {
+        headers: {
+          'Accept': 'application/json',
+          'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
+        },
+      timeout: 30000
+    }
     );
 
     // 2. Get all coins from Bitget
@@ -21,8 +27,6 @@ module.exports.getCryptoTrendingPortfolio = async () => {
 
     // Extract only coin symbols from Bitget response
     const bitgetCoins = new Set(bitgetRes.data.data.map(item => item.coin.toUpperCase()));
-    console.log(bitgetCoins)
-    console.log(data.coins)
     // 3. Filter trending coins that also exist in Bitget
     const filteredTrending = data.coins
       .filter(item => bitgetCoins.has(item.item.symbol.toUpperCase()))

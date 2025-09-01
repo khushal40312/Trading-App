@@ -167,8 +167,10 @@ const Search = () => {
                         
                         <div className='flex justify-between w-full items-center'>
 
-                        <h4 className="font-medium text-white">{suggestions?.symbol || 'Unknown Token'}</h4>
-                        <p className='bg-[#21b121] text-center  rounded font-bold text-sm text-white p-2 '>{suggestions?.name} </p>
+                        <h4 className="font-medium text-white">{suggestions?.name || 'Unknown Token'}</h4>
+                        <h4 className="font-medium text-gray-300">{suggestions?.current_price?.toFixed(4) || 'Unknown Token'}</h4>
+
+                        <p className='bg-[#21b121] text-center  rounded font-bold text-sm text-white p-2 '>{suggestions?.price_change_percentage_24h?.toFixed(2)}% </p>
                         </div>
                        
                     </div>

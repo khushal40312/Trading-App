@@ -328,41 +328,61 @@ async function fetchTicker(coinId) {
 
 async function getTrendingCoins() {
     try {
-        const response = await axios.get('https://api.coingecko.com/api/v3/search/trending', {
+        const { data } = await axios.get(
+            "https://api.coingecko.com/api/v3/search/trending", {
             headers: {
                 'Accept': 'application/json',
                 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
             },
             timeout: 30000
-        });
-
-        // Extract coins array and simplify price_change_percentage_24h to only include USD
-        const coins = response.data.coins
-            .slice(0, 7) // ✅ only keep top 7 items
-            .map(coinData => {
-                const coin = { ...coinData };
-
-                // Only keep USD from price_change_percentage_24h if it exists
-                if (coin.item.data && coin.item.data.price_change_percentage_24h) {
-                    coin.item.data.price_change_percentage_24h = {
-                        usd: coin.item.data.price_change_percentage_24h.usd
-                    };
-                }
-
-                return coin;
-            });
-
-        return coins;
-
-    } catch (error) {
-        if (error.response) {
-            throw new Error(`CoinGecko API Error: ${error.response.status} - ${error.response.data?.error || error.response.statusText}`);
-        } else if (error.request) {
-            throw new Error('Network error: Unable to reach CoinGecko API');
-        } else {
-            throw new Error(`Error: ${error.message}`);
         }
+        );
+
+        // 2. Get all coins from Bitget
+        const bitgetRes = await axios.get(
+            "https://api.bitget.com/api/v2/spot/public/coins"
+        );
+
+        // Extract only coin symbols from Bitget response
+        const bitgetCoins = new Set(bitgetRes.data.data.map(item => item.coin.toUpperCase()));
+        // 3. Filter trending coins that also exist in Bitget
+        const filteredTrending = data.coins
+            .filter(item => bitgetCoins.has(item.item.symbol.toUpperCase()))
+            .map(item => ({
+                item: {
+                    id: item.item.id,
+                    coin_id: item.item.coin_id,
+                    name: item.item.name,
+                    symbol: item.item.symbol,
+                    market_cap_rank: item.item.market_cap_rank,
+                    thumb: item.item.thumb,
+                    small: item.item.small,
+                    large: item.item.large,
+                    slug: item.item.slug,
+                    price_btc: item.item.price_btc,
+                    data: {
+                        price_change_percentage_24h: {
+                            usd: item.item.data.price_change_percentage_24h.usd,
+
+                        },
+                        price: item.item.data.price,
+                        sparkline: item.item.data.sparkline,
+                    },
+                }
+            }));
+           const coins = filteredTrending
+            .slice(0, 7)
+           return coins;
+
+} catch (error) {
+    if (error.response) {
+        throw new Error(`CoinGecko API Error: ${error.response.status} - ${error.response.data?.error || error.response.statusText}`);
+    } else if (error.request) {
+        throw new Error('Network error: Unable to reach CoinGecko API');
+    } else {
+        throw new Error(`Error: ${error.message}`);
     }
+}
 }
 
 
@@ -421,4 +441,4 @@ async function getFilteredGlobalMarketData() {
 
 
 
-module.exports = { getMarketSentiment,getRiskProfile,getPendingTradesFromDB,executeBuyAsset,executeSellAsset,getCoinMarkets,fetchOHLC ,fetchCryptoData,fetchTicker,getTrendingCoins,getFilteredGlobalMarketData}
+module.exports = { getMarketSentiment, getRiskProfile, getPendingTradesFromDB, executeBuyAsset, executeSellAsset, getCoinMarkets, fetchOHLC, fetchCryptoData, fetchTicker, getTrendingCoins, getFilteredGlobalMarketData }
