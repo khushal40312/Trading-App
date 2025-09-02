@@ -30,8 +30,10 @@ const tradingInputClassifierTool = {
     `;
 
     const result = await analyzeModel(classificationPrompt);
-    let parsed = JSON.parse(result)
-    return parsed;
+    const cleaned = result.content.replace(/```json|```/g, '').trim();
+    const jsonObject = JSON.parse(cleaned);
+    console.log(jsonObject)
+    return jsonObject;
 
   }
 

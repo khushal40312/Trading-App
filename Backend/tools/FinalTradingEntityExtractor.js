@@ -79,11 +79,13 @@ const finalTradeExtractorTool = {
     `;
 
     const result = await analyzeModel(Prompt);
-    let parsedResult = JSON.parse(result)
-   
+    const cleaned = result.content.replace(/```json|```/g, '').trim();
+    const jsonObject = JSON.parse(cleaned);
+    console.log(jsonObject)
+
     
     const oldMemory = parsed.interaction;
-    return { jsonObject:parsedResult, oldMemory };
+    return { jsonObject, oldMemory };
   }
 };
 

@@ -52,9 +52,12 @@ const extractTradingEntities = {
     Cached Trades(need Confirmation):${JSON.stringify(oldTrades, null, 2)}
     `;
     const result = await analyzeModel(extractionPrompt);
-    let parsed = JSON.parse(result)
-   console.log(parsed)
-    return parsed;
+    console.log(result)
+    const cleaned = result.content.replace(/```json|```/g, '').trim();
+    const jsonObject = JSON.parse(cleaned);
+    console.log(jsonObject)
+
+    return jsonObject;
 
 
   }

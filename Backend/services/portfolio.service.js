@@ -32,14 +32,12 @@ module.exports.getCryptoTrendingPortfolio = async () => {
       .filter(item => bitgetCoins.has(item.item.symbol.toUpperCase()))
       .map(item => ({
         item: {
-          id: item.item.id,
-          coin_id: item.item.coin_id,
+          coingeckoId: item.item.id,
           name: item.item.name,
           symbol: item.item.symbol,
-          market_cap_rank: item.item.market_cap_rank,
-          thumb: item.item.thumb,
-          small: item.item.small,
-          large: item.item.large,
+          image: item.item.thumb,
+          // small: item.item.small,
+          // large: item.item.large,
           slug: item.item.slug,
           price_btc: item.item.price_btc,
           data: {
@@ -47,7 +45,7 @@ module.exports.getCryptoTrendingPortfolio = async () => {
               usd: item.item.data.price_change_percentage_24h.usd,
 
             },
-            price: item.item.data.price,
+            current_price: item.item.data.price,
             sparkline: item.item.data.sparkline,
           },
         }

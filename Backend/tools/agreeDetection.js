@@ -32,9 +32,12 @@ const AgreementDetector = {
         }
       `;
     const result = await analyzeModel(agreementPrompt);
-    let parsed = JSON.parse(result)
+    const cleaned = result.content.replace(/```json|```/g, '').trim();
+    const jsonObject = JSON.parse(cleaned);
+
+    return jsonObject;
    
-    return parsed;
+   
 
   }
 }

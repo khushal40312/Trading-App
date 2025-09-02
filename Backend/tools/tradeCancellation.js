@@ -1,4 +1,4 @@
-const { model } = require("../aiModel/gemini");
+const { model, analyzeModel } = require("../aiModel/gemini");
 const redisClient = require("../config/redisClient");
 const { getLatest3Interactions, getLatest3Trades } = require("../services/ai.service");
 const { safeSend } = require("../webServer");
@@ -46,7 +46,7 @@ const tradeCancellationResolverTool = {
       
     `;
 
-        const result = await model.invoke(prompt);
+        const result = await analyzeModel(prompt);
         const cleaned = result.content.replace(/```json|```/g, '').trim();
 
         let parsed;

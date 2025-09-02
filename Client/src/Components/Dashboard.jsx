@@ -220,7 +220,6 @@ const Dashboard = () => {
   }
 
   const displayList = stocks?.length === 0 ? trendingSearch : stocks
-
   const handleNoAsset = () => {
     navigate('/search')
   }
@@ -289,16 +288,16 @@ const Dashboard = () => {
               <div className='flex items-center gap-5 w-full m-1'>
               <img
                   className='w-7 h-7  rounded-2xl'
-                  src={crypto?.item?.thumb}
+                  src={crypto?.item?.image}
                   alt={crypto?.item?.symbol}
                 />
               <p className={`font-bold text-sm ${theme === 'light' ? 'text-black' : 'text-white'} text-center`}>
                   {crypto?.item?.symbol}
                 </p>
                 <h1 className='font-bold text-sm text-gray-200'>
-                  {crypto?.item?.data?.price.toString().startsWith('0.0')
-                    ? `${crypto.item.data.price.toFixed(5)}$`
-                    : `${crypto.item.data.price.toFixed(2)}$`}
+                  {crypto?.item?.data?.current_price.toString().startsWith('0.0')
+                    ? `${crypto.item.data.current_price.toFixed(5)}$`
+                    : `${crypto.item.data.current_price.toFixed(2)}$`}
                 </h1>
                 
                

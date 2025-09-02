@@ -13,7 +13,7 @@ const retrieveMemoryTool = {
             filter.type = dataType;
         }
 
-        const results = await vectorStore.similaritySearch(input, 3, filter);
+        const results = await vectorStore.similaritySearch(input, 1, filter);
 
         const memories = results
             .map((doc) => `🔹 ${doc.pageContent}`)

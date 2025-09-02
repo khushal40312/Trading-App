@@ -36,64 +36,67 @@ async function getCoinMarketsByName(options = {}) {
 
 
 module.exports.getSuggestion = async (input) => {
-    console.log(input)
-  try {
-    const bitgetRes = await axios.get(
-      "https://api.bitget.com/api/v2/spot/public/coins"
-    );
+    try {
+        const bitgetRes = await axios.get(
+            "https://api.bitget.com/api/v2/spot/public/coins"
+        );
 
-    const upper = input.toUpperCase();
-    const bitgetCoins = new Set(
-      bitgetRes.data.data.map((item) => item.coin.toUpperCase())
-    );
+        const upper = input.toUpperCase();
+        const bitgetCoins = new Set(
+            bitgetRes.data.data.map((item) => item.coin.toUpperCase())
+        );
 
-    // Helper to transform market data into a unified response
-    const buildResponse = (info) => {
-      const symbolUpper = info.symbol.toUpperCase();
-      if (!bitgetCoins.has(symbolUpper)) return null;
+        // Helper to transform market data into a unified response
+        const buildResponse = (info) => {
+            const symbolUpper = info.symbol.toUpperCase();
+            if (!bitgetCoins.has(symbolUpper)) return null;
 
-      return {
-        name: info.name,
-        symbol: info.symbol,
-        bitgetSymbol: symbolUpper,
-        coingeckoId: info.id,
-        image: info.image,
-        current_price: info.current_price,
-        price_change_percentage_24h: info.price_change_percentage_24h,
-      };
-    };
+            return {
+                name: info.name,
+                symbol: info.symbol,
+                bitgetSymbol: symbolUpper,
+                coingeckoId: info.id,
+                image: info.image,
+                data: {
 
-    // First, try by symbol
-    const marketData = await getCoinMarkets({
-      vs_currency: "usd",
-      sparkline: false,
-      price_change_percentage: "1h",
-      symbols: input,
-    });
+                    current_price: info.current_price,
 
-    if (marketData?.length > 0) {
-      const result = buildResponse(marketData[0]);
-      if (result) return result;
+                    price_change_percentage_24h: info.price_change_percentage_24h,
+                },
+            };
+        };
+
+        // First, try by symbol
+        const marketData = await getCoinMarkets({
+            vs_currency: "usd",
+            sparkline: false,
+            price_change_percentage: "1h",
+            symbols: input,
+        });
+
+        if (marketData?.length > 0) {
+            const result = buildResponse(marketData[0]);
+            if (result) return result;
+        }
+
+        // Fallback: try by name
+        const marketDataByName = await getCoinMarketsByName({
+            vs_currency: "usd",
+            sparkline: false,
+            price_change_percentage: "1h",
+            names: input,
+        });
+
+        if (marketDataByName?.length > 0) {
+            const result = buildResponse(marketDataByName[0]);
+            if (result) return result;
+        }
+
+        return []; // nothing matched
+    } catch (error) {
+        console.error("Error fetching suggestion:", error.message);
+        return [];
     }
-
-    // Fallback: try by name
-    const marketDataByName = await getCoinMarketsByName({
-      vs_currency: "usd",
-      sparkline: false,
-      price_change_percentage: "1h",
-      names: input,
-    });
-
-    if (marketDataByName?.length > 0) {
-      const result = buildResponse(marketDataByName[0]);
-      if (result) return result;
-    }
-
-    return []; // nothing matched
-  } catch (error) {
-    console.error("Error fetching suggestion:", error.message);
-    return [];
-  }
 };
 
 module.exports.getTradingHistory = async (id, symbol) => {
@@ -322,3 +325,186 @@ module.exports.sellAssets = async (payload) => {
     }
 }
 
+module.exports.getCandlesfromCoingeko = async (payload) => {
+    const { coingeckoId, days } = payload;
+    try {
+        const response = await axios.get(
+            `https://api.coingecko.com/api/v3/coins/${coingeckoId}/ohlc?vs_currency=usd&days=${days}`,
+            {
+                headers: {
+                    accept: 'application/json',
+                    'x-cg-demo-api-key': process.env.COINGEKO_API // Replace with your actual CoinGecko key
+                }
+            }
+        );
+
+        return response.data
+
+
+    } catch (error) {
+        console.log(error, "error during fetching CK candles ")
+    }
+
+
+
+
+
+}
+module.exports.getCandlesfromBitget = async (payload) => {
+
+    const { symbol, interval, startTime, endTime } = payload;
+    try {
+        const response = await axios.get(
+            `https://api.bitget.com/api/v2/spot/market/candles`,
+            {
+
+                params: {
+                    symbol: `${symbol}USDT`,
+                    granularity: interval,
+                    startTime,
+                    endTime,
+                    limit: 100,
+                },
+            }
+        );
+
+
+        return response.data.data;
+
+
+    } catch (error) {
+        console.log(error, "error during fetching BG candles ")
+    }
+}
+module.exports.getCoinData = async (symbol) => {
+    // console.log(symbol)
+
+    if (!symbol) return
+    try {
+        const response = await axios.get(
+            `https://api.coingecko.com/api/v3/coins/${symbol}`,
+            {
+                headers: {
+                    accept: 'application/json',
+                    'x-cg-demo-api-key': process.env.COINGEKO_API // Replace with your actual CoinGecko key
+                },
+                params: {
+
+                    localization: false,
+                    tickers: false,
+                    market_data: false,
+                    community_data: false,
+                    developer_data: false,
+                    sparkline: false
+                },
+            }
+        );
+
+
+        return response.data;
+
+
+    } catch (error) {
+        console.log(error, "error during fetching data ")
+    }
+
+
+
+
+
+}
+
+module.exports.getTradingHistory = async (id, symbol) => {
+
+    try {
+
+        const trades = await tradeModel.find({
+            user: id,
+            symbol: symbol
+        });
+        return trades;
+
+    } catch (error) {
+        console.log("error during fetching tradehistory", error)
+    }
+
+
+}
+
+
+module.exports.getMyTradingStats= async(userId)=>{
+
+    try {
+        const trades = await tradeModel.find({ user: userId }).populate('portfolio');
+
+        if (!trades || trades.length === 0) {
+            return res.status(200).json({ success: true, data: {} });
+        }
+
+        const buyTrades = trades.filter(t => t.tradeType === 'buy');
+        const sellTrades = trades.filter(t => t.tradeType === 'sell');
+
+        const totalTrades = trades.length;
+        const totalBuyTrades = buyTrades.length;
+        const totalSellTrades = sellTrades.length;
+
+        const totalInvested = trades.reduce((sum, t) => {
+            return t.tradeType === 'buy' ? sum + (t.totalAmount || (t.quantity * t.price)) : sum;
+        }, 0);
+
+        const totalRealized = trades.reduce((sum, t) => {
+            return t.tradeType === 'sell' ? sum + (t.totalAmount || (t.quantity * t.price)) : sum;
+        }, 0);
+
+        const totalProfitLoss = totalRealized - totalInvested;
+        const profitLossPercentage = totalInvested > 0
+            ? Number(((totalProfitLoss / totalInvested) * 100).toFixed(2))
+            : 0;
+
+        const winningTrades = trades.filter(t => t.tradeType === 'sell' && t.netAmount > t.totalAmount).length;
+        const winRate = Number(((winningTrades / totalTrades) * 100).toFixed(2));
+
+        const averageTradeSize = Number((
+            trades.reduce((sum, t) => sum + (t.totalAmount || (t.quantity * t.price)), 0) / totalTrades
+        ).toFixed(2));
+
+        const profitLossValues = trades
+            .filter(t => t.tradeType === 'sell')
+            .map(t => (t.netAmount || 0) - (t.totalAmount || (t.quantity * t.price)));
+
+        const largestGain = profitLossValues.length ? Math.max(...profitLossValues) : 0;
+        const largestLoss = profitLossValues.length ? Math.min(...profitLossValues) : 0;
+
+        const assetStats = {};
+        trades.forEach(t => {
+            if (!assetStats[t.symbol]) {
+                assetStats[t.symbol] = { symbol: t.symbol, trades: 0, totalAmount: 0 };
+            }
+            assetStats[t.symbol].trades += 1;
+            assetStats[t.symbol].totalAmount += (t.totalAmount || (t.quantity * t.price));
+        });
+
+        const mostTradedAssets = Object.values(assetStats)
+            .sort((a, b) => b.trades - a.trades)
+            .slice(0, 5);
+
+        return  {
+                totalTrades,
+                totalInvested: Number(totalInvested.toFixed(2)),
+                totalProfitLoss: Number(totalProfitLoss.toFixed(2)),
+                profitLossPercentage,
+                averageTradeSize,
+                largestGain: Number(largestGain.toFixed(2)),
+                largestLoss: Number(largestLoss.toFixed(2)),
+                mostTradedAssets,
+            }
+        
+
+    } catch (error) {
+        console.error('Error in getMyTradingStats:', error);
+
+    }
+
+
+
+}

@@ -1,14 +1,14 @@
 
 
 const getStockQuote = require('../getStockQuote')
-const  {retrieveMemoryTool}  = require("./retriveMemoryTool");
+const { retrieveMemoryTool } = require("./retriveMemoryTool");
 // const { getMarketSentiment, getRiskProfile } = require("../services/ai.service");
-const { getMarketSentiment,getRiskProfile } = require('../utils/aiServicesFunc');
+const { getMarketSentiment, getRiskProfile } = require('../utils/aiServicesFunc');
 const tradeServices = require('../services/trade.service')
 const {
-    
+
     findPortfolio
-  } = require("../services/ai.service");
+} = require("../services/ai.service");
 const extractTradingContext = {
     name: "extractTradingContext",
     description: "Extract Trading context",
@@ -28,7 +28,7 @@ const extractTradingContext = {
                 assetName
             };
 
-            
+            console.log(context)
             return context;
 
         } catch (error) {

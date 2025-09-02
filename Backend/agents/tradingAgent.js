@@ -17,7 +17,7 @@ const { marketAnalyserContext } = require("../tools/marketAnalyserContext");
 const { marketAnalysisGenerator } = require("../tools/marketAnalysisGenerator");
 // 1. Node function: classify
 const classifyNode = async (state) => {
- 
+
   try {
     const category = await classifyTool.func({
       input: state.input,
@@ -34,7 +34,8 @@ const classifyNode = async (state) => {
     return {
       ...state,
       category: "ERROR",
-      error: error.message
+      error: error.message,
+      reply: "Something Went Wrong try again Later..."
     };
   }
 };
@@ -54,7 +55,9 @@ const tradingInputClassifierNode = async (state) => {
     return {
       ...state,
       tradeClassification: { type: "ERROR" },
-      error: error.message
+      error: error.message,
+      reply: "Something Went Wrong try again Later..."
+
     };
   }
 };
@@ -74,7 +77,8 @@ const extractTradingEntitiesNode = async (state) => {
     return {
       ...state,
       entities: {},
-      error: error.message
+      error: error.message,
+
     };
   }
 };
@@ -146,7 +150,8 @@ const generateAIResponseNode = async (state) => {
   } catch (error) {
     return {
       ...state,
-      reply: { type: "ERROR" },
+      reply: "Something Went Wrong try again Later..."
+      ,
       error: error.message
     };
   }
@@ -167,7 +172,9 @@ const AgreementDetectorNode = async (state) => {
     return {
       ...state,
       agreeDetection: { type: "ERROR" },
-      error: error.message
+      error: error.message,
+      reply: "Something Went Wrong try again Later..."
+
     };
   }
 };
@@ -187,7 +194,9 @@ const finalTradeExtractorToolNode = async (state) => {
     return {
       ...state,
       finalJson: { type: "ERROR" },
-      error: error.message
+      error: error.message,
+      reply: "Something Went Wrong try again Later..."
+
     };
   }
 };
@@ -205,7 +214,8 @@ const tradeExecutionToolNode = async (state) => {
   } catch (error) {
     return {
       ...state,
-      reply: { type: "ERROR" },
+      reply: "Something Went Wrong try again Later..."
+      ,
       error: error.message
     };
   }
@@ -248,7 +258,8 @@ const unifiedTradeAssistantNode = async (state) => {
   } catch (error) {
     return {
       ...state,
-      reply: { type: "ERROR" },
+      reply:"Something Went Wrong try again Later..."
+      ,
       error: error.message
     };
   }
@@ -270,7 +281,8 @@ const tradeCancellationResolverNode = async (state) => {
   } catch (error) {
     return {
       ...state,
-      reply: { type: "ERROR" },
+      reply:"Something Went Wrong try again Later..."
+      ,
       error: error.message
     };
   }
@@ -291,7 +303,8 @@ const marketAnalysisAssistantNode = async (state) => {
   } catch (error) {
     return {
       ...state,
-      marketClassification: { type: "ERROR" },
+      reply:"Something Went Wrong try again Later..."
+      ,
       error: error.message
     };
   }
@@ -315,7 +328,8 @@ const marketAnalysisContextNode = async (state) => {
   } catch (error) {
     return {
       ...state,
-      marketClassificationContext: { type: "ERROR" },
+      reply:"Something Went Wrong try again Later..."
+      ,
       error: error.message
     };
   }
@@ -361,7 +375,7 @@ const marketAnalysisGeneratorNode = async (state) => {
   } catch (error) {
     return {
       ...state,
-      reply: { type: "ERROR" },
+      reply:"Something Went Wrong try again Later...",
       error: error.message
     };
   }
@@ -385,7 +399,7 @@ const graphBuilder = new StateGraph({
     tradeInfoClassification: "string",
     marketClassification: 'object',
     marketClassificationContext: 'object',
-    ws: "any" 
+    ws: "any"
   }
 });
 graphBuilder.addNode("classify", classifyNode);

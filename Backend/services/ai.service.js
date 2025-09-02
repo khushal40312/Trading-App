@@ -242,12 +242,13 @@ const isMonitoringActive = () => {
 
 // Function to remove a trade from monitoring
 const removeFromMonitoring = (tradeId) => {
-    const index = executedTrades.findIndex(trade => trade.id === tradeId);
+    const index = executedTrades.findIndex(trade => String(trade._id) === String(tradeId));
     if (index > -1) {
         executedTrades.splice(index, 1);
         console.log(`Removed trade ${tradeId} from monitoring`);
     }
 };
+
 
 // Function to parse and evaluate price conditions
 const evaluateCondition = (condition, currentPrice) => {

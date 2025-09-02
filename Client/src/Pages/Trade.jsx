@@ -16,7 +16,7 @@ import PendingTradeHistory from '../Components/PendingTradesHistory';
 const Trade = () => {
   const [selectedSide, setSelectedSide] = useState('buy');
   const [lastTrade, setLastTrade] = useState('buy');
-  const [tempTokenInfo, setTempTokenInfo] = useState({});
+  // const [tempTokenInfo, setTempTokenInfo] = useState({});
   const [recentTrades, setRecentTrades] = useState([]);
   const [showTradeHistory, setshowTradeHistory] = useState(false);
 
@@ -35,7 +35,6 @@ const Trade = () => {
   const selectedToken = useSelector((store) => store.selectedToken);
   const dispatch = useDispatch()
   const theme = useSelector(store => store.selectedTheme)
-
 
   const timeoutRef = useRef(null);
 
@@ -77,7 +76,7 @@ const Trade = () => {
           `${import.meta.env.VITE_BASE_URL}/trades/get-suggestions?q=${tradecoin}`,
           { headers: { Authorization: `Bearer ${token_auth}` } }
         );
-        setTempTokenInfo(data);
+
         dispatch(selectedTokenAction.addToken(data));
       } catch (error) {
         handleSessionError(error, navigate);
@@ -91,7 +90,7 @@ const Trade = () => {
 
 
   useEffect(() => {
-    if (!tradecoin) return 
+    if (!tradecoin) return
 
     const socket = new WebSocket('wss://ws.bitget.com/v2/ws/public');
 
@@ -162,7 +161,7 @@ const Trade = () => {
 
   }
   // ${theme === 'light' ?'border-white':'border-green-300'} 
-  const imageSrc = selectedToken?.image || selectedToken?.thumb || tempTokenInfo?.image;
+  const imageSrc = selectedToken?.image
   return (
     <div className={`w-screen h-screen  ${theme === 'light' ? 'bg-gradient-to-r from-green-400 via-green-400 to-green-800 ' : 'bg-gradient-to-r from-zinc-900 via-zinc-600 to-zinc-900'}`}>
       <div className="h-full w-screen bg-black/20 p-3 flex flex-col">
@@ -179,7 +178,7 @@ const Trade = () => {
 
         {/* Main Section */}
         <div className={`flex border ${theme === 'light' ? ' border-white' : '  border-green-300'} rounded`}>
-          <BuySellPanel theme={theme} TokenDetails={selectedToken || tempTokenInfo} tradecoin={tradecoin} livePrice={tradeRef.current?.PRICE} token_auth={token_auth} selectedSide={selectedSide} setSelectedSide={setSelectedSide} />
+          <BuySellPanel theme={theme} TokenDetails={selectedToken } tradecoin={tradecoin} livePrice={tradeRef.current?.PRICE} token_auth={token_auth} selectedSide={selectedSide} setSelectedSide={setSelectedSide} />
           <TokenInfoPanel theme={theme} recentTrades={recentTrades} tradeRef={tradeRef} lastTrade={lastTrade} token={token} imageSrc={imageSrc} priceRef={priceRef} tradecoin={tradecoin} qtyRef={qtyRef} />
 
         </div>

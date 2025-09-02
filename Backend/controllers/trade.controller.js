@@ -442,6 +442,7 @@ module.exports.cancelPendingTrades = async (req, res) => {
         });
         if (trade) {
             removeFromMonitoring(trade._id)
+            
         }
         if (!trade) {
             return res.status(404).json({
