@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { Send, Bot, User, Loader2, Bell, X, Brain, Wifi, WifiOff, Globe, Ellipsis, CircleSmall, Pen, Circle, WandSparkles, StopCircle, BadgeAlert } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Send, Bot, User, Loader2, Bell, X, Brain, Wifi, WifiOff, Globe, Ellipsis, CircleSmall, Pen, Circle, WandSparkles, StopCircle, BadgeAlert, ChevronLeft, Home } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const TradeX = () => {
   const [messages, setMessages] = useState([]);
   const [user, setUser] = useState({});
-  const navigate= useNavigate()
-  
+  const navigate = useNavigate()
+
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentTypingMessage, setCurrentTypingMessage] = useState(null);
@@ -26,30 +26,30 @@ const TradeX = () => {
   const token = localStorage.getItem('token')
   useEffect(() => {
     if (token) {
-        const fetchUserProfile = async () => {
-            try {
-                const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/users/profile`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                })
-                setUser(response.data.user)
-                
-
-            } catch (error) {
-                console.error(error)
-                if (error.response?.data?.message?.toLowerCase().includes('session expired')) {
-                    localStorage.removeItem('token');
-                    navigate('/session-expired');
-                }
+      const fetchUserProfile = async () => {
+        try {
+          const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/users/profile`, {
+            headers: {
+              Authorization: `Bearer ${token}`
             }
-        }
+          })
+          setUser(response.data.user)
 
-  
-        fetchUserProfile()
+
+        } catch (error) {
+          console.error(error)
+          if (error.response?.data?.message?.toLowerCase().includes('session expired')) {
+            localStorage.removeItem('token');
+            navigate('/session-expired');
+          }
+        }
+      }
+
+
+      fetchUserProfile()
     }
-}, [navigate, token])
- 
+  }, [navigate, token])
+
   useEffect(() => {
     connectWebSocket();
 
@@ -228,43 +228,43 @@ const TradeX = () => {
           typeMessage(reply, aiMsgId);
         }
         break;
-        case 'rate_limit_exceeded':
-          setIsLoading(false);
-          setCurrentActivity(null);
-          setActivityMessage(null);
-          
-          // Show rate limit notification
-          const rateLimitMessage = reason === 'burst_limit_exceeded' 
-            ? `Too many messages too quickly! Please wait ${retryAfter} seconds.`
-            : `Rate limit reached. Please wait ${retryAfter} seconds.`;
-          
-            showNotification(rateLimitMessage);
-          setActivityMessage({
-            id: "12dfhnmnbvdrt565",
-            event: "",
-            icon: BadgeAlert,
-            message: 'Let me Breath Bro...',
-            timestamp: new Date()
-          });
-          setCurrentActivity({ event: "Rate Limit", icon: Bot });
+      case 'rate_limit_exceeded':
+        setIsLoading(false);
+        setCurrentActivity(null);
+        setActivityMessage(null);
 
-          // Temporarily disable input
-          setIsRateLimited(true);
-          setTimeout(() => {
-            setIsRateLimited(false);
-          }, retryAfter * 1000);
-    
-          // Add system message to chat
-          const rateLimitMsgId = Date.now();
-          setMessages(prev => [...prev, {
-            id: rateLimitMsgId,
-            type: 'ai',
-            content: `⚠️ ${rateLimitMessage}`,
-            timestamp: new Date(),
-            isRateLimit: true
-          }]);
-          break;
-    
+        // Show rate limit notification
+        const rateLimitMessage = reason === 'burst_limit_exceeded'
+          ? `Too many messages too quickly! Please wait ${retryAfter} seconds.`
+          : `Rate limit reached. Please wait ${retryAfter} seconds.`;
+
+        showNotification(rateLimitMessage);
+        setActivityMessage({
+          id: "12dfhnmnbvdrt565",
+          event: "",
+          icon: BadgeAlert,
+          message: 'Let me Breath Bro...',
+          timestamp: new Date()
+        });
+        setCurrentActivity({ event: "Rate Limit", icon: Bot });
+
+        // Temporarily disable input
+        setIsRateLimited(true);
+        setTimeout(() => {
+          setIsRateLimited(false);
+        }, retryAfter * 1000);
+
+        // Add system message to chat
+        const rateLimitMsgId = Date.now();
+        setMessages(prev => [...prev, {
+          id: rateLimitMsgId,
+          type: 'ai',
+          content: `⚠️ ${rateLimitMessage}`,
+          timestamp: new Date(),
+          isRateLimit: true
+        }]);
+        break;
+
       case 'error':
         setIsLoading(false);
         setCurrentActivity(null);
@@ -283,7 +283,7 @@ const TradeX = () => {
   useEffect(() => {
     // find the latest message
     const lastMessage = messages[messages.length - 1];
-  
+
     // only scroll when a message finishes generating
     if (lastMessage && !lastMessage.isGenerating) {
       if (messagesEndRef.current) {
@@ -291,16 +291,16 @@ const TradeX = () => {
       }
     }
   }, [messages]);
-  
+
 
   const typeMessage = (content, messageId) => {
     let index = 0;
     const words = content.split(" "); // split into words
-  
+
     if (typingIntervalRef.current) {
       clearInterval(typingIntervalRef.current);
     }
-  
+
     typingIntervalRef.current = setInterval(() => {
       // join up to current index
       setCurrentTypingMessage({
@@ -308,19 +308,19 @@ const TradeX = () => {
         content: words.slice(0, index + 1).join(" "),
         isGenerating: true
       });
-  
+
       index++;
-  
+
       if (index >= words.length) {
         clearInterval(typingIntervalRef.current);
         typingIntervalRef.current = null;
-  
+
         setMessages(prev => prev.map(msg =>
           msg.id === messageId
             ? { ...msg, content, isGenerating: false }
             : msg
         ));
-  
+
         setCurrentTypingMessage(null);
         setCurrentActivity(null);
         setIsLoading(false);
@@ -328,7 +328,7 @@ const TradeX = () => {
       }
     }, 90); // <-- tweak speed here (faster/slower)
   };
-  
+
 
   const sendMessage = (userMessage) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -432,15 +432,12 @@ const TradeX = () => {
               <img src="/logo.png" className="w-17   rounded-2xl text-white" />
             </div>
             <div>
+              
               <h1 className="text-md  font-bold text-white">TradeXavier</h1>
- <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
                 <p className="text-sm text-slate-400">Your intelligent trading companion</p>
-                {/* {sessionId && (
-                  <span className="text-xs text-slate-500 bg-slate-700/50 px-2 py-1 rounded">
-                    Session: {sessionId.slice(-6)}
-                  </span>
-                )} */}
-              </div> 
+               
+              </div>
             </div>
             <div className="ml-auto flex items-center space-x-4">
               {/* Connection Status */}
@@ -522,9 +519,9 @@ const TradeX = () => {
           {activityMessage && (
             <div className="flex justify-start">
               <div className="flex max-w-[97%] items-start space-x-3">
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center `}>
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center `}>
 
-              <img src="/logo.png" className="w-6 rounded-2xl h-6 text-white" />
+                  <img src="/logo.png" className="w-6 rounded-2xl h-6 text-white" />
 
 
                 </div>
@@ -546,9 +543,9 @@ const TradeX = () => {
           {currentTypingMessage && (
             <div className="flex justify-start">
               <div className="flex max-w-[97%] items-start space-x-3">
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center `}>
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center `}>
 
-              <img src="/logo.png" className="w-6 rounded-2xl h-6 text-white" />
+                  <img src="/logo.png" className="w-6 rounded-2xl h-6 text-white" />
 
 
                 </div>
@@ -604,7 +601,7 @@ const TradeX = () => {
               </div>
               <button
                 onClick={handleSubmit}
-                disabled={!inputValue.trim() || isLoading || connectionStatus !== 'connected'||isRateLimited}
+                disabled={!inputValue.trim() || isLoading || connectionStatus !== 'connected' || isRateLimited}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 mb-2 rounded-xl transition-all duration-200 flex items-center justify-center"
               >
                 {isLoading ? (
@@ -617,13 +614,29 @@ const TradeX = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="flex flex-wrap gap-2 mt-3">
-            {[ 'tell me current BTC Price'].map((action) => (
+          <div className="flex  gap-2 mt-3">
+            <div
+            title="Go to Home"
+              onClick={() => navigate('/home')}
+              className="fixed bottom-36 hover:bg-gradient-to-r from-blue-600 to-purple-600 right-3 z-50 cursor-pointer flex flex-col items-center border-1 border-gray-600 hover: p-3 rounded-xl hover:scale-110 transition-transform"
+            >
+              <span
+                // title='Your Personal AI Assistant'
+                //   src="/logo.png" 
+                //   alt="Tradexavier AI" 
+                className=""
+              >
+                <Home className="w-6 h-6 text-white" />                 </span>
+              {/* <span className="text-[10px] text-green-300 mt-1 font-semibold bg-black/60 px-2 py-0.5 rounded">
+                TradeXavier Ai
+              </span> */}
+            </div>
+            {['current BTC Price', "tell me about Today's trending coins"].map((action) => (
               <button
                 key={action}
                 onClick={() => handleQuickAction(action)}
                 disabled={isLoading || connectionStatus !== 'connected'}
-                className="px-3 py-1 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50  rounded-lg text-xs text-slate-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-1 py-1 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50  rounded-lg text-xs text-slate-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {action}
               </button>
@@ -631,6 +644,7 @@ const TradeX = () => {
           </div>
         </div>
       </div>
+
     </div>
   );
 };

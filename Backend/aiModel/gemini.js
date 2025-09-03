@@ -1,6 +1,6 @@
 // models/gemini.js
 const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
-console.log(process.env.GOOGLE_API_KEY)
+
 // Normal Gemini model (free-form text)
 const model = new ChatGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_API_KEY,
@@ -20,7 +20,6 @@ const jsonModel = new ChatGoogleGenerativeAI({
 
 // JSON response (like analyzeModel)
 async function analyzeModel(prompt) {
-  // console.log(prompt)
   try {
     const res = await jsonModel.invoke(prompt);
     // LangChain packs responses in .content array
@@ -33,11 +32,9 @@ async function analyzeModel(prompt) {
 }
 
 async function runOpsTask(prompt) {
-  // console.log(prompt)
 
   try {
     const res = await model.invoke(prompt);
-    console.log(res)
     return res?.content ?? "";
   } catch (err) {
     console.error("RunOpsTask Error:", err.message);

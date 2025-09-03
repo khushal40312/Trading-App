@@ -32,7 +32,6 @@ Just output the category name (or "out of context").
 - Example output TRADING
 `
 const category= await runOpsTask(classifyPrompt)
-// console.log(category)
     return category.trim();
   }
 };

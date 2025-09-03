@@ -49,7 +49,6 @@ const executeTrade = async ({ finalJson, oldMemory, sessionId }) => {
             orderType, price: currentPrice, assetName, riskProfile,
             status: "CONFIRMED"
         });
-        console.log("pendingID", pending.id)
         const tradeData = {
             id: pending.id,
             symbol,

@@ -28,7 +28,6 @@ const extractTradingContext = {
                 assetName
             };
 
-            console.log(context)
             return context;
 
         } catch (error) {

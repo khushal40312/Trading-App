@@ -55,7 +55,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center py-2 w-80">
           <div className="flex justify-between items-center w-31">
             <Link
-              className={` ${location.pathname.includes('home') ? "border border-1 border-green-300" : ''} w-13 h-13 justify-center items-center flex flex-col text-white font-medium rounded-md hover:bg-green-700 transition`}
+              className={`  w-13 h-13 justify-center items-center flex flex-col text-white font-medium rounded-md hover:bg-green-700 transition`}
               to="/home"
             >
               <span className='text-center'>{location.pathname.includes('home') ? <GoHomeFill size={27} /> : <GoHome size={27} />}</span>
