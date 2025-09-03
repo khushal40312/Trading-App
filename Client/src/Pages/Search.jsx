@@ -9,6 +9,7 @@ import Navbar from '../Components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import { selectedTokenAction } from '../store/seletedTokenSlice';
 import { handleSessionError } from '../Functions/HandleSessionError';
+import { formatPrice } from '../Functions/FormatPrice';
 
 const AssetListSkeleton = () => (
     <div className="flex items-center mt-3 p-4 border border-gray-600 bg-black/20 backdrop-blur-xs rounded-lg animate-pulse overflow-y-auto ">
@@ -46,9 +47,10 @@ const Search = () => {
 
     useEffect(() => {
         const fetchSuggestions = async () => {
+            setLoading(true);
+
             if (!debouncedInput || !token) return;
             try {
-                setLoading(true);
                 const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/trades/get-suggestions?q=${debouncedInput}`, {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -161,25 +163,29 @@ const Search = () => {
                 </div>
 
             ) : (
-                !loading && suggestions?.symbol && 
-                    <div className="p-2  w-full h-screen">
+                !loading && suggestions?.symbol &&
+                <div className="p-2  w-full h-screen">
 
 
-                        <div onClick={() => findToken(suggestions?.symbol, suggestions)} className="flex items-center my-3 p-2 border-[#eeeeee] border-2 rounded-xl cursor-pointer active:border-green-500 transition">
-                            <img src={suggestions?.image} alt={suggestions?.symbol} className="w-10 h-10 rounded-full bg-[#eeeeee] mr-3 object-contain" />
+                    <div onClick={() => findToken(suggestions?.symbol, suggestions)} className="flex items-center my-3 p-2 border-[#eeeeee] border-2 rounded-xl cursor-pointer active:border-green-500 transition">
+                        <img src={suggestions?.image} alt={suggestions?.symbol} className="w-10 h-10 rounded-full bg-[#eeeeee] mr-3 object-contain" />
 
-                            <div className='flex justify-between w-full items-center'>
+                        <div className='flex justify-between w-full items-center'>
 
-                                <h4 className="font-medium text-white">{suggestions?.name || 'Not Found'}</h4>
-                                <h4 className="font-medium text-gray-300">{suggestions?.data?.current_price?.toFixed(4) || 'Unknown Token'}</h4>
+                            <h4 className="font-medium text-white">{suggestions?.symbol?.toUpperCase()} <span className='text-gray-400 text-xs'>/USDT</span></h4>
+                            <div>
+                                <h4 className="font-bold text-gray-300">{formatPrice(suggestions?.data?.current_price)}</h4>
 
-                                <p className='bg-[#21b121] text-center  rounded font-bold text-sm text-white p-2 '>{suggestions?.data?.price_change_percentage_24h?.toFixed(2)}% </p>
+                                <p className={`text-center  rounded  text-xs ${suggestions?.data?.price_change_percentage_24h?.toString().startsWith('-') ? 'text-red-500' : 'text-green-500'}`}  >{suggestions?.data?.price_change_percentage_24h?.toString().startsWith('-') ? "" : "+"}{formatPrice(suggestions?.data?.price_change_percentage_24h)}% </p>
+
                             </div>
 
                         </div>
 
                     </div>
-                )}
+
+                </div>
+            )}
 
             <Navbar />
         </div>

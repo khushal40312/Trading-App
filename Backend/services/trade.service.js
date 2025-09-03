@@ -71,7 +71,7 @@ module.exports.getSuggestion = async (input) => {
             vs_currency: "usd",
             sparkline: false,
             price_change_percentage: "1h",
-            symbols: input,
+            symbols: input.toUpperCase() === 'BITCOIN' ? "BTC" : input,
         });
 
         if (marketData?.length > 0) {
@@ -432,7 +432,7 @@ module.exports.getTradingHistory = async (id, symbol) => {
 }
 
 
-module.exports.getMyTradingStats= async(userId)=>{
+module.exports.getMyTradingStats = async (userId) => {
 
     try {
         const trades = await tradeModel.find({ user: userId }).populate('portfolio');
@@ -488,17 +488,17 @@ module.exports.getMyTradingStats= async(userId)=>{
             .sort((a, b) => b.trades - a.trades)
             .slice(0, 5);
 
-        return  {
-                totalTrades,
-                totalInvested: Number(totalInvested.toFixed(2)),
-                totalProfitLoss: Number(totalProfitLoss.toFixed(2)),
-                profitLossPercentage,
-                averageTradeSize,
-                largestGain: Number(largestGain.toFixed(2)),
-                largestLoss: Number(largestLoss.toFixed(2)),
-                mostTradedAssets,
-            }
-        
+        return {
+            totalTrades,
+            totalInvested: Number(totalInvested.toFixed(2)),
+            totalProfitLoss: Number(totalProfitLoss.toFixed(2)),
+            profitLossPercentage,
+            averageTradeSize,
+            largestGain: Number(largestGain.toFixed(2)),
+            largestLoss: Number(largestLoss.toFixed(2)),
+            mostTradedAssets,
+        }
+
 
     } catch (error) {
         console.error('Error in getMyTradingStats:', error);

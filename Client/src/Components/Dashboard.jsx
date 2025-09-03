@@ -267,7 +267,7 @@ const Dashboard = () => {
               {Number(actualBalance)?.toFixed(2) || '----'}
               <span className='font-bolder text-xs p-2 rounded bg-black text-white'>{currencyType}</span>
             </h1>
-            <p className='bg-[#21b121] text-center w-1/2 rounded font-bold text-sm text-white'>
+            <p className='bg-[#21b121] text-center w-1/2 rounded font-bold text-xs text-white'>
               {parseFloat(portfolioInfo?.totalProfitLossPercentage?.toFixed(2)) || 0} %
             </p>
           </div>
