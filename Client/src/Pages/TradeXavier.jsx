@@ -621,15 +621,11 @@ const TradeX = () => {
               className="fixed bottom-36 hover:bg-gradient-to-r from-blue-600 to-purple-600 right-3 z-50 cursor-pointer flex flex-col items-center border-1 border-gray-600 hover: p-3 rounded-xl hover:scale-110 transition-transform"
             >
               <span
-                // title='Your Personal AI Assistant'
-                //   src="/logo.png" 
-                //   alt="Tradexavier AI" 
+             
                 className=""
               >
                 <Home className="w-6 h-6 text-white" />                 </span>
-              {/* <span className="text-[10px] text-green-300 mt-1 font-semibold bg-black/60 px-2 py-0.5 rounded">
-                TradeXavier Ai
-              </span> */}
+            
             </div>
             {['current BTC Price', "tell me about Today's trending coins"].map((action) => (
               <button

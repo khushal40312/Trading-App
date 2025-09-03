@@ -26,12 +26,10 @@ const AssetListSkeleton = () => (
             <div className="h-8 bg-gray-700 rounded w-full"></div>
             <div className="h-8 bg-gray-700 rounded w-full"></div>
             <div className="h-8 bg-gray-700 rounded w-full"></div>
-
-
-
         </div>
     </div>
 )
+
 const Search = () => {
     const [input, setInput] = useState('');
     const [suggestions, setSuggestions] = useState({});
@@ -47,9 +45,8 @@ const Search = () => {
 
     useEffect(() => {
         const fetchSuggestions = async () => {
-            setLoading(true);
-
             if (!debouncedInput || !token) return;
+            setLoading(true);
             try {
                 const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/trades/get-suggestions?q=${debouncedInput}`, {
                     headers: {
@@ -61,7 +58,6 @@ const Search = () => {
             } catch (error) {
                 console.error('Error fetching suggestions:', error);
                 handleSessionError(error, navigate);
-
             } finally {
                 setLoading(false);
             }
@@ -74,12 +70,11 @@ const Search = () => {
         e.preventDefault();
         // Handle search submission logic if needed
     };
-    useEffect(() => {
 
+    useEffect(() => {
         if (trendingSearch.length === 0 && token) {
             setLoading2(true)
             const fetchStocks = async () => {
-
                 try {
                     const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/portfolios/dashboard-stocks`, {
                         headers: {
@@ -87,32 +82,23 @@ const Search = () => {
                         }
                     })
 
-
                     dispatch(SearchAction.addTrendingCoins(response.data))
-
-
                 } catch (error) {
                     console.error(error)
-
                     handleSessionError(error, navigate);
-
                 } finally {
-
                     setLoading2(false)
                 }
             }
             fetchStocks()
         }
-
     }, [trendingSearch])
-
 
     const findToken = (token, info) => {
         localStorage.setItem("trade", token)
         dispatch(selectedTokenAction.addToken(info))
         navigate(`/trade/${token}`);
     };
-
 
     return (
         <div className={`w-full  ${theme === 'light' ? 'bg-gradient-to-r from-green-400 via-green-400 to-green-800' : 'bg-gradient-to-r from-zinc-900 via-gray-800 to-stone-900'}`}>
@@ -129,61 +115,75 @@ const Search = () => {
                     placeholder="BTC"
                 />
             </form>
-            {input.length === 0 && <div className="p-2  w-full h-screen overflow-y-auto space-y-4">
-                <h2 className='text-white font-bold text-sm'>Top Searches</h2>
-                {loading2 ? (
-                    <AssetListSkeleton />
 
-                ) : (
-                    trendingSearch?.map((item) => (
-                        <div onClick={() => findToken(item.item.symbol, {
-                            coingeckoId: item.item.coingeckoId,
-                            image: item.item.image, name: item.item.name, symbol: item.item.symbol,
-                            source: item.item.slug
-                        })} key={item.item.symbol} className="flex items-center my-3 p-2  border border-black/30 rounded-xl cursor-pointer active:border-green-500 transition justify-between">
-                            <div className='flex items-center w-10'> <img src={item?.item.image} alt={item?.item?.name} className="w-10 h-10 rounded-full bg-[#eeeeee] mr-3 object-contain" />
-                                <h4 className="font-medium text-white">{item?.item?.symbol}</h4>
+            {/* Show trending searches when input is empty */}
+            {input.length === 0 && (
+                <div className="p-2 w-full h-screen overflow-y-auto space-y-4">
+                    <h2 className='text-white font-bold text-sm'>Top Searches</h2>
+                    {loading2 ? (
+                        <AssetListSkeleton />
+                    ) : (
+                        trendingSearch?.map((item) => (
+                            <div 
+                                onClick={() => findToken(item.item.symbol, {
+                                    coingeckoId: item.item.coingeckoId,
+                                    image: item.item.image, 
+                                    name: item.item.name, 
+                                    symbol: item.item.symbol,
+                                    source: item.item.slug
+                                })} 
+                                key={item.item.symbol} 
+                                className="flex items-center my-3 p-2 border border-black/30 rounded-xl cursor-pointer active:border-green-500 transition justify-between"
+                            >
+                                <div className='flex items-center w-10'>
+                                    <img src={item?.item.image} alt={item?.item?.name} className="w-10 h-10 rounded-full bg-[#eeeeee] mr-3 object-contain" />
+                                    <h4 className="font-medium text-white">{item?.item?.symbol}</h4>
+                                </div>
+                                <h1 className='font-bold text-sm text-center text-gray-300'>
+                                    {item?.item?.data?.current_price?.toString().startsWith('0.0')
+                                        ? `${item.item.data.current_price.toFixed(5)} $`
+                                        : `${item.item.data.current_price.toFixed(2)} $`}
+                                </h1>
+                                <p className='bg-[#21b121] text-center rounded font-bold text-sm text-white'>
+                                    {item?.item?.data?.price_change_percentage_24h?.usd.toString().startsWith("-") 
+                                        ? `${(item?.item?.data?.price_change_percentage_24h.usd).toFixed(3)}` 
+                                        : `+${(item.item.data.price_change_percentage_24h.usd).toFixed(3)}`}
+                                </p>
                             </div>
-                            <h1 className='font-bold text-sm text-center text-gray-300'>
-                                {item?.item?.data?.current_price?.toString().startsWith('0.0')
-                                    ? `${item.item.data.current_price.toFixed(5)} $`
-                                    : `${item.item.data.current_price.toFixed(2)} $`}
-                            </h1>
-
-                            <p className='bg-[#21b121] text-center  rounded font-bold text-sm text-white'>
-                                {item?.item?.data?.price_change_percentage_24h?.usd.toString().startsWith("-") ? `${(item?.item?.data?.price_change_percentage_24h.usd).toFixed(3)}` : `+${(item.item.data.price_change_percentage_24h.usd).toFixed(3)}`}
-                            </p>
-                        </div>
-                    ))
-                )}
-            </div>}
-            {loading ? (
-                <div className="p-2  w-full h-screen">
-                    <AssetListSkeleton />
+                        ))
+                    )}
                 </div>
+            )}
 
-            ) : (
-                !loading && suggestions?.symbol &&
-                <div className="p-2  w-full h-screen">
-
-
-                    <div onClick={() => findToken(suggestions?.symbol, suggestions)} className="flex items-center my-3 p-2 border-[#eeeeee] border-2 rounded-xl cursor-pointer active:border-green-500 transition">
-                        <img src={suggestions?.image} alt={suggestions?.symbol} className="w-10 h-10 rounded-full bg-[#eeeeee] mr-3 object-contain" />
-
-                        <div className='flex justify-between w-full items-center'>
-
-                            <h4 className="font-medium text-white">{suggestions?.symbol?.toUpperCase()} <span className='text-gray-400 text-xs'>/USDT</span></h4>
-                            <div>
-                                <h4 className="font-bold text-gray-300">{formatPrice(suggestions?.data?.current_price)}</h4>
-
-                                <p className={`text-center  rounded  text-xs ${suggestions?.data?.price_change_percentage_24h?.toString().startsWith('-') ? 'text-red-500' : 'text-green-500'}`}  >{suggestions?.data?.price_change_percentage_24h?.toString().startsWith('-') ? "" : "+"}{formatPrice(suggestions?.data?.price_change_percentage_24h)}% </p>
-
+            {/* Show search results when input has content */}
+            {input.length > 0 && (
+                <div className="p-2 w-full h-screen">
+                    {loading ? (
+                        <AssetListSkeleton />
+                    ) : suggestions?.symbol ? (
+                        <div 
+                            onClick={() => findToken(suggestions?.symbol, suggestions)} 
+                            className="flex items-center my-3 p-2 border-[#eeeeee] border-2 rounded-xl cursor-pointer active:border-green-500 transition"
+                        >
+                            <img src={suggestions?.image} alt={suggestions?.symbol} className="w-10 h-10 rounded-full bg-[#eeeeee] mr-3 object-contain" />
+                            <div className='flex justify-between w-full items-center'>
+                                <h4 className="font-medium text-white">
+                                    {suggestions?.symbol?.toUpperCase()} 
+                                    <span className='text-gray-400 text-xs'>/USDT</span>
+                                </h4>
+                                <div>
+                                    <h4 className="font-bold text-gray-300">{formatPrice(suggestions?.data?.current_price)}</h4>
+                                    <p className={`text-center rounded text-xs ${suggestions?.data?.price_change_percentage_24h?.toString().startsWith('-') ? 'text-red-500' : 'text-green-500'}`}>
+                                        {suggestions?.data?.price_change_percentage_24h?.toString().startsWith('-') ? "" : "+"}
+                                        {formatPrice(suggestions?.data?.price_change_percentage_24h)}%
+                                    </p>
+                                </div>
                             </div>
-
                         </div>
-
-                    </div>
-
+                    ) : (
+                        // Show skeleton when no results but not loading (prevents white flash)
+                        <AssetListSkeleton />
+                    )}
                 </div>
             )}
 
