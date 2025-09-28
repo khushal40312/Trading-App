@@ -65,6 +65,6 @@ module.exports.sendOTPEmail = async (receiverEmail) => {
     
     await redisClient.setEx(`otp:${receiverEmail}`, 300, otp);
   } catch (err) {
-    console.error('Error sending OTP:', err.response?.data || err.message);
+    console.error('Error sending OTP:',  err.message);
   }
 };
