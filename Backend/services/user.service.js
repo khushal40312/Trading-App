@@ -27,7 +27,7 @@ module.exports.sendOTPEmail = async (receiverEmail) => {
 
   const msg = {
     to: receiverEmail,
-    from: 'TradeX <no-reply@tradex.com>', // must be verified in SendGrid
+    from: 'TradeX <anuabc40312@gmail.com>', // must be verified in SendGrid
     subject: 'Your TradeX OTP Code',
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; background: #f8f8f8;">
