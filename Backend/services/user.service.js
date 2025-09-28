@@ -25,7 +25,7 @@ module.exports.sendOTPEmail = async (receiverEmail) => {
   const otp = generateOTP();
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-  const mailOptions = {
+  const msg = {
       from: 'TradeX <anuabc40312@gmail.com>',
       to: receiverEmail,
       subject: 'Your TradeX OTP Code',
